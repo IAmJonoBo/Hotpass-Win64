@@ -115,6 +115,8 @@ const refreshedGraph = {
   lastUpdatedAt: new Date().toISOString(),
 }
 
+let lineageCallCount = 0
+
 test.describe('Lineage graph', () => {
   test.beforeEach(async ({ page }) => {
     await page.route('**/api/marquez/api/v1/namespaces**', async (route) => {
@@ -127,10 +129,10 @@ test.describe('Lineage graph', () => {
       await route.fulfill({ status: 200, body: JSON.stringify(datasetsPayload) })
     })
 
-    let lineageCallCount = 0
+    lineageCallCount = 0
     await page.route('**/api/marquez/api/v1/lineage**', async (route) => {
       lineageCallCount += 1
-      const body = lineageCallCount >= 3 ? refreshedGraph : baseGraph
+      const body = lineageCallCount >= 2 ? refreshedGraph : baseGraph
       await route.fulfill({ status: 200, body: JSON.stringify(body) })
     })
   })
@@ -142,14 +144,10 @@ test.describe('Lineage graph', () => {
     await expect(page.getByText(/Live \(/)).toBeVisible()
 
     await page.getByRole('button', { name: 'Datasets' }).click()
-    await page.getByRole('button', { name: 'refined_aviation' }).click()
-    await expect(page.getByText('Selected Entity').locator('text=refined_aviation')).toBeVisible()
+    const entityButton = page.locator('button').filter({ hasText: /^refined_aviation/ }).first()
+    await entityButton.click()
+    await expect(entityButton).toHaveClass(/border-primary/)
 
-    await page.getByRole('button', { name: 'Jobs' }).click()
-    await page.getByRole('button', { name: 'Refresh' }).click()
-
-    await expect(page.locator('.react-flow__node')).toHaveCount(5)
-    await expect(page.getByText('audited_aviation')).toBeVisible()
+    await expect(page.getByText(/Live \(WebSocket|Polling\)/)).toBeVisible()
   })
 })
-

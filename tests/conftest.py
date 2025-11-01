@@ -38,12 +38,33 @@ _install_warning_filters()
 
 def pytest_configure(config: pytest.Config) -> None:
     _install_warning_filters()
+    config.addinivalue_line(
+        "markers",
+        "bandwidth(name): classify test runtime footprint (smoke|full|quality_gate|slow)",
+    )
+    config.addinivalue_line("markers", "smoke: smoke-tier fast checks")
+    config.addinivalue_line("markers", "full: comprehensive default checks")
 
 
 @fixture(autouse=True)
 def _fail_fast_for_mutmut() -> None:
     if os.environ.get("MUTANT_UNDER_TEST") == "fail":
         pytest.fail("mutmut forced failure sentinel", pytrace=False)
+
+
+def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
+    for item in items:
+        bandwidth_marks = list(item.iter_markers(name="bandwidth"))
+        if bandwidth_marks:
+            bucket = bandwidth_marks[-1].args[0]
+        else:
+            bucket = "full"
+            item.add_marker(pytest.mark.bandwidth(bucket))
+
+        if bucket == "smoke":
+            item.add_marker("smoke")
+        elif bucket == "full":
+            item.add_marker("full")
 
 
 @fixture()

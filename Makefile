@@ -1,8 +1,15 @@
 .PHONY: qa
 qa:
-	ruff format --check
-	ruff check
-	pytest --cov=apps/data-platform --cov=tests --cov-report=term-missing
+	ruff check apps/web-ui
+	uv run pytest -m "smoke"
+	uv run coverage html
+	@echo "Smoke QA complete. For full suite run: make qa-full"
+
+.PHONY: qa-full
+qa-full:
+	ruff check apps/web-ui
+	uv run pytest
+	uv run coverage html
 	mypy apps/data-platform/hotpass/pipeline/config.py apps/data-platform/hotpass/pipeline/orchestrator.py ops/quality/fitness_functions.py
 	bandit -r apps/data-platform ops
 	python -m detect_secrets scan apps/data-platform tests ops

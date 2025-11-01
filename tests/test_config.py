@@ -9,7 +9,11 @@ from textwrap import dedent
 from hotpass.config import (IndustryProfile, get_default_profile,
                             load_industry_profile, save_industry_profile)
 
+import pytest
+
 from tests.helpers.assertions import expect
+
+pytestmark = pytest.mark.bandwidth("smoke")
 
 
 def test_load_industry_profile_prefers_yaml(tmp_path: Path) -> None:

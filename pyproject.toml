@@ -118,9 +118,14 @@ indent-style = "space"
 [tool.pytest.ini_options]
 minversion = "8.0"
 testpaths = ["tests"]
-addopts = "--maxfail=1 --disable-warnings --cov=apps/data-platform --cov-report=term-missing"
+addopts = "--maxfail=1 --disable-warnings --cov=apps/data-platform --cov-report=term-missing --cov-report=xml"
 pythonpath = ["apps/data-platform"]
-markers = ["accessibility: accessibility semantics checks"]
+markers = [
+  "accessibility: accessibility semantics checks",
+  "smoke: fast deterministic checks for ephemeral runners",
+  "full: comprehensive suite (default)",
+  "bandwidth(name): classify tests by expected runtime footprint (smoke|full|quality_gate|slow)",
+]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 

@@ -1,0 +1,44 @@
+name: Playwright Nightly
+
+on:
+  schedule:
+    - cron: '30 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/web-ui/package-lock.json
+
+      - name: Install dependencies
+        working-directory: apps/web-ui
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: apps/web-ui
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Playwright e2e suite
+        working-directory: apps/web-ui
+        env:
+          CI: 'true'
+        run: npm run test:e2e
+
+      - name: Upload Playwright artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-nightly-report
+          path: apps/web-ui/playwright-report

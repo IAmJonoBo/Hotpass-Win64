@@ -6,8 +6,12 @@ import json
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from hotpass.versioning import (DatasetVersion, DVCManager,
                                 record_version_metadata)
+
+pytestmark = pytest.mark.bandwidth("smoke")
 
 
 def expect(condition: bool, message: str) -> None:

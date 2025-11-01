@@ -30,36 +30,44 @@ export function jobHasHotpassFacet(job: MarquezJob): boolean {
   return Object.keys(facets).some((key) => key.toLowerCase().includes('hotpass'))
 }
 
+export function summariseLineageJobs(jobs: MarquezJob[]) {
+  let jobsToday = 0
+  let failedToday = 0
+  let incompleteFacets = 0
+
+  for (const job of jobs) {
+    const latestRun = job.latestRun
+    if (latestRun) {
+      if (isToday(latestRun.createdAt) || isToday(latestRun.updatedAt)) {
+        jobsToday += 1
+        if (latestRun.state === 'FAILED' || latestRun.state === 'ABORTED') {
+          failedToday += 1
+        }
+      }
+      if (!jobHasHotpassFacet(job)) {
+        incompleteFacets += 1
+      }
+    } else {
+      incompleteFacets += 1
+    }
+  }
+
+  return {
+    jobsToday,
+    failedToday,
+    incompleteFacets,
+  }
+}
+
 export function useLineageTelemetry(namespace: string = DEFAULT_NAMESPACE) {
   return useQuery<LineageTelemetry>({
     queryKey: ['marquez-jobs', namespace],
     queryFn: async () => {
       const jobs = await marquezApi.getJobs(namespace, 200)
-      let jobsToday = 0
-      let failedToday = 0
-      let incompleteFacets = 0
-
-      for (const job of jobs) {
-        const latestRun = job.latestRun
-        if (latestRun) {
-          if (isToday(latestRun.createdAt) || isToday(latestRun.updatedAt)) {
-            jobsToday += 1
-            if (latestRun.state === 'FAILED' || latestRun.state === 'ABORTED') {
-              failedToday += 1
-            }
-          }
-          if (!jobHasHotpassFacet(job)) {
-            incompleteFacets += 1
-          }
-        } else {
-          incompleteFacets += 1
-        }
-      }
+      const summary = summariseLineageJobs(jobs)
 
       return {
-        jobsToday,
-        failedToday,
-        incompleteFacets,
+        ...summary,
         jobs,
         lastUpdated: new Date().toISOString(),
       }

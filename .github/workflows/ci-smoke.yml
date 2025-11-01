@@ -1,0 +1,78 @@
+name: CI Smoke
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      PYTEST_XDIST_AUTO_NUM_WORKERS: 3
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up uv and Python
+        uses: astral-sh/setup-uv@v7
+        with:
+          python-version: '3.13'
+
+      - name: Synchronise dependencies (smoke extras)
+        env:
+          HOTPASS_UV_EXTRAS: "dev orchestration"
+        run: bash ops/uv_sync_extras.sh
+
+      - name: Run smoke pytest suite with coverage
+        run: |
+          uv run pytest -m "smoke" --maxfail=1
+          uv run coverage report --fail-under=70
+          uv run coverage html
+
+      - name: Upload Python coverage artefacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-smoke-coverage
+          if-no-files-found: warn
+          path: |
+            .coverage*
+            coverage.xml
+            htmlcov/**
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/web-ui/package-lock.json
+
+      - name: Install web dependencies
+        working-directory: apps/web-ui
+        run: npm ci
+
+      - name: Run Vitest unit suite with coverage
+        working-directory: apps/web-ui
+        run: npm run test:unit
+
+      - name: Upload web coverage artefacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-unit-coverage
+          if-no-files-found: warn
+          path: |
+            apps/web-ui/coverage/unit/**
+
+      - name: Persist Vitest HTML coverage summary
+        if: always()
+        working-directory: apps/web-ui
+        run: |
+          if [ -f coverage/unit/index.html ]; then
+            echo "Vitest coverage report saved under coverage/unit" >> "$GITHUB_STEP_SUMMARY"
+          fi
