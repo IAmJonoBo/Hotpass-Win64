@@ -99,6 +99,8 @@ If any command fails, the script exits immediately with a non-zero code so CI ca
 
 **Result:** consistent enforcement of `ruff`, `black`, `bandit`, `mypy`, `detect-secrets`, YAML/Markdown linters, container linting, and additional security scanners through one orchestrated command.
 
+> **Docs CI:** `.github/workflows/docs.yml` runs `make qa-trunk` before building Sphinx artefacts so documentation-only pull requests still pass the full Trunk lint suite.
+
 ## Reference
 
 ### Test tiers by scope

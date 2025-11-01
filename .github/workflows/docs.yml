@@ -44,12 +44,20 @@ jobs:
           python -m pip install --upgrade pip
           pip install uv
 
+      - name: Install Trunk CLI
+        run: |
+          curl https://get.trunk.io -fsSL | bash -s -- -y
+          echo "$HOME/.trunk/bin" >> "$GITHUB_PATH"
+
       - name: Sync dependencies
         env:
           HOTPASS_UV_EXTRAS: ${{ env.UV_EXTRAS }}
         run: |
           uv venv
           bash ops/uv_sync_extras.sh
+
+      - name: Run Trunk lint suite
+        run: make qa-trunk
 
       - name: Build documentation
         run: uv run sphinx-build -n -W -b html docs docs/_build/html
