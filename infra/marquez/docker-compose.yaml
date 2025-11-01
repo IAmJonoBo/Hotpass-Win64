@@ -18,7 +18,7 @@ services:
       - marquez_db:/var/lib/postgresql/data
 
   marquez:
-    image: marquezproject/marquez:0.50.0
+    image: marquezproject/marquez:0.51.1
     platform: linux/amd64
     container_name: marquez
     depends_on:
