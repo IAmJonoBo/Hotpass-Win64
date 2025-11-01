@@ -1,19 +1,18 @@
 .PHONY: qa
 qa:
-	ruff check apps/web-ui
+	TRUNK_ALLOW_MISSING=0 TRUNK_FMT_MODE=check scripts/testing/trunk_check.sh
 	uv run pytest -m "smoke"
 	uv run coverage html
 	@echo "Smoke QA complete. For full suite run: make qa-full"
 
 .PHONY: qa-full
 qa-full:
-	ruff check apps/web-ui
-	uv run pytest
-	uv run coverage html
-	mypy apps/data-platform/hotpass/pipeline/config.py apps/data-platform/hotpass/pipeline/orchestrator.py ops/quality/fitness_functions.py
-	bandit -r apps/data-platform ops
-	python -m detect_secrets scan apps/data-platform tests ops
-	pre-commit run --all-files --show-diff-on-failure
+	TRUNK_ALLOW_MISSING=0 TRUNK_FMT_MODE=check scripts/testing/trunk_check.sh
+	TRUNK_ALLOW_MISSING=0 TRUNK_SKIP_TRUNK=1 scripts/testing/full.sh
+
+.PHONY: qa-trunk
+qa-trunk:
+	TRUNK_ALLOW_MISSING=0 TRUNK_FMT_MODE=check scripts/testing/trunk_check.sh
 
 EXTRAS ?= dev orchestration
 MARQUEZ_API_PORT ?= 5000
