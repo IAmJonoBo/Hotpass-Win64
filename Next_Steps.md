@@ -31,7 +31,7 @@
 
   - [ ] Infrastructure — `uv run python ops/arc/verify_runner_lifecycle.py --owner ...` to capture lifecycle report for ARC runners (blocked awaiting staging access).【73fd99†L41-L55】
   - [x] Tests — Baseline `uv run pytest --cov=hotpass --cov=apps --cov-report=term-missing` failures resolved (CLI parser conflict, handler signatures, and lineage stub facets). Targeted suites `tests/cli/test_new_commands.py tests/cli/test_backfill.py tests/cli/test_run_lineage_integration.py` now green; schedule full-suite run when time budget allows; owner: Engineering.
-  - [ ] Lint — `uv run ruff check` fails under ruff 0.12.11 because import ordering rules (`I001`) and upgrade helpers (`UP038`) now flag legacy modules; owner: Engineering.
+  - [ ] Lint — `uv run ruff check` fails under ruff 0.12.11 because import ordering rules (`I001`) and upgrade helpers (`UP038`) now flag legacy modules; owner: Engineering. See follow-up issue: #456.
   - [ ] Types — `uv run mypy apps/data-platform tests ops` reports missing stub packages (`yaml`, `requests`, `hypothesis`) and signature issues in automation/linkage modules; owner: Engineering.
   - [ ] Supply chain — `uv run python ops/supply_chain/generate_sbom.py --output dist/sbom/hotpass-sbom.json` fails (missing `cyclonedx_py` module inside repo venv); owner: Platform.
   - [ ] Security — `uv run detect-secrets scan --all-files` interrupted locally (KeyboardInterrupt) after multi-process heuristics stalled on large files; confirm baseline runtime or scope reduction with Security owners.
