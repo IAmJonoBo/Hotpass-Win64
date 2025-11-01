@@ -1,6 +1,6 @@
 services:
   marquez-db:
-    image: postgres:14
+    image: postgres:18
     platform: linux/amd64
     container_name: marquez-db
     environment:
