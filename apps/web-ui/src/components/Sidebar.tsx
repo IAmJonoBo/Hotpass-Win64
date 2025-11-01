@@ -13,6 +13,7 @@ import {
 import { cn, getEnvironmentColor } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { useState, useEffect } from 'react'
+import { useAuth } from '@/auth'
 
 interface SidebarProps {
   environment?: string
@@ -41,13 +42,25 @@ export function Sidebar({ environment = 'local', onOpenAssistant, onOpenActivity
     localStorage.setItem('darkMode', JSON.stringify(darkMode))
   }, [darkMode])
 
-  const navigation = [
+  const { user, isAuthenticated, isLoading, login, logout, hasRole } = useAuth()
+
+  const navigation: Array<{
+    name: string
+    href: string
+    icon: typeof LayoutDashboard
+    roles?: readonly string[]
+  }> = [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
     { name: 'Lineage', href: '/lineage', icon: GitBranch },
     { name: 'Health', href: '/health', icon: Stethoscope },
     { name: 'Assistant', href: '/assistant', icon: MessageSquare },
-    { name: 'Admin', href: '/admin', icon: Settings },
+    { name: 'Admin', href: '/admin', icon: Settings, roles: ['admin'] as const },
   ]
+
+  const filteredNavigation = navigation.filter(item => {
+    if (!('roles' in item) || !item.roles) return true
+    return item.roles.some(role => hasRole(role))
+  })
 
   return (
     <div className="flex h-screen w-64 flex-col border-r bg-card">
@@ -69,7 +82,7 @@ export function Sidebar({ environment = 'local', onOpenAssistant, onOpenActivity
 
       {/* Navigation */}
       <nav className="flex-1 space-y-1 px-3">
-        {navigation.map((item) => (
+        {filteredNavigation.map(item => (
           <NavLink
             key={item.name}
             to={item.href}
@@ -90,6 +103,13 @@ export function Sidebar({ environment = 'local', onOpenAssistant, onOpenActivity
 
       {/* Dark mode toggle and Assistant button */}
       <div className="border-t p-4 space-y-2">
+        <div className="flex flex-col gap-1 text-xs text-muted-foreground">
+          <span aria-live="polite">
+            {isAuthenticated && user
+              ? `Signed in as ${user.name || user.email || user.id}`
+              : 'Not signed in'}
+          </span>
+        </div>
         {onOpenActivity && (
           <Button
             variant="ghost"
@@ -129,6 +149,21 @@ export function Sidebar({ environment = 'local', onOpenAssistant, onOpenActivity
               Dark Mode
             </>
           )}
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={isLoading}
+          onClick={() => {
+            if (isAuthenticated) {
+              void logout()
+            } else {
+              void login()
+            }
+          }}
+          className="w-full justify-start"
+        >
+          {isAuthenticated ? 'Sign out' : 'Sign in'}
         </Button>
       </div>
 

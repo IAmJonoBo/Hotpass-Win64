@@ -101,23 +101,41 @@ const normalizeLineageGraph = (payload: unknown): MarquezLineageGraph => {
     lastUpdatedAt?: string
   }
   const nodes: MarquezLineageGraphNode[] = Array.isArray(raw?.graph?.nodes)
-    ? raw.graph.nodes.map((node) => {
+    ? raw.graph.nodes.map(node => {
         const id = String(node?.id ?? '')
         const [namespacePart, ...rest] = id.split(':')
         const fallbackName = rest.length > 0 ? rest.join(':') : id
+
+        const rawNode = (node ?? {}) as Partial<MarquezLineageGraphNode> & Record<string, unknown>
+        const rawData = (rawNode.data ?? {}) as (Partial<MarquezDataset & MarquezJob> & Record<string, unknown>)
+
+        const namespaceCandidate =
+          typeof rawData.namespace === 'string'
+            ? rawData.namespace
+            : typeof rawNode.namespace === 'string'
+              ? rawNode.namespace
+              : typeof (rawData.id as { namespace?: string } | undefined)?.namespace === 'string'
+                ? (rawData.id as { namespace?: string }).namespace
+                : namespacePart
+
+        const nameCandidate =
+          typeof rawData.name === 'string'
+            ? rawData.name
+            : typeof rawNode.name === 'string'
+              ? rawNode.name
+              : fallbackName
+
+        const runCandidate = (rawNode as { run?: MarquezRun | null }).run ?? (rawData.latestRun as MarquezRun | undefined) ?? null
+
         return {
           id,
-          type: node?.type === 'JOB' ? 'JOB' : 'DATASET',
+          type: rawNode.type === 'JOB' ? 'JOB' : 'DATASET',
           data: {
-            ...(node?.data as MarquezDataset | MarquezJob | undefined),
-            name: node?.data?.name ?? (node as any)?.name ?? fallbackName,
-            namespace:
-              node?.data?.namespace ??
-              (node as any)?.namespace ??
-              (node?.data as MarquezDataset | MarquezJob | undefined)?.id?.namespace ??
-              namespacePart,
+            ...(rawData as Partial<MarquezDataset | MarquezJob>),
+            name: nameCandidate,
+            namespace: namespaceCandidate,
           },
-          run: (node as any)?.run ?? (node?.data as any)?.latestRun ?? null,
+          run: runCandidate,
         }
       })
     : []
@@ -150,7 +168,7 @@ export const marquezApi = {
   // List all namespaces
   async getNamespaces(): Promise<MarquezNamespace[]> {
     const url = `${getBaseUrl()}/api/v1/namespaces`
-    const response = await fetch(url)
+    const response = await fetch(url, { credentials: 'include' })
     if (!response.ok) {
       throw new Error(`Failed to fetch namespaces: ${response.statusText}`)
     }
@@ -161,7 +179,7 @@ export const marquezApi = {
   // Get jobs in a namespace
   async getJobs(namespace: string, limit = 100, offset = 0): Promise<MarquezJob[]> {
     const url = `${getBaseUrl()}/api/v1/namespaces/${encodeURIComponent(namespace)}/jobs?limit=${limit}&offset=${offset}`
-    const response = await fetch(url)
+    const response = await fetch(url, { credentials: 'include' })
     if (!response.ok) {
       throw new Error(`Failed to fetch jobs: ${response.statusText}`)
     }
@@ -172,7 +190,7 @@ export const marquezApi = {
   // Get a specific job
   async getJob(namespace: string, jobName: string): Promise<MarquezJob> {
     const url = `${getBaseUrl()}/api/v1/namespaces/${encodeURIComponent(namespace)}/jobs/${encodeURIComponent(jobName)}`
-    const response = await fetch(url)
+    const response = await fetch(url, { credentials: 'include' })
     if (!response.ok) {
       throw new Error(`Failed to fetch job: ${response.statusText}`)
     }
@@ -182,7 +200,7 @@ export const marquezApi = {
   // Get runs for a job
   async getJobRuns(namespace: string, jobName: string, limit = 100, offset = 0): Promise<MarquezRun[]> {
     const url = `${getBaseUrl()}/api/v1/namespaces/${encodeURIComponent(namespace)}/jobs/${encodeURIComponent(jobName)}/runs?limit=${limit}&offset=${offset}`
-    const response = await fetch(url)
+    const response = await fetch(url, { credentials: 'include' })
     if (!response.ok) {
       throw new Error(`Failed to fetch job runs: ${response.statusText}`)
     }
@@ -193,7 +211,7 @@ export const marquezApi = {
   // Get a specific run
   async getRun(runId: string): Promise<MarquezRun> {
     const url = `${getBaseUrl()}/api/v1/runs/${encodeURIComponent(runId)}`
-    const response = await fetch(url)
+    const response = await fetch(url, { credentials: 'include' })
     if (!response.ok) {
       throw new Error(`Failed to fetch run: ${response.statusText}`)
     }
@@ -203,7 +221,7 @@ export const marquezApi = {
   // Get datasets in a namespace
   async getDatasets(namespace: string, limit = 100, offset = 0): Promise<MarquezDataset[]> {
     const url = `${getBaseUrl()}/api/v1/namespaces/${encodeURIComponent(namespace)}/datasets?limit=${limit}&offset=${offset}`
-    const response = await fetch(url)
+    const response = await fetch(url, { credentials: 'include' })
     if (!response.ok) {
       throw new Error(`Failed to fetch datasets: ${response.statusText}`)
     }
@@ -214,7 +232,7 @@ export const marquezApi = {
   // Get lineage graph with full filter set
   async getLineageGraph(filters: MarquezLineageFilters): Promise<MarquezLineageGraph> {
     const url = buildLineageQuery(filters)
-    const response = await fetch(url.toString())
+    const response = await fetch(url.toString(), { credentials: 'include' })
     if (!response.ok) {
       throw new Error(`Failed to fetch lineage: ${response.statusText}`)
     }
@@ -374,6 +392,7 @@ export const marquezApi = {
     try {
       const response = await fetch(`${base}/api/v1/namespaces?limit=1`, {
         headers: { Accept: 'application/json' },
+        credentials: 'include',
       })
       return response.ok
     } catch (error) {

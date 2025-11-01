@@ -46,6 +46,8 @@ export function LiveRefinementPanel() {
   const [expandedRow, setExpandedRow] = useState<string | null>(null)
   const [feedback, setFeedback] = useState<Record<string, string>>({})
   const [lastSync, setLastSync] = useState(new Date())
+  const [csrfToken, setCsrfToken] = useState<string | null>(null)
+  const [telemetryError, setTelemetryError] = useState<string | null>(null)
 
   // Fetch refined rows with auto-refresh
   const { data: rows = [], refetch } = useQuery({
@@ -63,23 +65,60 @@ export function LiveRefinementPanel() {
     setLastSync(new Date())
   }, [rows])
 
+  useEffect(() => {
+    let cancelled = false
+    async function fetchCsrf() {
+      try {
+        const response = await fetch('/telemetry/operator-feedback/csrf', {
+          method: 'GET',
+          credentials: 'include',
+          headers: { Accept: 'application/json' },
+        })
+        if (!response.ok) {
+          throw new Error(`Failed to initialise CSRF token: ${response.status}`)
+        }
+        const payload = (await response.json()) as { token?: string }
+        if (!cancelled) {
+          setCsrfToken(payload.token ?? null)
+          setTelemetryError(null)
+        }
+      } catch (error) {
+        console.error('Unable to fetch telemetry CSRF token', error)
+        if (!cancelled) {
+          setTelemetryError('Feedback temporarily unavailable while security context initialises.')
+          setCsrfToken(null)
+        }
+      }
+    }
+
+    fetchCsrf()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   const handleFeedbackSubmit = async (rowId: string) => {
     const feedbackText = feedback[rowId]
-    if (!feedbackText?.trim()) return
+    if (!feedbackText?.trim() || !csrfToken) return
 
-    // Mock POST to telemetry endpoint
-    console.log('Submitting feedback:', {
-      rowId,
-      feedback: feedbackText,
-      timestamp: new Date().toISOString(),
-    })
-
-    // In production:
-    // await fetch('/telemetry/operator-feedback', {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({ rowId, feedback: feedbackText }),
-    // })
+    try {
+      const response = await fetch('/telemetry/operator-feedback', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': csrfToken,
+        },
+        body: JSON.stringify({ rowId, feedback: feedbackText, metadata: { submittedAt: new Date().toISOString() } }),
+      })
+      if (!response.ok) {
+        throw new Error(`Feedback submission failed: ${response.status}`)
+      }
+      setTelemetryError(null)
+    } catch (error) {
+      console.error('Failed to submit telemetry feedback', error)
+      setTelemetryError('Could not submit feedback. Please retry once the session stabilises.')
+    }
 
     // Clear feedback and collapse
     setFeedback(prev => ({ ...prev, [rowId]: '' }))
@@ -122,9 +161,14 @@ export function LiveRefinementPanel() {
           </Button>
         </div>
       </CardHeader>
-      <CardContent>
-        {/* Summary Stats */}
-        <div className="flex gap-4 mb-4">
+        <CardContent>
+          {telemetryError && (
+            <div className="mb-3 rounded border border-red-500/40 bg-red-500/10 p-2 text-sm text-red-700 dark:text-red-300" role="alert">
+              {telemetryError}
+            </div>
+          )}
+          {/* Summary Stats */}
+          <div className="flex gap-4 mb-4">
           <div className="flex items-center gap-2">
             <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
             <span className="text-sm font-medium">{completedCount} completed</span>
@@ -188,6 +232,7 @@ export function LiveRefinementPanel() {
                         onClick={() =>
                           setExpandedRow(expandedRow === row.id ? null : row.id)
                         }
+                        disabled={!csrfToken}
                       >
                         <MessageSquare className="h-4 w-4" />
                       </Button>
