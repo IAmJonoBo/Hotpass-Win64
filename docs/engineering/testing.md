@@ -89,24 +89,36 @@ If any command fails, the script exits immediately with a non-zero code so CI ca
 
 **Result:** parity with the nightly `quality-gates` workflow, including Playwright shard scheduling.
 
+### Run Trunk static analysis
+
+**Use when:** you need comprehensive linting, formatting validation, or secret scanning before pushing a branch.
+
+1. Install the Trunk CLI once: `curl https://get.trunk.io -fsSL | bash` (or `brew install trunk`).
+2. From the repo root run `make qa-trunk` for lint-only coverage, or rely on `make qa` / `make qa-full` which now invoke Trunk automatically. Pull requests also run `.github/workflows/trunk-format.yml`, which applies `trunk fmt` in fix mode and attaches a patch when formatting is missing.
+3. For CI-style execution call `scripts/testing/trunk_check.sh` directly. Set `TRUNK_FMT_MODE=fix` to apply autofixes locally or keep the default `check` mode to fail on unformatted files.
+
+**Result:** consistent enforcement of `ruff`, `black`, `bandit`, `mypy`, `detect-secrets`, YAML/Markdown linters, container linting, and additional security scanners through one orchestrated command.
+
+> **Docs CI:** `.github/workflows/docs.yml` runs `make qa-trunk` before building Sphinx artefacts so documentation-only pull requests still pass the full Trunk lint suite.
+
 ## Reference
 
 ### Test tiers by scope
 
-| Tier         | Invocation                                         | Components covered                                                                                                        | When to run                                     | Target runtime |
-|--------------|----------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------|----------------|
-| Smoke        | `scripts/testing/smoke.sh` · `make qa`              | `ruff` (apps/web-ui), `pytest -m "smoke"` with coverage, `uv run coverage html`, Vitest coverage (`npm run test:unit`)    | Every PR and before pushing shared branches     | < 5 minutes    |
-| Full         | `scripts/testing/full.sh` · `make qa-full`          | Smoke suite + full `pytest`, HTML/XML coverage, low-coverage audit, `mypy`, `bandit`, `detect-secrets`, `pre-commit`     | Before releases, after dependency upgrades      | < 45 minutes   |
-| Quality gates| `.github/workflows/quality-gates.yml` (scheduled)  | Full regression, Quality Gate checks (QG-1…5), Playwright shard                                                           | Nightly on `main`, manual reruns for incidents  | < 60 minutes   |
-| Nightly E2E  | `.github/workflows/playwright-nightly.yml`         | Playwright Chromium journeys with trace/HTML reports                                                                     | Nightly or after major UI merges               | < 40 minutes   |
+| Tier          | Invocation                                        | Components covered                                                                                                     | When to run                                    | Target runtime |
+| ------------- | ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- | -------------- |
+| Smoke         | `scripts/testing/smoke.sh` · `make qa`            | `ruff` (apps/web-ui), `pytest -m "smoke"` with coverage, `uv run coverage html`, Vitest coverage (`npm run test:unit`) | Every PR and before pushing shared branches    | < 5 minutes    |
+| Full          | `scripts/testing/full.sh` · `make qa-full`        | Smoke suite + full `pytest`, HTML/XML coverage, low-coverage audit, `mypy`, `bandit`, `detect-secrets`, `pre-commit`   | Before releases, after dependency upgrades     | < 45 minutes   |
+| Quality gates | `.github/workflows/quality-gates.yml` (scheduled) | Full regression, Quality Gate checks (QG-1…5), Playwright shard                                                        | Nightly on `main`, manual reruns for incidents | < 60 minutes   |
+| Nightly E2E   | `.github/workflows/playwright-nightly.yml`        | Playwright Chromium journeys with trace/HTML reports                                                                   | Nightly or after major UI merges               | < 40 minutes   |
 
 ### Coverage expectations
 
-| Suite        | Thresholds enforced                                                                                   |
-|--------------|-------------------------------------------------------------------------------------------------------|
-| Smoke pytest | `coverage report --fail-under=70` (configured via CI environment)                                     |
+| Suite        | Thresholds enforced                                                                                                          |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------- |
+| Smoke pytest | `coverage report --fail-under=70` (configured via CI environment)                                                            |
 | Full/Nightly | `coverage report --fail-under=80`; additional module-level audit via `report_low_coverage.py --min-lines 5 --min-branches 0` |
-| Vitest       | `vitest.config.ts` enforces ≥60% statements/lines/functions and ≥50% branches                         |
+| Vitest       | `vitest.config.ts` enforces ≥60% statements/lines/functions and ≥50% branches                                                |
 
 **Artifacts uploaded by CI:** `coverage.xml`, `htmlcov/`, `apps/web-ui/coverage/unit/`, Playwright traces (`playwright-report/`), and Quality Gate logs under `dist/quality-gates/`.
 
@@ -142,14 +154,14 @@ If any command fails, the script exits immediately with a non-zero code so CI ca
 
 ## Troubleshooting
 
-| Symptom                                                                 | Likely cause                                               | Fix                                                                                  |
-|-------------------------------------------------------------------------|------------------------------------------------------------|--------------------------------------------------------------------------------------|
-| `uv: command not found`                                                 | `uv` not installed locally                                 | `python -m pip install -U uv`, then rerun the script                                 |
-| `ModuleNotFoundError` during pytest                                    | Missing Python extras                                      | `make sync EXTRAS="dev orchestration"`                                               |
-| Vitest exits with `ERR_MODULE_NOT_FOUND`                               | Node modules absent                                        | `make web-ui-install`                                                                |
-| Playwright complains about missing browsers                           | Playwright binaries not installed                          | `cd apps/web-ui && npx playwright install --with-deps`                               |
-| `detect-secrets` finds unexpected baselines                           | Out-of-date baselines in repo                              | Run `python -m detect_secrets scan ...` locally, review, and update baseline as needed|
-| Coverage report empty                                                  | Tests exited before coverage finalised                     | Rerun suite; ensure no early exit skips `uv run coverage html`                      |
+| Symptom                                     | Likely cause                           | Fix                                                                                    |
+| ------------------------------------------- | -------------------------------------- | -------------------------------------------------------------------------------------- |
+| `uv: command not found`                     | `uv` not installed locally             | `python -m pip install -U uv`, then rerun the script                                   |
+| `ModuleNotFoundError` during pytest         | Missing Python extras                  | `make sync EXTRAS="dev orchestration"`                                                 |
+| Vitest exits with `ERR_MODULE_NOT_FOUND`    | Node modules absent                    | `make web-ui-install`                                                                  |
+| Playwright complains about missing browsers | Playwright binaries not installed      | `cd apps/web-ui && npx playwright install --with-deps`                                 |
+| `detect-secrets` finds unexpected baselines | Out-of-date baselines in repo          | Run `python -m detect_secrets scan ...` locally, review, and update baseline as needed |
+| Coverage report empty                       | Tests exited before coverage finalised | Rerun suite; ensure no early exit skips `uv run coverage html`                         |
 
 ## Related resources
 
