@@ -18,7 +18,7 @@ jobs:
       PYTEST_XDIST_AUTO_NUM_WORKERS: 3
       PYTHONUNBUFFERED: "1"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up uv and Python
         uses: astral-sh/setup-uv@v7

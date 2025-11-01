@@ -29,7 +29,7 @@ jobs:
       PYTEST_ADDOPTS: '--max-worker=4'
       PYTEST_XDIST_AUTO_NUM_WORKERS: 4
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up uv and Python
         uses: astral-sh/setup-uv@v7
@@ -63,7 +63,7 @@ jobs:
     env:
       UV_EXTRAS: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.uv_extras != '' && github.event.inputs.uv_extras || 'dev' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up uv and Python
         uses: astral-sh/setup-uv@v7
@@ -125,7 +125,7 @@ jobs:
     timeout-minutes: 40
     needs: pytest-full
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
