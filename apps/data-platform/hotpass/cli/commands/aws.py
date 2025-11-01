@@ -34,7 +34,11 @@ def build(
         parents=[shared.base],
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    parser.add_argument("--profile", help="AWS CLI profile name to use")
+    parser.add_argument(
+        "--aws-profile",
+        dest="aws_profile",
+        help="AWS CLI profile name to use (defaults to Hotpass profile if omitted)",
+    )
     parser.add_argument("--region", help="AWS region override for commands")
     parser.add_argument(
         "--eks-cluster",
@@ -87,7 +91,7 @@ def _command_handler(namespace: argparse.Namespace, profile: CLIProfile | None) 
         )
         return 1
 
-    aws_profile = namespace.profile
+    aws_profile = getattr(namespace, "aws_profile", None) or getattr(namespace, "profile", None)
     aws_region = namespace.region
     dry_run = namespace.dry_run
     output_mode = namespace.output

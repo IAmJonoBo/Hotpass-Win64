@@ -10,23 +10,14 @@
 - [ ] **Docs & QA** — Document and test the new CLI automation surface once available (README quickstart, `docs/reference/cli.md`, `AGENTS.md`, and ARC how-to guide).
 - [ ] **QA & Engineering** — Extend orchestrate/resolve CLI coverage for advanced profiles (reuse CLI stress fixtures and add resolve scenarios in `tests/cli/test_resolve.py`).
   - **Progress:** Added `tests/cli/test_resolve_profile.py` coverage for profile-driven Splink defaults, explicit disable flags, and Label Studio wiring; orchestrator stress fixtures still pending once staging data is available.
-- [x] **Engineering & QA** — Execute the staged mypy remediation plan (typed Hypothesis wrappers ➜ optional-dependency stubs ➜ CLI/MCP typing ➜ long-tail cleanup) to drive the error count toward zero.
-- [x] **Platform (Phase 5)** — Enable Docker buildx cache reuse through PR `ci/docker-cache` (owner: Platform).【F:.github/workflows/docker-cache.yml†L1-L60】
 - [ ] **Platform & QA** — Capture staging evidence for Prefect backfill guardrails and ARC runner sign-off once access returns _(post-1.0)_.
 - [ ] **Docs & UX (Phase 6)** — Finish Diátaxis navigation uplift in PR `docs/data-governance-nav` follow-on, ensuring governance artefacts surfaced (owner: Docs & UX).
 
 ## Steps
 
 - [ ] Reconfirm post-PR hygiene: ensure `Next_Steps.md` updated alongside each PR hand-off as per contributing guide (rolling reminder for all owners).【2ed7b7†L71-L71】
-- [x] Introduce manifest-driven Prefect deployments with CLI/docs/ADR updates (completed 2025-11-01).
 - [ ] Schedule Marquez lineage smoke against `observability/marquez-bootstrap` follow-up once optional dependencies land (target 2025-11-29) using the quickstart workflow.【d9a97b†L24-L29】【b3de0d†L1-L42】
 - [ ] Document expected staging artefacts for Prefect backfill guardrails and ARC runner sign-off runs so evidence drops into `dist/staging/backfill/` and `dist/staging/arc/` when access resumes (owner: Platform & QA, _(post-1.0)_).
-- [x] **Types remediation roadmap (Engineering & QA)** — execute the staged plan and record checkpoints:
-  - **Phase 0** (Baseline capture) — archived `dist/quality-gates/baselines/mypy-baseline-2025-10-31.txt`; pytest baseline confirmed.
-  - **Phase 1** (Hypothesis/property suites) — typed wrappers + suite updates; property suites now raise zero decorator warnings.
-  - **Phase 2** (Optional dependency stubs) — centralised stubs (`tests/helpers/stubs.py`), refactored orchestration/dashboard suites; mypy fell below 40 errors with tests green.
-  - **Phase 3** (CLI/MCP/source typing) — annotated CLI commands, MCP server, remaining fixtures; mypy below 15 errors with `uv run pytest` green.
-  - **Phase 4** (Long tail) — residual list-based expects/unreachables cleared; `uv run mypy src tests scripts` now reports 0 errors.
 - [ ] Continue migrating orchestration pytest assertions to `expect()` helper outside touched scenarios (owner: QA & Engineering).
   - **Progress:** test_error_handling.py completed (46 assertions migrated); compliance verification + enrichment suites migrated to `expect()`; agentic orchestration coverage converted 2025-10-31. Remaining bare-assert files: 31.
 - [ ] Audit remaining telemetry/CLI modules for strict mypy readiness and convert outstanding bare assertions (owner: Engineering & QA).
@@ -35,14 +26,13 @@
 
 ## Deliverables
 
-- [x] Marquez lineage smoke evidence captured with screenshots/log export following quickstart (Owner: QA & Engineering). Artefacts: `dist/staging/marquez/20251112T140000Z/cli.log`, `dist/staging/marquez/20251112T140000Z/graph.png`.【b3de0d†L1-L42】【F:tests/infrastructure/test_marquez_stack.py†L1-L46】【F:tests/test_lineage.py†L149-L200】
 
 ## Quality Gates
 
-- [x] Infrastructure — ARC runner smoke test workflow (`ARC runner smoke test`) reports healthy lifecycle across staging namespace. Live rehearsal artefacts: `dist/staging/arc/20251113T160000Z/lifecycle.json`, `dist/staging/arc/20251113T160000Z/sts.txt`.【F:.github/workflows/arc-ephemeral-runner.yml†L1-L60】【F:ops/arc/verify_runner_lifecycle.py†L1-L210】
-- [x] Types — `uv run mypy src tests scripts` now reports 0 errors as of 2025-10-31; remediation plan complete.【F:tests/helpers/stubs.py†L1-L170】【F:apps/data-platform/hotpass/cli/commands/plan.py†L1-L200】
-- [x] Lineage — `uv run pytest tests/test_lineage.py tests/scripts/test_arc_runner_verifier.py` executed 2025-10-31; suite passes locally with existing dependencies.【F:tests/test_lineage.py†L1-L200】【F:tests/scripts/test_arc_runner_verifier.py†L1-L160】
   - [ ] Infrastructure — `uv run python ops/arc/verify_runner_lifecycle.py --owner ...` to capture lifecycle report for ARC runners (blocked awaiting staging access).【73fd99†L41-L55】
+  - [x] Tests — Baseline `uv run pytest --cov=hotpass --cov=apps --cov-report=term-missing` failures resolved (CLI parser conflict, handler signatures, and lineage stub facets). Targeted suites `tests/cli/test_new_commands.py tests/cli/test_backfill.py tests/cli/test_run_lineage_integration.py` now green; schedule full-suite run when time budget allows; owner: Engineering.
+  - [ ] Types — `uv run mypy apps/data-platform tests ops` reports missing stub packages (`yaml`, `requests`, `hypothesis`) and signature issues in automation/linkage modules; owner: Engineering.
+  - [ ] Supply chain — `uv run python ops/supply_chain/generate_sbom.py --output dist/sbom/hotpass-sbom.json` fails (missing `cyclonedx_py` module inside repo venv); owner: Platform.
 
 ## Links
 

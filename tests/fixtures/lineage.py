@@ -8,7 +8,6 @@ from types import ModuleType
 from typing import Any
 
 import pytest
-
 from tests.helpers.fixtures import fixture
 
 
@@ -47,13 +46,26 @@ def capture_lineage(
             self.facets = dict(facets)
 
     class _StubRun:
-        def __init__(self, *, runId: str) -> None:  # noqa: N803 - OpenLineage naming
+        def __init__(
+            self,
+            *,
+            runId: str,
+            facets: Mapping[str, object] | None = None,
+        ) -> None:  # noqa: N803 - OpenLineage naming
             self.runId = runId
+            self.facets = dict(facets or {})
 
     class _StubJob:
-        def __init__(self, *, namespace: str, name: str) -> None:
+        def __init__(
+            self,
+            *,
+            namespace: str,
+            name: str,
+            facets: Mapping[str, object] | None = None,
+        ) -> None:
             self.namespace = namespace
             self.name = name
+            self.facets = dict(facets or {})
 
     class _StubRunEvent:
         def __init__(

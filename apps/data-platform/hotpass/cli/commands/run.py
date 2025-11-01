@@ -13,6 +13,8 @@ from typing import Any
 from uuid import uuid4
 
 import pandas as pd
+from rich.prompt import Confirm
+
 from hotpass.artifacts import create_refined_archive
 from hotpass.automation.hooks import dispatch_webhooks, push_crm_updates
 from hotpass.automation.http import AutomationHTTPClient, DeadLetterQueue
@@ -27,18 +29,18 @@ from hotpass.lineage import (
 )
 from hotpass.orchestration import build_pipeline_job_name
 from hotpass.pipeline import PipelineConfig, default_feature_bundle
-from hotpass.pipeline.orchestrator import (PipelineExecutionConfig,
-                                           PipelineOrchestrator)
-from hotpass.telemetry.bootstrap import (TelemetryBootstrapOptions,
-                                         telemetry_session)
-from rich.prompt import Confirm
+from hotpass.pipeline.orchestrator import PipelineExecutionConfig, PipelineOrchestrator
+from hotpass.telemetry.bootstrap import TelemetryBootstrapOptions, telemetry_session
 
 from ..builder import CLICommand, SharedParsers
 from ..configuration import CLIProfile
-from ..progress import (DEFAULT_SENSITIVE_FIELD_TOKENS, PipelineProgress,
-                        StructuredLogger, render_progress)
-from ..shared import (infer_report_format, load_config,
-                      normalise_sensitive_fields)
+from ..progress import (
+    DEFAULT_SENSITIVE_FIELD_TOKENS,
+    PipelineProgress,
+    StructuredLogger,
+    render_progress,
+)
+from ..shared import infer_report_format, load_config, normalise_sensitive_fields
 
 LEGACY_PIPELINE_KEYS: frozenset[str] = frozenset(
     {
@@ -58,7 +60,8 @@ LEGACY_PIPELINE_KEYS: frozenset[str] = frozenset(
         "qa_mode",
         "observability",
         "sensitive_fields",
-}
+    }
+)
 
 
 def _resolve_profile_name(config: PipelineConfig) -> str | None:
@@ -92,7 +95,6 @@ def _research_enabled() -> bool:
     feature = os.getenv("FEATURE_ENABLE_REMOTE_RESEARCH", "0").lower()
     allow = os.getenv("ALLOW_NETWORK_RESEARCH", "false").lower()
     return feature in truthy and allow in truthy
-)
 
 
 @dataclass(slots=True)

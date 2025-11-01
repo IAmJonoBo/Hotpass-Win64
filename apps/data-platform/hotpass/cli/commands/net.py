@@ -9,7 +9,6 @@ import socket
 import subprocess
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from pathlib import Path
 from typing import Any
 
 from rich.console import Console
@@ -212,7 +211,7 @@ def _dispatch(namespace: argparse.Namespace, profile: CLIProfile | None) -> int:
             "[red]No net subcommand specified (use 'hotpass net --help').[/red]"
         )
         return 1
-    return handler(namespace)
+    return handler(namespace, profile)
 
 
 # ---------------------------------------------------------------------------
@@ -292,7 +291,8 @@ def _terminate_pid(pid: int) -> None:
 # Command handlers
 
 
-def _handle_up(args: argparse.Namespace) -> int:
+def _handle_up(args: argparse.Namespace, profile: CLIProfile | None) -> int:
+    _ = profile
     console = Console()
     via = args.via
     label = args.label or datetime.now(tz=UTC).strftime("%Y%m%dT%H%M%SZ")
@@ -300,8 +300,9 @@ def _handle_up(args: argparse.Namespace) -> int:
     sessions = _load_sessions()
     if any(session.label == label for session in sessions):
         console.print(
-            f"[red]A tunnel session named '{label}' already exists. Use --label to supply a unique name or "
-            "run 'hotpass net down --label {label}'.[/red]"
+            f"[red]A tunnel session named '{label}' already exists. "
+            "Use --label to supply a unique name or "
+            f"run 'hotpass net down --label {label}'.[/red]"
         )
         return 1
 
@@ -314,7 +315,8 @@ def _handle_up(args: argparse.Namespace) -> int:
         return 1
     if via == "ssm" and not host:
         console.print(
-            "[red]SSM target instance ID is required (pass --host or set HOTPASS_BASTION_HOST).[/red]"
+            "[red]SSM target instance ID is required "
+            "(pass --host or set HOTPASS_BASTION_HOST).[/red]"
         )
         return 1
 
@@ -325,20 +327,19 @@ def _handle_up(args: argparse.Namespace) -> int:
             new_port = _find_available_port(prefect_port + 1)
             if new_port is None:
                 console.print(
-                    "[red]Unable to locate a free port for Prefect tunnel; disable --auto-port to stop auto "
-                    "searching or free ports.[/red]"
+                    "[red]Unable to locate a free port for Prefect tunnel; "
+                    "disable --auto-port to stop auto searching or free ports.[/red]"
                 )
                 return 1
             console.print(
-                f"[yellow]Local port {prefect_port} in use. Selecting {new_port} for Prefect[/yellow]"
+                f"[yellow]Local port {prefect_port} in use. "
+                f"Selecting {new_port} for Prefect[/yellow]"
             )
             prefect_port = new_port
         else:
             console.print(
-                (
-                    f"[red]Local port {prefect_port} is in use. Specify a free port or "
-                    "enable --auto-port.[/red]"
-                )
+                f"[red]Local port {prefect_port} is in use. Specify a free port or "
+                "enable --auto-port.[/red]"
             )
             return 1
 
@@ -349,25 +350,19 @@ def _handle_up(args: argparse.Namespace) -> int:
             new_port = _find_available_port(marquez_port + 1)
             if new_port is None:
                 console.print(
-                    (
-                        "[red]Unable to locate a free port for Marquez tunnel; disable --auto-port to stop "
-                        "auto searching or free ports.[/red]"
-                    )
+                    "[red]Unable to locate a free port for Marquez tunnel; "
+                    "disable --auto-port to stop auto searching or free ports.[/red]"
                 )
                 return 1
             console.print(
-                (
-                    f"[yellow]Local port {marquez_port} in use. Selecting {new_port} "
-                    "for Marquez[/yellow]"
-                )
+                f"[yellow]Local port {marquez_port} in use. "
+                f"Selecting {new_port} for Marquez[/yellow]"
             )
             marquez_port = new_port
         else:
             console.print(
-                (
-                    f"[red]Local port {marquez_port} is in use. Specify a free port or "
-                    "enable --auto-port.[/red]"
-                )
+                f"[red]Local port {marquez_port} is in use. Specify a free port or "
+                "enable --auto-port.[/red]"
             )
             return 1
 
@@ -467,7 +462,8 @@ def _handle_up(args: argparse.Namespace) -> int:
     return 0
 
 
-def _handle_down(args: argparse.Namespace) -> int:
+def _handle_down(args: argparse.Namespace, profile: CLIProfile | None) -> int:
+    _ = profile
     console = Console()
     sessions = _load_sessions()
     if not sessions:
@@ -495,10 +491,8 @@ def _handle_down(args: argparse.Namespace) -> int:
         pid = session.pid
         if pid is None:
             console.print(
-                (
-                    f"[yellow]Session '{session.label}' was not started in detach mode; "
-                    "nothing to terminate.[/yellow]"
-                )
+                f"[yellow]Session '{session.label}' was not started in detach mode; "
+                "nothing to terminate.[/yellow]"
             )
             continue
         if _is_process_alive(pid):
@@ -508,10 +502,8 @@ def _handle_down(args: argparse.Namespace) -> int:
             )
         else:
             console.print(
-                (
-                    f"[yellow]Tunnel '{session.label}' already inactive (PID {pid} "
-                    "not running).[/yellow]"
-                )
+                f"[yellow]Tunnel '{session.label}' already inactive (PID {pid} "
+                "not running).[/yellow]"
             )
 
     if remaining:
@@ -523,7 +515,9 @@ def _handle_down(args: argparse.Namespace) -> int:
 
 def _handle_status(
     args: argparse.Namespace,
-) -> int:  # noqa: ARG001 - signature mandated
+    profile: CLIProfile | None,
+) -> int:
+    _ = profile
     console = Console()
     sessions = _load_sessions()
     if not sessions:
