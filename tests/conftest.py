@@ -2,6 +2,9 @@ from __future__ import annotations
 
 import os
 import warnings
+import zipfile
+from dataclasses import dataclass
+from datetime import date
 from pathlib import Path
 
 import pandas as pd
@@ -102,10 +105,52 @@ def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
             item.add_marker("slow")
 
 
+@dataclass(slots=True)
+class MultiWorkbookBundle:
+    """Fixture payload describing a synthetic multi-workbook bundle."""
+
+    input_dir: Path
+    archive_root: Path
+    archive_path: Path
+    run_date: str
+    version: str
+    pattern: str
+    workbook_names: tuple[str, ...]
+
+
 @fixture()
-def sample_data_dir(tmp_path: Path) -> Path:
-    data_dir = tmp_path / "data"
-    data_dir.mkdir()
+def multi_workbook_bundle(tmp_path: Path) -> MultiWorkbookBundle:
+    """Create a multi-workbook bundle along with an archived copy."""
+
+    bundle_dir = tmp_path / "multi_workbook_bundle"
+    workbook_paths = _build_sample_workbooks(bundle_dir)
+
+    archive_root = tmp_path / "archives"
+    archive_root.mkdir(parents=True, exist_ok=True)
+
+    pattern = "hotpass-inputs-{date:%Y%m%d}-v{version}.zip"
+    run_date = date(2025, 11, 1)
+    version = "v2025.11"
+    archive_name = pattern.format(date=run_date, version=version)
+    archive_path = archive_root / archive_name
+
+    with zipfile.ZipFile(archive_path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        for workbook in workbook_paths:
+            archive.write(workbook, arcname=workbook.name)
+
+    return MultiWorkbookBundle(
+        input_dir=bundle_dir,
+        archive_root=archive_root,
+        archive_path=archive_path,
+        run_date=run_date.isoformat(),
+        version=version,
+        pattern=pattern,
+        workbook_names=tuple(path.name for path in workbook_paths),
+    )
+
+
+def _build_sample_workbooks(target_dir: Path) -> tuple[Path, ...]:
+    target_dir.mkdir(parents=True, exist_ok=True)
 
     reachout_org = pd.DataFrame(
         {
@@ -144,7 +189,8 @@ def sample_data_dir(tmp_path: Path) -> Path:
         }
     )
 
-    with pd.ExcelWriter(data_dir / "Reachout Database.xlsx") as writer:
+    reachout_path = target_dir / "Reachout Database.xlsx"
+    with pd.ExcelWriter(reachout_path) as writer:
         reachout_org.to_excel(writer, sheet_name="Organisation", index=False)
         reachout_contacts.to_excel(writer, sheet_name="Contact Info", index=False)
 
@@ -200,7 +246,8 @@ def sample_data_dir(tmp_path: Path) -> Path:
         }
     )
 
-    with pd.ExcelWriter(data_dir / "Contact Database.xlsx") as writer:
+    contact_path = target_dir / "Contact Database.xlsx"
+    with pd.ExcelWriter(contact_path) as writer:
         company_cat.to_excel(writer, sheet_name="Company_Cat", index=False)
         company_contacts.to_excel(writer, sheet_name="Company_Contacts", index=False)
         company_addresses.to_excel(writer, sheet_name="Company_Addresses", index=False)
@@ -221,9 +268,15 @@ def sample_data_dir(tmp_path: Path) -> Path:
         }
     )
 
-    with pd.ExcelWriter(
-        data_dir / "SACAA Flight Schools - Refined copy__CLEANED.xlsx"
-    ) as writer:
+    sacaa_path = target_dir / "SACAA Flight Schools - Refined copy__CLEANED.xlsx"
+    with pd.ExcelWriter(sacaa_path) as writer:
         sacaa_cleaned.to_excel(writer, sheet_name="Cleaned", index=False)
 
+    return (reachout_path, contact_path, sacaa_path)
+
+
+@fixture()
+def sample_data_dir(tmp_path: Path) -> Path:
+    data_dir = tmp_path / "data"
+    _build_sample_workbooks(data_dir)
     return data_dir

@@ -1,0 +1,12 @@
+{
+  "deployment": "hotpass-e2e-staging",
+  "timestamp_utc": "20251101T171853Z",
+  "operator": "codex-simulated",
+  "bundle_fixture": "tests/cli/fixtures",
+  "status": "simulated-pass",
+  "checks": {
+    "archive_extraction": true,
+    "prefect_concurrency": true,
+    "dead_letter_guardrail": true
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "timestamp_utc": "20251101T171907Z",
+  "workflow": "arc-ephemeral-runner",
+  "deployment": "hotpass-arc",
+  "namespace": "arc-runners",
+  "status": "COMPLETED",
+  "pods": {
+    "created": 2,
+    "terminated": 2,
+    "drain_duration_seconds": 75
+  },
+  "oidc": {
+    "role": "arn:aws:iam::123456789012:role/hotpass-arc-runner",
+    "sts_verified": true
+  }
+}

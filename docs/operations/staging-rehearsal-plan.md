@@ -18,7 +18,10 @@ This document captures the scheduled rehearsal windows, owners, and artefacts th
 | Rehearsal             | Date & Time (UTC)        | Owner(s)                            | Environment             | Notes                                                                                                                     |
 | --------------------- | ------------------------ | ----------------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------- |
 | Marquez lineage smoke | 2025-11-12 14:00 – 15:00 | QA (primary), Engineering (support) | `hotpass-staging`       | Completed. Artefacts: `dist/staging/marquez/20251112T140000Z/cli.log`, `dist/staging/marquez/20251112T140000Z/graph.png`. |
+| Marquez lineage smoke | 2025-11-01 17:15 – 17:25 | QA (simulated)                      | `hotpass-staging`       | Dry-run rehearsal captured at `dist/staging/marquez/20251101T171901Z/`. Includes `cli.log`, `graph.json`, and `graph.png`. |
+| Prefect backfill guardrails | 2025-11-01 17:10 – 17:20 | Platform (simulated)                 | `hotpass-e2e-staging`   | Dry-run rehearsal captured at `dist/staging/backfill/20251101T171853Z/` with `hotpass-e2e-staging.log`, `metadata.json`, and `hotpass-e2e-staging.png`. |
 | ARC runner lifecycle  | 2025-11-13 16:00 – 17:30 | Platform (primary), QA (observer)   | `arc-staging` namespace | Completed. Artefacts: `dist/staging/arc/20251113T160000Z/lifecycle.json`, `dist/staging/arc/20251113T160000Z/sts.txt`.    |
+| ARC runner lifecycle  | 2025-11-01 17:20 – 17:30 | Platform (simulated)                | `arc-staging` namespace | Dry-run rehearsal captured at `dist/staging/arc/20251101T171907Z/` (`lifecycle.json`, `sts.txt`).                         |
 
 ## Artefact Checklist
 
@@ -26,10 +29,14 @@ This document captures the scheduled rehearsal windows, owners, and artefacts th
   - CLI logs saved to `dist/staging/marquez/{timestamp}/cli.log`.
   - Screenshot of lineage UI saved to `dist/staging/marquez/{timestamp}/graph.png`.
   - Updated entry in `Next_Steps_Log.md` referencing the above path.
+  - Latest rehearsal evidence: `dist/staging/marquez/20251101T171901Z/`.
 - **ARC lifecycle**
   - Workflow run URL appended to `docs/how-to-guides/manage-arc-runners.md` audit section.
   - Lifecycle report saved to `dist/staging/arc/{timestamp}/lifecycle.json`.
   - IAM/OIDC confirmation snippet stored in the same directory (`sts.txt`).
+  - Latest rehearsal evidence: `dist/staging/arc/20251101T171907Z/`.
+- **Prefect backfill guardrails**
+  - Deployment log, metadata, and screenshot recorded under `dist/staging/backfill/20251101T171853Z/` for the `hotpass-e2e-staging` dry run.
 
 ## Follow-up Actions
 

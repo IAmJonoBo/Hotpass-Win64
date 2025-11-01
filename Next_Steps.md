@@ -4,7 +4,6 @@
 - [ ] Confirm Phase 5 T5.5 completion so roadmap status reflects programme expectations. (owner: Programme, due: backlog)
 - [ ] Execute full end-to-end runs with canonical configuration toggles using Prefect deployment `hotpass-e2e-staging`. (owner: QA, due: backlog)
 - [ ] Validate Prefect backfill deployment guardrails in staging. (owner: Platform, due: post-1.0)
-- [ ] Benchmark `HotpassConfig.merge` on large payloads. (owner: Engineering, due: backlog)
 - [ ] Design and implement new CLI surface commands (`hotpass net`, `hotpass aws`, `hotpass ctx`, `hotpass env`). (owner: Engineering & Platform, due: backlog)
 - [ ] Document and test the new CLI automation surface once available (README quickstart, `docs/reference/cli.md`, `AGENTS.md`, ARC guide). (owner: Docs & QA, due: backlog)
 - [ ] Extend orchestrate/resolve CLI coverage for advanced profiles; reuse CLI stress fixtures and add resolve scenarios in `tests/cli/test_resolve.py`. (owner: QA & Engineering, due: backlog)
@@ -14,6 +13,7 @@
 - [ ] Restore `make qa` baseline; address `ruff format --check` reporting 137 files to avoid mass reformatting before rerunning the gate. Command: `make qa`. (owner: Engineering, due: 2025-11-05)
 - [ ] Investigate Prefect deployment registration regression surfaced by `uv run pytest --cov=hotpass --cov=apps --cov-report=term-missing` (`tests/test_deployment_specs.py::test_deploy_pipeline_filters_and_registers`). (owner: Engineering, due: 2025-11-04)
 - [ ] Resolve mypy baseline regressions uncovered by `uv run mypy apps/data-platform tests ops` (90 errors across requests/yaml stubs and CLI/MLflow typing). (owner: Engineering & QA, due: backlog)
+- [ ] Restore `ops/quality/fitness_functions.py` fitness baseline by refactoring `pipeline/aggregation.py` below the 750 line guardrail. Command: `python ops/quality/fitness_functions.py`. (owner: Engineering, due: backlog)
 
 ## Steps
 - [ ] Reproduce `tests/test_deployment_specs.py::test_deploy_pipeline_filters_and_registers` with Prefect runner mocks to isolate extra registrations and draft remediation.
@@ -24,9 +24,11 @@
 - Baseline QA run notes (2025-11-01) covering `make qa`, pytest, mypy, and SBOM status.
 - Updated dependency matrix (`pyproject.toml`) including `cyclonedx-bom` for supply chain tooling.
 - Generated CycloneDX SBOM at `dist/sbom/hotpass-sbom.json` (2025-11-01) for baseline evidence.
+- Benchmark evidence stored at `dist/benchmarks/hotpass_config_merge.json` (2025-11-01) for HotpassConfig merge profiling.
+- Simulated staging artefacts at `dist/staging/backfill/20251101T171853Z/` and `dist/staging/marquez/20251101T171901Z/` pending live access.
 
 ## Quality Gates
-- tests: **fail** — `uv run pytest --cov=hotpass --cov=apps --cov-report=term-missing` halted with `tests/test_deployment_specs.py::test_deploy_pipeline_filters_and_registers` asserting only selected deployments register. (owner: Engineering)
+- tests: **fail** — `uv run pytest` halted with `tests/profiles/test_quality_gates.py::TestFitnessFunctionsProfiles::test_fitness_functions_check_profiles` after `pipeline/aggregation.py` exceeded the 750 line guardrail enforced by `ops/quality/fitness_functions.py`. (owner: Engineering)
 - linters/formatters: **fail** — `make qa` stopped at `ruff format --check` after 137 files reported pending formatting. (owner: Engineering)
 - type-checks: **fail** — `uv run mypy apps/data-platform tests ops` surfaced 90 errors (missing `yaml`, `requests`, `hypothesis` stubs and CLI/MLflow typing gaps). (owner: Engineering & QA)
 - security scan: **blocked** — `make qa` exited before Bandit and detect-secrets stages; rerun once formatting remediation plan is approved. (owner: Engineering & Security)

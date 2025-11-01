@@ -3,3 +3,7 @@
 !/logs/
 !/logs/access/
 !/logs/access/README.md
+!/benchmarks/
+!/benchmarks/**
+!/staging/
+!/staging/**

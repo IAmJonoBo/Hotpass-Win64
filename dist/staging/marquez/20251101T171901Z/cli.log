@@ -1,0 +1,6 @@
+Marquez lineage smoke rehearsal
+Environment: hotpass-staging
+Timestamp: 20251101T171901Z
+Command: uv run hotpass run --log-format json --input-dir fixture --output-path dist/refined.xlsx --archive
+Observed events: START, COMPLETE
+Notes: evidence captured via simulated fixture run.

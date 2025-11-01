@@ -1,0 +1,60 @@
+{
+  "timestamp_utc": "2025-11-01T17:24:45Z",
+  "iterations": 3,
+  "chain_depth": 2,
+  "sizes": [
+    250,
+    1000,
+    3000
+  ],
+  "results": [
+    {
+      "payload_size": 250,
+      "payload_bytes": 13820,
+      "iterations": 3,
+      "chain_depth": 2,
+      "durations": [
+        0.003126001000055112,
+        0.0012940039996465202,
+        0.0012769490022037644
+      ],
+      "mean_seconds": 0.001898984667301799,
+      "stdev_seconds": 0.0008676595065143104,
+      "min_seconds": 0.0012769490022037644,
+      "max_seconds": 0.003126001000055112,
+      "merges_per_second": 1053.1943908961257
+    },
+    {
+      "payload_size": 1000,
+      "payload_bytes": 55136,
+      "iterations": 3,
+      "chain_depth": 2,
+      "durations": [
+        0.01462070399793447,
+        0.01440162499784492,
+        0.015333302002545679
+      ],
+      "mean_seconds": 0.014785210332775023,
+      "stdev_seconds": 0.00039774553081423704,
+      "min_seconds": 0.01440162499784492,
+      "max_seconds": 0.015333302002545679,
+      "merges_per_second": 135.27031100575638
+    },
+    {
+      "payload_size": 3000,
+      "payload_bytes": 168528,
+      "iterations": 3,
+      "chain_depth": 2,
+      "durations": [
+        0.11160939399997005,
+        0.11210920399753377,
+        0.1172991790008382
+      ],
+      "mean_seconds": 0.11367259233278067,
+      "stdev_seconds": 0.0025724891517899654,
+      "min_seconds": 0.11160939399997005,
+      "max_seconds": 0.1172991790008382,
+      "merges_per_second": 17.594390687817928
+    }
+  ]
+}

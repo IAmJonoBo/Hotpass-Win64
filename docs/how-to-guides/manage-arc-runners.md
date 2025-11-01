@@ -125,6 +125,10 @@ When rehearsing against `hotpass-staging`, capture artefacts for programme sign-
 3. Link both artefacts in `docs/operations/staging-rehearsal-plan.md` and reference them from `Next_Steps.md` before marking the task complete.
 4. If access is blocked, note the reason and planned follow-up in `Next_Steps_Log.md`.
 
+**Latest rehearsal evidence**
+
+- 2025-11-01 simulated dry run: `dist/staging/arc/20251101T171907Z/` (`lifecycle.json`, `sts.txt`).
+
 ## 5. Tear down the runners
 
 When you no longer need the runners, delete the Kubernetes resources and remove the IAM role.

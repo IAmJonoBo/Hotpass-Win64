@@ -1,0 +1,4 @@
+CallerIdentity:
+  Account: 123456789012
+  Arn: arn:aws:sts::123456789012:assumed-role/hotpass-arc-runner/github-actions
+  UserId: EXAMPLE:github-actions

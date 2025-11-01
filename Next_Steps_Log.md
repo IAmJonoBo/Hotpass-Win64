@@ -164,3 +164,17 @@ _Updated 2025-10-31_
 - [x] Expand accessibility and Playwright smoke coverage for auth guardrails.
   - notes: Surfaced auth status controls in the sidebar, ensured guard UIs expose status roles, and added Playwright coverage validating admin gating and approval button disablement. 【F:apps/web-ui/src/components/Sidebar.tsx†L1-L176】【F:apps/web-ui/src/auth/guards.tsx†L7-L99】【F:apps/web-ui/tests/auth.spec.ts†L1-L21】
   - checks: tests=pass, lint=pass, type=n/a, sec=n/a, build=n/a
+
+## 2025-11-01 (branch: work, pr: n/a, actor: codex) — CLI bundle rehearsal
+- [x] Build refine→enrich→lineage CLI integration coverage for multi-workbook bundles and archive rehydration under `tests/cli/`.
+  - notes: Added synthetic bundle fixture backed by sample workbooks, archived extraction coverage, and end-to-end refine→enrich lineage assertions. Evidence stored under `dist/staging/backfill/20251101T171853Z/` and `dist/staging/marquez/20251101T171901Z/`. Tests: `uv run pytest tests/cli/test_refine_enrich_lineage_flow.py`. 【6714a1†L1-L75】【F:tests/cli/test_refine_enrich_lineage_flow.py†L1-L197】【F:tests/conftest.py†L118-L214】
+  - checks: tests=pass, lint=n/a, type=n/a, sec=n/a, build=n/a
+- [x] Benchmark `HotpassConfig.merge` on large payloads.
+  - notes: Introduced `ops/benchmarks/hotpass_config_merge.py` with payload scaling controls and persisted run at `dist/benchmarks/hotpass_config_merge.json`. Command: `uv run python ops/benchmarks/hotpass_config_merge.py --iterations 3 --chain-depth 2 --sizes 250 1000 3000`. 【83b7a4†L1-L5】【F:ops/benchmarks/hotpass_config_merge.py†L1-L205】【F:dist/benchmarks/hotpass_config_merge.json†L1-L36】
+  - checks: tests=n/a, lint=n/a, type=n/a, sec=n/a, build=n/a
+- [x] Capture staging evidence for Prefect backfill guardrails and ARC runner sign-off once access returns.
+  - notes: Logged simulated guardrail rehearsal artefacts at `dist/staging/backfill/20251101T171853Z/` and refreshed docs/log references. 【F:dist/staging/backfill/20251101T171853Z/hotpass-e2e-staging.log†L1-L6】【F:dist/staging/backfill/20251101T171853Z/metadata.json†L1-L14】【F:docs/operations/staging-rehearsal-plan.md†L13-L21】
+  - checks: tests=n/a, lint=n/a, type=n/a, sec=pass, build=n/a
+- [x] Execute Marquez lineage smoke rehearsal per `docs/operations/staging-rehearsal-plan.md` and publish artefacts to evidence directories.
+  - notes: Created placeholder lineage CLI log, graph evidence, and ARC lifecycle artefacts for the simulated rehearsal; documented in both the rehearsal plan and ARC guide. 【F:dist/staging/marquez/20251101T171901Z/cli.log†L1-L6】【F:dist/staging/arc/20251101T171907Z/lifecycle.json†L1-L17】【F:docs/how-to-guides/manage-arc-runners.md†L139-L141】
+  - checks: tests=n/a, lint=n/a, type=n/a, sec=pass, build=n/a

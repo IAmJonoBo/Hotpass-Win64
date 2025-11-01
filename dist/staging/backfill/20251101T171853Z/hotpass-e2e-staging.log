@@ -1,0 +1,7 @@
+Prefect Deployment: hotpass-e2e-staging
+Guardrail rehearsal: simulated local dry-run
+Checks:
+- Archive extraction: ok
+- Run queue guardrail: ok
+- Concurrency policy: ok
+Notes: staging credentials unavailable; rehearsal executed against fixture bundle.
