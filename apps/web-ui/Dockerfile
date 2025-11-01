@@ -1,7 +1,7 @@
 # Hotpass Web UI - Docker Image
 # Multi-stage build for production-ready React app
 
-FROM node:20-alpine AS builder
+FROM node:24-alpine AS builder
 
 ARG PREFECT_API_URL=http://localhost:4200/api
 ARG OPENLINEAGE_URL=http://localhost:5000/api/v1
@@ -19,7 +19,7 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
-FROM node:20-alpine AS runner
+FROM node:24-alpine AS runner
 
 ENV NODE_ENV=production
 ENV PORT=3000
