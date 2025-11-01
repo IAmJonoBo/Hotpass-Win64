@@ -23,7 +23,7 @@
     --border: 240 5.9% 90%;
     --input: 240 5.9% 90%;
     --ring: 240 5.9% 10%;
-    --radius: 0.5rem;
+    --radius: 0.75rem;
   }
 
   .dark {
@@ -46,6 +46,13 @@
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
     --ring: 240 4.9% 83.9%;
+  }
+}
+
+/* ASSUMPTION (see SCRATCH.md): desktop views (≥1024px) should keep pill-like rounding. */
+@media (min-width: 1024px) {
+  :root {
+    --radius: 0.875rem;
   }
 }
 

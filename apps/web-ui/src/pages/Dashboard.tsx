@@ -12,8 +12,10 @@ import { Activity, Clock, GitBranch, CheckCircle, XCircle, AlertCircle } from 'l
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
+import { Skeleton } from '@/components/ui/skeleton'
+import { ApiBanner } from '@/components/feedback/ApiBanner'
 import { cn, formatDuration, getStatusColor } from '@/lib/utils'
-import { mockPrefectData } from '@/api/prefect'
+import { prefectApi, mockPrefectData } from '@/api/prefect'
 import { useHILApprovals } from '@/store/hilStore'
 import { LiveRefinementPanel } from '@/components/refinement/LiveRefinementPanel'
 import { PowerTools } from '@/components/powertools/PowerTools'
@@ -27,23 +29,23 @@ export function Dashboard() {
   const { openAssistant } = useOutletContext<OutletContext>()
 
   // Fetch Prefect flow runs from last 24h
-  const { data: flowRuns = [], isLoading: isLoadingPrefect } = useQuery({
+  const flowRunsQuery = useQuery({
     queryKey: ['flowRuns'],
-    queryFn: async () => {
-      try {
-        const { prefectApi } = await import('@/api/prefect')
-        return await prefectApi.getFlowRuns({ limit: 50 })
-      } catch {
-        return mockPrefectData.flowRuns
-      }
-    },
-    placeholderData: mockPrefectData.flowRuns,
+    queryFn: () => prefectApi.getFlowRuns({ limit: 50 }),
+    retry: 1,
   })
+  const flowRuns = flowRunsQuery.data ?? mockPrefectData.flowRuns
+  const isLoadingPrefect = flowRunsQuery.isLoading
+  const prefectError = flowRunsQuery.error instanceof Error ? flowRunsQuery.error : null
 
   // Fetch HIL approvals
   const { data: hilApprovals = {} } = useHILApprovals()
 
-  const { data: lineageTelemetry } = useLineageTelemetry()
+  const {
+    data: lineageTelemetry,
+    error: telemetryError,
+    isFetching: isFetchingTelemetry,
+  } = useLineageTelemetry()
 
   // Helper to get HIL status badge
   const getHILStatusBadge = (runId: string) => {
@@ -135,6 +137,23 @@ export function Dashboard() {
         </p>
       </div>
 
+      {prefectError && (
+        <ApiBanner
+          variant="error"
+          title="Prefect API unreachable"
+          description="Live run data is temporarily unavailable. Showing cached mock data until the connection recovers."
+          badge="fallback"
+        />
+      )}
+
+      {telemetryError && (
+        <ApiBanner
+          variant="warning"
+          title="Lineage telemetry degraded"
+          description={telemetryError instanceof Error ? telemetryError.message : 'The telemetry probe failed to refresh. Historical insights may be stale.'}
+        />
+      )}
+
       {/* Summary Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
@@ -143,8 +162,17 @@ export function Dashboard() {
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalRuns}</div>
-            <p className="text-xs text-muted-foreground">Last 24 hours</p>
+            {isLoadingPrefect ? (
+              <div className="space-y-2">
+                <Skeleton className="h-7 w-20" />
+                <Skeleton className="h-4 w-24" />
+              </div>
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{totalRuns}</div>
+                <p className="text-xs text-muted-foreground">Last 24 hours</p>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -156,10 +184,19 @@ export function Dashboard() {
             </Badge>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{completedRuns}</div>
-            <p className="text-xs text-muted-foreground">
-              {totalRuns > 0 ? Math.round((completedRuns / totalRuns) * 100) : 0}% success rate
-            </p>
+            {isLoadingPrefect ? (
+              <div className="space-y-2">
+                <Skeleton className="h-7 w-16" />
+                <Skeleton className="h-4 w-28" />
+              </div>
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{completedRuns}</div>
+                <p className="text-xs text-muted-foreground">
+                  {totalRuns > 0 ? Math.round((completedRuns / totalRuns) * 100) : 0}% success rate
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -171,10 +208,19 @@ export function Dashboard() {
             </Badge>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{failedRuns}</div>
-            <p className="text-xs text-muted-foreground">
-              {failedRuns > 0 ? 'Needs attention' : 'All good'}
-            </p>
+            {isLoadingPrefect ? (
+              <div className="space-y-2">
+                <Skeleton className="h-7 w-16" />
+                <Skeleton className="h-4 w-28" />
+              </div>
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{failedRuns}</div>
+                <p className="text-xs text-muted-foreground">
+                  {failedRuns > 0 ? 'Needs attention' : 'All good'}
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -186,13 +232,67 @@ export function Dashboard() {
             </Badge>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{runningRuns}</div>
-            <p className="text-xs text-muted-foreground">In progress</p>
+            {isLoadingPrefect ? (
+              <div className="space-y-2">
+                <Skeleton className="h-7 w-16" />
+                <Skeleton className="h-4 w-20" />
+              </div>
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{runningRuns}</div>
+                <p className="text-xs text-muted-foreground">In progress</p>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
 
       {/* Live Refinement Panel */}
+      <Card>
+        <CardHeader className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          <div>
+            <CardTitle className="text-base flex items-center gap-2">
+              <GitBranch className="h-4 w-4" />
+              Lineage Telemetry
+            </CardTitle>
+            <CardDescription>
+              Snapshot of Marquez activity feeding the telemetry strip. Updates every minute.
+            </CardDescription>
+          </div>
+          {isFetchingTelemetry && <span className="text-xs text-muted-foreground">Refreshing…</span>}
+        </CardHeader>
+        <CardContent>
+          {isFetchingTelemetry && !lineageTelemetry ? (
+            <div className="grid gap-3 md:grid-cols-3">
+              <Skeleton className="h-24" />
+              <Skeleton className="h-24" />
+              <Skeleton className="h-24" />
+            </div>
+          ) : (
+            <div className="grid gap-3 md:grid-cols-3">
+              <div className="rounded-2xl border border-border/60 p-4">
+                <div className="text-xs uppercase tracking-wide text-muted-foreground">Jobs Today</div>
+                <div className="mt-2 text-2xl font-semibold">
+                  {lineageTelemetry?.jobsToday ?? 0}
+                </div>
+              </div>
+              <div className="rounded-2xl border border-border/60 p-4">
+                <div className="text-xs uppercase tracking-wide text-muted-foreground">Failed Today</div>
+                <div className="mt-2 text-2xl font-semibold text-red-600 dark:text-red-400">
+                  {lineageTelemetry?.failedToday ?? 0}
+                </div>
+              </div>
+              <div className="rounded-2xl border border-border/60 p-4">
+                <div className="text-xs uppercase tracking-wide text-muted-foreground">Incomplete Facets</div>
+                <div className="mt-2 text-2xl font-semibold text-yellow-700 dark:text-yellow-400">
+                  {lineageTelemetry?.incompleteFacets ?? 0}
+                </div>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       <LiveRefinementPanel />
 
       {/* Power Tools */}
@@ -218,38 +318,48 @@ export function Dashboard() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {[...latestSpreadsheets, ...suggestedBackfills].map((entry) => (
-                <TableRow key={entry.id} className={entry.run ? undefined : 'bg-yellow-500/10'}>
-                  <TableCell className="font-medium">
-                    {entry.name}
-                    {!entry.run && (
-                      <Badge variant="outline" className="ml-2 text-xs text-yellow-700 border-yellow-500/50">
-                        Suggested backfill
-                      </Badge>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className={cn(getStatusColor(entry.status))}>
-                      {entry.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {entry.geDocs && entry.geDocs !== '#' ? (
-                      <a href={entry.geDocs} className="text-primary hover:underline" target="_blank" rel="noreferrer">
-                        View Docs
-                      </a>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">Not published</span>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">
-                    {entry.notes}
-                  </TableCell>
-                  <TableCell className="text-right text-xs text-muted-foreground">
-                    {entry.run?.start_time ? new Date(entry.run.start_time).toLocaleString() : '—'}
-                  </TableCell>
-                </TableRow>
-              ))}
+              {isLoadingPrefect
+                ? Array.from({ length: 5 }).map((_, index) => (
+                    <TableRow key={`spreadsheets-skeleton-${index}`}>
+                      <TableCell><Skeleton className="h-4 w-48" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-28" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-40" /></TableCell>
+                      <TableCell className="text-right"><Skeleton className="ml-auto h-4 w-24" /></TableCell>
+                    </TableRow>
+                  ))
+                : [...latestSpreadsheets, ...suggestedBackfills].map((entry) => (
+                    <TableRow key={entry.id} className={entry.run ? undefined : 'bg-yellow-500/10'}>
+                      <TableCell className="font-medium">
+                        {entry.name}
+                        {!entry.run && (
+                          <Badge variant="outline" className="ml-2 text-xs text-yellow-700 border-yellow-500/50">
+                            Suggested backfill
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={cn(getStatusColor(entry.status))}>
+                          {entry.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {entry.geDocs && entry.geDocs !== '#' ? (
+                          <a href={entry.geDocs} className="text-primary hover:underline" target="_blank" rel="noreferrer">
+                            View Docs
+                          </a>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">Not published</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {entry.notes}
+                      </TableCell>
+                      <TableCell className="text-right text-xs text-muted-foreground">
+                        {entry.run?.start_time ? new Date(entry.run.start_time).toLocaleString() : '—'}
+                      </TableCell>
+                    </TableRow>
+                  ))}
             </TableBody>
           </Table>
         </CardContent>
@@ -272,14 +382,32 @@ export function Dashboard() {
         </CardHeader>
         <CardContent>
           {isLoadingPrefect ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="text-center space-y-2">
-                <div className="text-sm text-muted-foreground">Loading runs from Prefect...</div>
-                <p className="text-xs text-muted-foreground">
-                  (Over VPN/bastion this may be slow)
-                </p>
-              </div>
-            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Run Name</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>HIL Status</TableHead>
+                  <TableHead>Started</TableHead>
+                  <TableHead>Duration</TableHead>
+                  <TableHead>Profile</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {Array.from({ length: 6 }).map((_, index) => (
+                  <TableRow key={`runs-skeleton-${index}`}>
+                    <TableCell><Skeleton className="h-4 w-48" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-40" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                    <TableCell className="text-right"><Skeleton className="ml-auto h-4 w-24" /></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           ) : recentRuns.length === 0 ? (
             <div className="flex items-center justify-center py-8">
               <div className="text-sm text-muted-foreground">No runs in the last 24 hours</div>

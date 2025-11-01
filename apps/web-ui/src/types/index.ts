@@ -65,21 +65,40 @@ export interface MarquezRun {
   facets?: Record<string, unknown>
 }
 
-export interface MarquezLineageNode {
+export interface MarquezLineageGraphNode {
   id: string
   type: 'DATASET' | 'JOB'
-  data: MarquezDataset | MarquezJob
-  inEdges?: MarquezLineageEdge[]
-  outEdges?: MarquezLineageEdge[]
+  data: (Partial<MarquezDataset> | Partial<MarquezJob>) & {
+    name: string
+    namespace: string
+  }
+  run?: MarquezRun | null
 }
 
-export interface MarquezLineageEdge {
+export interface MarquezLineageGraphEdge {
   origin: string
   destination: string
 }
 
 export interface MarquezLineageGraph {
-  graph: MarquezLineageNode[]
+  graph: {
+    nodes: MarquezLineageGraphNode[]
+    edges: MarquezLineageGraphEdge[]
+  }
+  lastUpdatedAt?: string
+}
+
+export interface MarquezLineageFilters {
+  namespace: string
+  name: string
+  nodeType: 'JOB' | 'DATASET'
+  upstreamDepth?: number
+  downstreamDepth?: number
+  includeDownstream?: boolean
+  includeUpstream?: boolean
+  startTime?: string
+  endTime?: string
+  filterRunStates?: Array<MarquezRun['state']>
 }
 
 // Prefect API Types

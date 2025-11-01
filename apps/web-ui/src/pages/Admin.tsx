@@ -10,7 +10,7 @@
  */
 
 import { useState, useEffect } from 'react'
-import { Save, Check, AlertCircle } from 'lucide-react'
+import { Save, Check, AlertCircle, Loader2, XCircle } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -110,14 +110,68 @@ export function Admin() {
     setConnectionStatus({ prefect: 'unknown', marquez: 'unknown' })
   }
 
+  useEffect(() => {
+    // Kick off an optimistic health check so the header can enumerate connection state.
+    testConnection('prefect')
+    testConnection('marquez')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const getStatusMeta = (status: 'unknown' | 'success' | 'error', isTesting: boolean) => {
+    if (isTesting) {
+      return {
+        label: 'Checking…',
+        className: 'border-blue-500/40 bg-blue-500/10 text-blue-700 dark:text-blue-300',
+        icon: <Loader2 className="mr-1 h-3 w-3 animate-spin" />,
+      }
+    }
+    switch (status) {
+      case 'success':
+        return {
+          label: 'Connected',
+          className: 'border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
+          icon: <Check className="mr-1 h-3 w-3" />,
+        }
+      case 'error':
+        return {
+          label: 'Unreachable',
+          className: 'border-red-500/40 bg-red-500/10 text-red-700 dark:text-red-400',
+          icon: <XCircle className="mr-1 h-3 w-3" />,
+        }
+      default:
+        return {
+          label: 'Unknown',
+          className: 'border-muted text-muted-foreground',
+          icon: <AlertCircle className="mr-1 h-3 w-3" />,
+        }
+    }
+  }
+
+  const prefectMeta = getStatusMeta(connectionStatus.prefect, testingConnection.prefect)
+  const marquezMeta = getStatusMeta(connectionStatus.marquez, testingConnection.marquez)
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Admin Settings</h1>
-        <p className="text-muted-foreground">
-          Configure API endpoints and environment settings
-        </p>
+      <div className="space-y-3">
+        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Admin Settings</h1>
+            <p className="text-muted-foreground">
+              Configure API endpoints and environment settings
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="outline" className={`flex items-center gap-1 ${prefectMeta.className}`}>
+              {prefectMeta.icon}
+              Prefect: {prefectMeta.label}
+            </Badge>
+            <Badge variant="outline" className={`flex items-center gap-1 ${marquezMeta.className}`}>
+              {marquezMeta.icon}
+              Marquez: {marquezMeta.label}
+            </Badge>
+          </div>
+        </div>
       </div>
 
       {/* Alert - Settings are local */}

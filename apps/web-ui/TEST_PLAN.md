@@ -67,6 +67,15 @@ Test individual React components in isolation:
 - Verify real data loads from APIs
 - Verify status colors match run states
 
+**Test Case 4: Skeleton + Failure Banner**
+- Simulate Prefect API outage
+- Verify a red API banner appears with fallback badge
+- Confirm skeleton loaders display in summary cards and tables during initial load
+
+**Test Case 5: Lineage Telemetry Card**
+- With Marquez jobs available, ensure the telemetry card shows jobs today / failures / incomplete facets
+- Confirm the card refresh indicator toggles when new data polls in
+
 ### Lineage Page
 **Test Case 1: Namespace Filtering**
 - Navigate to `/lineage`
@@ -87,6 +96,16 @@ Test individual React components in isolation:
 **Test Case 4: Dataset Display**
 - Verify datasets section shows when available
 - Verify dataset details display correctly
+
+**Test Case 5: React Flow Graph Rendering**
+- With Marquez returning lineage data, confirm the graph renders via React Flow (nodes + edges visible)
+- Verify the live badge reflects the active mode (`Live (WebSocket)` or `Live (Polling)`)
+- Clicking a node pivots the selected entity panel
+
+**Test Case 6: Manual Refresh & Auto-Fallback**
+- Click the `Refresh` button on the lineage graph
+- When the API returns updated edges, confirm the node count updates without a full page reload
+- If WebSocket/SSE is unavailable, confirm polling fallback keeps the badge in `Live (Polling)`
 
 ### Run Details Page
 **Test Case 1: Valid Run**
@@ -109,6 +128,14 @@ Test individual React components in isolation:
 - Verify passed checks show green
 - Verify warning checks show yellow
 - Verify failed checks show red
+
+**Test Case 4: API Failure Fallback Banner**
+- Force Prefect flow run endpoint to return 500
+- Verify the error banner appears with fallback badge and mock data continues to render
+
+**Test Case 5: Skeleton Loader**
+- Hard-refresh the page
+- Confirm skeleton placeholders show for header, summary cards, tables, and JSON blocks until data arrives
 
 ### Admin Page
 **Test Case 1: Configuration Display**
@@ -273,6 +300,12 @@ After each update, verify:
 4. Check error messages
 5. Navigate to lineage to see upstream
 
+## Playwright Automation
+
+- `dashboard.spec.ts` – baseline smoke for dashboard rendering
+- `lineage.spec.ts` – verifies React Flow graph rendering, selection, and live refresh badge/state
+- `failure-ux.spec.ts` – asserts Prefect outage surfaces API banner and fallback data stays readable
+
 ## Storybook Testing
 
 ### Component Stories
@@ -285,6 +318,15 @@ After each update, verify:
 - ✅ Default card
 - ✅ With stats
 - ✅ Ghost variant
+
+**ApiBanner Stories**
+- ✅ Error variant with fallback badge
+- ✅ Warning + info variants render copy and colors correctly
+- ✅ Success state displays confirmation messaging
+
+**Skeleton Stories**
+- ✅ Basic skeleton renders with rounded-2xl styling
+- ✅ Card preview demonstrates stacked skeleton blocks
 
 **Button Stories**
 - ✅ All variants
@@ -392,7 +434,7 @@ npm run preview
 
 2. **Lineage Visualization**: Currently uses table view. Future enhancement would add interactive graph visualization with react-flow or d3.
 
-3. **Real-time Updates**: No WebSocket support yet. Requires manual refresh to see new runs.
+3. **Live Updates**: Lineage subscriptions fall back to polling when the `/lineage/stream` endpoint is unavailable. Verify the badge reflects the active mode.
 
 4. **Authentication**: No authentication implemented. Intended for internal/VPN-only deployment.
 

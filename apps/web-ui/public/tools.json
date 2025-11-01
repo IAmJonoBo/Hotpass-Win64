@@ -1,0 +1,17 @@
+[
+  {
+    "name": "list_prefect_flows",
+    "method": "GET",
+    "path": "/api/prefect/flows"
+  },
+  {
+    "name": "get_marquez_lineage",
+    "method": "GET",
+    "path": "/api/marquez/lineage?ns={namespace}"
+  },
+  {
+    "name": "run_hotpass_refine",
+    "method": "POST",
+    "path": "/api/hotpass/refine"
+  }
+]

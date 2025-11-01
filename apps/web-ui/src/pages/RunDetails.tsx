@@ -11,12 +11,15 @@
 import { useParams, Link, useOutletContext } from 'react-router-dom'
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowLeft, CheckCircle2, XCircle, AlertTriangle, Clock, Tag, UserCheck } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, XCircle, AlertTriangle, Clock, Tag, UserCheck, GitBranch } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Skeleton } from '@/components/ui/skeleton'
+import { ApiBanner } from '@/components/feedback/ApiBanner'
 import { prefectApi, mockPrefectData } from '@/api/prefect'
+import { useLineageTelemetry } from '@/hooks/useLineageTelemetry'
 import { cn, formatDuration, getStatusColor } from '@/lib/utils'
 import { ApprovalPanel } from '@/components/hil/ApprovalPanel'
 import type { QAResult } from '@/types'
@@ -30,13 +33,26 @@ export function RunDetails() {
   const { openAssistant } = useOutletContext<OutletContext>()
   const [approvalPanelOpen, setApprovalPanelOpen] = useState(false)
 
+  const mockRun = mockPrefectData.flowRuns.find(r => r.id === runId)
+
   // Fetch run details
-  const { data: run, isLoading } = useQuery({
+  const runQuery = useQuery({
     queryKey: ['flowRun', runId],
     queryFn: () => prefectApi.getFlowRun(runId!),
-    placeholderData: mockPrefectData.flowRuns.find(r => r.id === runId),
     enabled: !!runId,
+    retry: 1,
   })
+  const runError = runQuery.error instanceof Error ? runQuery.error : null
+  const run = runQuery.data ?? (runError ? mockRun : undefined)
+  const isLoading = runQuery.isLoading
+  const showSkeleton = isLoading && !run
+  const isFallback = Boolean(runError && mockRun)
+
+  const {
+    data: lineageTelemetry,
+    error: telemetryError,
+    isFetching: isFetchingTelemetry,
+  } = useLineageTelemetry()
 
   // Mock QA results (in production, these would come from dist/data-docs or the run artifacts)
   const mockQAResults: QAResult[] = [
@@ -66,18 +82,7 @@ export function RunDetails() {
     },
   ]
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="text-lg font-semibold">Loading run details...</div>
-          <p className="text-sm text-muted-foreground mt-2">Please wait</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (!run) {
+  if (!run && !showSkeleton) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -112,31 +117,67 @@ export function RunDetails() {
               </Button>
             </Link>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight">{run.name}</h1>
-          <p className="text-muted-foreground">Run ID: {run.id}</p>
+          {showSkeleton ? (
+            <>
+              <Skeleton className="h-8 w-64" />
+              <Skeleton className="h-4 w-40" />
+            </>
+          ) : (
+            <>
+              <h1 className="text-3xl font-bold tracking-tight">{run?.name}</h1>
+              <p className="text-muted-foreground">Run ID: {run?.id}</p>
+            </>
+          )}
         </div>
-        <Badge
-          variant="outline"
-          className={cn('text-base px-4 py-2', getStatusColor(run.state_type))}
-        >
-          {run.state_name}
-        </Badge>
+        {showSkeleton ? (
+          <Skeleton className="h-10 w-28" />
+        ) : run && (
+          <Badge
+            variant="outline"
+            className={cn('text-base px-4 py-2', getStatusColor(run.state_type))}
+          >
+            {run.state_name}
+          </Badge>
+        )}
       </div>
       <div className="flex items-center gap-3">
-        <Button variant="outline" size="sm">
-          <a
-            href={marquezUiBase ? `${marquezUiBase}/runs/${encodeURIComponent(run.id)}` : '#'}
-            target="_blank"
-            rel="noreferrer"
-            className="flex items-center gap-1"
-          >
-            Open in Marquez
-          </a>
-        </Button>
-        <div className="text-xs text-muted-foreground">
-          Uses the shared OPENLINEAGE_URL so CLI and UI link to the same namespace.
-        </div>
+        {showSkeleton ? (
+          <Skeleton className="h-9 w-44" />
+        ) : (
+          <>
+            <Button variant="outline" size="sm" disabled={!run}>
+              <a
+                href={marquezUiBase && run ? `${marquezUiBase}/runs/${encodeURIComponent(run.id)}` : '#'}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-1"
+              >
+                Open in Marquez
+              </a>
+            </Button>
+            <div className="text-xs text-muted-foreground">
+              Uses the shared OPENLINEAGE_URL so CLI and UI link to the same namespace.
+            </div>
+          </>
+        )}
       </div>
+
+      {runError && (
+        <ApiBanner
+          variant="error"
+          title="Prefect API unreachable"
+          description="Showing cached mock data until the Prefect flow run endpoint is reachable again."
+          badge={isFallback ? 'fallback' : undefined}
+        />
+      )}
+
+      {telemetryError && (
+        <ApiBanner
+          variant="warning"
+          title="Lineage telemetry degraded"
+          description={telemetryError instanceof Error ? telemetryError.message : 'Telemetry probes failed. Lineage insights may be stale.'}
+        />
+      )}
 
       {/* Summary Cards */}
       <div className="grid gap-4 md:grid-cols-4">
@@ -146,12 +187,21 @@ export function RunDetails() {
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {run.total_run_time ? formatDuration(run.total_run_time) : '-'}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {run.start_time ? new Date(run.start_time).toLocaleString() : 'Not started'}
-            </p>
+            {showSkeleton ? (
+              <div className="space-y-2">
+                <Skeleton className="h-7 w-24" />
+                <Skeleton className="h-4 w-32" />
+              </div>
+            ) : (
+              <>
+                <div className="text-2xl font-bold">
+                  {run?.total_run_time ? formatDuration(run.total_run_time) : '-'}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {run?.start_time ? new Date(run.start_time).toLocaleString() : 'Not started'}
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -161,8 +211,17 @@ export function RunDetails() {
             <Tag className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-sm font-medium truncate">{run.flow_id}</div>
-            <p className="text-xs text-muted-foreground">Flow ID</p>
+            {showSkeleton ? (
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-40" />
+                <Skeleton className="h-3 w-24" />
+              </div>
+            ) : (
+              <>
+                <div className="text-sm font-medium truncate">{run?.flow_id}</div>
+                <p className="text-xs text-muted-foreground">Flow ID</p>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -171,17 +230,24 @@ export function RunDetails() {
             <CardTitle className="text-sm font-medium">Tags</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-wrap gap-1">
-              {run.tags && run.tags.length > 0 ? (
-                run.tags.map((tag) => (
-                  <Badge key={tag} variant="secondary" className="text-xs">
-                    {tag}
-                  </Badge>
-                ))
-              ) : (
-                <span className="text-xs text-muted-foreground">No tags</span>
-              )}
-            </div>
+            {showSkeleton ? (
+              <div className="flex gap-2">
+                <Skeleton className="h-5 w-16" />
+                <Skeleton className="h-5 w-20" />
+              </div>
+            ) : (
+              <div className="flex flex-wrap gap-1">
+                {run?.tags && run.tags.length > 0 ? (
+                  run.tags.map((tag) => (
+                    <Badge key={tag} variant="secondary" className="text-xs">
+                      {tag}
+                    </Badge>
+                  ))
+                ) : (
+                  <span className="text-xs text-muted-foreground">No tags</span>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -190,13 +256,55 @@ export function RunDetails() {
             <CardTitle className="text-sm font-medium">QA Status</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {mockQAResults.filter(r => r.status === 'passed').length}/{mockQAResults.length}
-            </div>
-            <p className="text-xs text-muted-foreground">Checks passed</p>
+            {showSkeleton ? (
+              <div className="space-y-2">
+                <Skeleton className="h-7 w-16" />
+                <Skeleton className="h-4 w-28" />
+              </div>
+            ) : (
+              <>
+                <div className="text-2xl font-bold">
+                  {mockQAResults.filter(r => r.status === 'passed').length}/{mockQAResults.length}
+                </div>
+                <p className="text-xs text-muted-foreground">Checks passed</p>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle className="text-base flex items-center gap-2">
+              <GitBranch className="h-4 w-4" />
+              Lineage Telemetry
+            </CardTitle>
+            <CardDescription>Recent Marquez activity that may impact this run&apos;s context.</CardDescription>
+          </div>
+          {isFetchingTelemetry && <span className="text-xs text-muted-foreground">Refreshing…</span>}
+        </CardHeader>
+        <CardContent>
+          {isFetchingTelemetry && !lineageTelemetry ? (
+            <Skeleton className="h-20 w-full" />
+          ) : (
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="rounded-2xl border border-border/60 p-4">
+                <div className="text-xs uppercase text-muted-foreground">Jobs Today</div>
+                <div className="mt-2 text-xl font-semibold">{lineageTelemetry?.jobsToday ?? 0}</div>
+              </div>
+              <div className="rounded-2xl border border-border/60 p-4">
+                <div className="text-xs uppercase text-muted-foreground">Failed Today</div>
+                <div className="mt-2 text-xl font-semibold text-red-600 dark:text-red-400">{lineageTelemetry?.failedToday ?? 0}</div>
+              </div>
+              <div className="rounded-2xl border border-border/60 p-4">
+                <div className="text-xs uppercase text-muted-foreground">Incomplete Facets</div>
+                <div className="mt-2 text-xl font-semibold text-yellow-700 dark:text-yellow-400">{lineageTelemetry?.incompleteFacets ?? 0}</div>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* QA Results */}
       <Card>
@@ -217,44 +325,53 @@ export function RunDetails() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockQAResults.map((result, index) => (
-                <TableRow key={index}>
-                  <TableCell className="font-medium">{result.check}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      {result.status === 'passed' && (
-                        <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
-                      )}
-                      {result.status === 'failed' && (
-                        <XCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
-                      )}
-                      {result.status === 'warning' && (
-                        <AlertTriangle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
-                      )}
-                      <Badge
-                        variant="outline"
-                        className={cn(
-                          result.status === 'passed'
-                            ? 'text-green-600 dark:text-green-400'
-                            : result.status === 'failed'
-                            ? 'text-red-600 dark:text-red-400'
-                            : 'text-yellow-600 dark:text-yellow-400'
+              {showSkeleton
+                ? Array.from({ length: 4 }).map((_, index) => (
+                    <TableRow key={`qa-skeleton-${index}`}>
+                      <TableCell><Skeleton className="h-4 w-40" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-64" /></TableCell>
+                      <TableCell className="text-right"><Skeleton className="ml-auto h-4 w-20" /></TableCell>
+                    </TableRow>
+                  ))
+                : mockQAResults.map((result, index) => (
+                    <TableRow key={index}>
+                      <TableCell className="font-medium">{result.check}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {result.status === 'passed' && (
+                            <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+                          )}
+                          {result.status === 'failed' && (
+                            <XCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
+                          )}
+                          {result.status === 'warning' && (
+                            <AlertTriangle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                          )}
+                          <Badge
+                            variant="outline"
+                            className={cn(
+                              result.status === 'passed'
+                                ? 'text-green-600 dark:text-green-400'
+                                : result.status === 'failed'
+                                ? 'text-red-600 dark:text-red-400'
+                                : 'text-yellow-600 dark:text-yellow-400'
+                            )}
+                          >
+                            {result.status}
+                          </Badge>
+                        </div>
+                      </TableCell>
+                      <TableCell>{result.message}</TableCell>
+                      <TableCell className="text-right text-sm text-muted-foreground">
+                        {result.details && (
+                          <code className="text-xs">
+                            {JSON.stringify(result.details).slice(0, 50)}...
+                          </code>
                         )}
-                      >
-                        {result.status}
-                      </Badge>
-                    </div>
-                  </TableCell>
-                  <TableCell>{result.message}</TableCell>
-                  <TableCell className="text-right text-sm text-muted-foreground">
-                    {result.details && (
-                      <code className="text-xs">
-                        {JSON.stringify(result.details).slice(0, 50)}...
-                      </code>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
+                      </TableCell>
+                    </TableRow>
+                  ))}
             </TableBody>
           </Table>
         </CardContent>
@@ -269,11 +386,15 @@ export function RunDetails() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="rounded-lg bg-muted p-4">
-            <pre className="text-sm overflow-x-auto">
-              {JSON.stringify(run.parameters || {}, null, 2)}
-            </pre>
-          </div>
+          {showSkeleton ? (
+            <Skeleton className="h-32 w-full" />
+          ) : (
+            <div className="rounded-lg bg-muted p-4">
+              <pre className="text-sm overflow-x-auto">
+                {JSON.stringify(run?.parameters || {}, null, 2)}
+              </pre>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -286,11 +407,15 @@ export function RunDetails() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="rounded-lg bg-muted p-4">
-            <pre className="text-sm overflow-x-auto">
-              {JSON.stringify(run, null, 2)}
-            </pre>
-          </div>
+          {showSkeleton ? (
+            <Skeleton className="h-48 w-full" />
+          ) : (
+            <div className="rounded-lg bg-muted p-4">
+              <pre className="text-sm overflow-x-auto">
+                {JSON.stringify(run, null, 2)}
+              </pre>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -298,6 +423,7 @@ export function RunDetails() {
       <div className="flex justify-between gap-2">
         <Button
           variant="default"
+          disabled={showSkeleton || !run}
           onClick={() => setApprovalPanelOpen(true)}
         >
           <UserCheck className="mr-2 h-4 w-4" />
@@ -305,9 +431,9 @@ export function RunDetails() {
         </Button>
         <div className="flex gap-2">
           <Link to="/lineage">
-            <Button variant="outline">View Lineage</Button>
+            <Button variant="outline" disabled={showSkeleton}>View Lineage</Button>
           </Link>
-          <Button>Rerun Pipeline</Button>
+          <Button disabled={showSkeleton || !run}>Rerun Pipeline</Button>
         </div>
       </div>
 
