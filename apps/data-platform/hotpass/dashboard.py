@@ -39,6 +39,22 @@ DATA_PREVIEW_CAPTION = (
     "and consult the glossary for field definitions."
 )
 
+__all__ = [
+    "ALLOWED_ROOTS_ENV",
+    "AUTH_PASSWORD_ENV",
+    "AUTH_STATE_KEY",
+    "DOCS_URL",
+    "GLOSSARY_URL",
+    "UNLOCK_BUTTON_LABEL",
+    "PASSWORD_INPUT_LABEL",
+    "RUN_BUTTON_LABEL",
+    "DATA_PREVIEW_CAPTION",
+    "load_pipeline_history",
+    "save_pipeline_run",
+    "main",
+    "st",
+]
+
 
 def _load_allowed_roots() -> list[Path]:
     """Load filesystem allowlist from environment or defaults."""
@@ -171,11 +187,9 @@ def main() -> None:
         page_icon="🔥",
         layout="wide",
     )
-
     st.title("🔥 Hotpass Data Refinement Dashboard")
     st.markdown("Monitor and control your data refinement pipeline")
 
-    # Sidebar configuration
     if not _require_authentication():
         return
 

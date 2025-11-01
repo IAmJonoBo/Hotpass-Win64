@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping, cast
 from unittest.mock import patch
 
 import pytest
@@ -152,5 +152,5 @@ def test_broker_agent_run_executes_pipeline_with_approval() -> None:
     result_payload = log_sink[1].result
     if result_payload is None:  # pragma: no cover - defensive guard for mypy
         pytest.fail("Execution entry should include a result payload")
-    payload = result_payload
+    payload = dict(cast(Mapping[str, Any], result_payload))
     expect(payload.get("success") is True, "Execution result should indicate success")
