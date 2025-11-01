@@ -53,9 +53,7 @@ class Geocoder:
         else:
             self.geolocator = Nominatim(user_agent=user_agent, timeout=timeout)
 
-    def geocode_address(
-        self, address: str, country: str | None = None
-    ) -> dict[str, Any] | None:
+    def geocode_address(self, address: str, country: str | None = None) -> dict[str, Any] | None:
         """Geocode an address to coordinates.
 
         Args:
@@ -97,9 +95,7 @@ class Geocoder:
             logger.error(f"Unexpected error geocoding '{address}': {e}")
             return None
 
-    def reverse_geocode(
-        self, latitude: float, longitude: float
-    ) -> dict[str, Any] | None:
+    def reverse_geocode(self, latitude: float, longitude: float) -> dict[str, Any] | None:
         """Reverse geocode coordinates to an address.
 
         Args:
@@ -296,9 +292,7 @@ def create_geodataframe(
         raise ImportError("Geopandas is required for creating GeoDataFrames")
 
     if lat_column not in df.columns or lon_column not in df.columns:
-        raise ValueError(
-            f"Columns {lat_column} and {lon_column} must exist in dataframe"
-        )
+        raise ValueError(f"Columns {lat_column} and {lon_column} must exist in dataframe")
 
     # Filter rows with valid coordinates
     valid_coords = df[[lat_column, lon_column]].notna().all(axis=1)
@@ -310,8 +304,7 @@ def create_geodataframe(
 
     # Create geometry column
     geometry = [
-        Point(lon, lat)
-        for lon, lat in zip(df_valid[lon_column], df_valid[lat_column], strict=True)
+        Point(lon, lat) for lon, lat in zip(df_valid[lon_column], df_valid[lat_column], strict=True)
     ]
 
     gdf = gpd.GeoDataFrame(df_valid, geometry=geometry, crs="EPSG:4326")
@@ -342,25 +335,17 @@ def calculate_distance_matrix(
     """
 
     if lat_column not in df.columns or lon_column not in df.columns:
-        raise GeospatialError(
-            f"Columns {lat_column!r} and {lon_column!r} must exist in dataframe"
-        )
+        raise GeospatialError(f"Columns {lat_column!r} and {lon_column!r} must exist in dataframe")
 
     coordinates = df[[lat_column, lon_column]].copy()
     coordinates = coordinates.dropna(how="any")
 
     if coordinates.empty:
-        raise GeospatialError(
-            "No valid coordinates available for distance matrix computation"
-        )
+        raise GeospatialError("No valid coordinates available for distance matrix computation")
 
     try:
-        latitudes = np.radians(
-            pd.to_numeric(coordinates[lat_column], errors="raise").to_numpy()
-        )
-        longitudes = np.radians(
-            pd.to_numeric(coordinates[lon_column], errors="raise").to_numpy()
-        )
+        latitudes = np.radians(pd.to_numeric(coordinates[lat_column], errors="raise").to_numpy())
+        longitudes = np.radians(pd.to_numeric(coordinates[lon_column], errors="raise").to_numpy())
     except (TypeError, ValueError) as exc:  # pragma: no cover - exercised via tests
         raise GeospatialError(f"Invalid coordinate data: {exc}") from exc
 
@@ -379,13 +364,9 @@ def calculate_distance_matrix(
 
     np.fill_diagonal(distances_km, 0.0)
 
-    logger.info(
-        "Calculated %dx%d distance matrix", len(distances_km), len(distances_km)
-    )
+    logger.info("Calculated %dx%d distance matrix", len(distances_km), len(distances_km))
 
-    return pd.DataFrame(
-        distances_km, index=coordinates.index, columns=coordinates.index
-    )
+    return pd.DataFrame(distances_km, index=coordinates.index, columns=coordinates.index)
 
 
 def cluster_by_proximity(

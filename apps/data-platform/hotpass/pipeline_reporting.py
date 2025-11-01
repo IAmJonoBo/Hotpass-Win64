@@ -33,9 +33,7 @@ def html_performance_rows(metrics: dict[str, Any]) -> str:
             value = f"{float(raw):.4f}"
         else:
             value = str(raw)
-        rows.append(
-            f"<tr><td>{html.escape(label)}</td><td>{html.escape(value)}</td></tr>"
-        )
+        rows.append(f"<tr><td>{html.escape(label)}</td><td>{html.escape(value)}</td></tr>")
     if not rows:
         return '<tr><td colspan="2">No performance metrics recorded.</td></tr>'
     return "".join(rows)

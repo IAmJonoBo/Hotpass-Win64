@@ -8,8 +8,13 @@ from datetime import datetime
 from typing import Any, ClassVar, Protocol
 
 from ..data_sources import RawRecord
-from ..normalization import (clean_string, join_non_empty, normalize_email,
-                             normalize_phone, normalize_website)
+from ..normalization import (
+    clean_string,
+    join_non_empty,
+    normalize_email,
+    normalize_phone,
+    normalize_website,
+)
 
 
 class CredentialStore(Protocol):
@@ -39,9 +44,7 @@ def _credential_metadata(
     store = context.credential_store
     if store is None:
         return None
-    aliases = (
-        options.get("credential_aliases") if isinstance(options, Mapping) else None
-    )
+    aliases = options.get("credential_aliases") if isinstance(options, Mapping) else None
     alias_iter: list[str] | None = None
     if isinstance(aliases, Sequence) and not isinstance(aliases, str | bytes):
         alias_iter = [str(alias) for alias in aliases]
@@ -98,9 +101,7 @@ class ProviderRegistry:
     def register(self, name: str, provider_cls: type[BaseProvider]) -> None:
         self._providers[name.lower()] = provider_cls
 
-    def create(
-        self, name: str, options: Mapping[str, Any] | None = None
-    ) -> BaseProvider:
+    def create(self, name: str, options: Mapping[str, Any] | None = None) -> BaseProvider:
         try:
             provider_cls = self._providers[name.lower()]
         except KeyError as exc:  # pragma: no cover - defensive
@@ -143,9 +144,7 @@ class LinkedInProvider(BaseProvider):
             name = clean_string(contact.get("name"))
             if not name:
                 continue
-            email_value = (
-                normalize_email(contact.get("email")) if contact.get("email") else None
-            )
+            email_value = normalize_email(contact.get("email")) if contact.get("email") else None
             phone_value = (
                 normalize_phone(contact.get("phone"), country_code=context.country_code)
                 if contact.get("phone")
@@ -197,10 +196,7 @@ class ClearbitProvider(BaseProvider):
         context: ProviderContext,
     ) -> Iterable[ProviderPayload]:
         policies = self.options.get("policies", {})
-        if (
-            policies.get("robots_allowed") is False
-            or policies.get("tos_accepted") is False
-        ):
+        if policies.get("robots_allowed") is False or policies.get("tos_accepted") is False:
             return []
         dataset = self.options.get("companies", {})
         entry = dataset.get(target_domain or target_identifier)
@@ -251,10 +247,7 @@ class AviationRegistryProvider(BaseProvider):
         context: ProviderContext,
     ) -> Iterable[ProviderPayload]:
         policies = self.options.get("policies", {})
-        if (
-            policies.get("robots_allowed") is False
-            or policies.get("tos_accepted") is False
-        ):
+        if policies.get("robots_allowed") is False or policies.get("tos_accepted") is False:
             return []
         dataset = self.options.get("fleets", {})
         entry = dataset.get(target_identifier)

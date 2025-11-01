@@ -23,4 +23,3 @@ test.describe('Failure UX', () => {
     await expect(page.getByText('Latest 50 Spreadsheets')).toBeVisible()
   })
 })
-

@@ -14,11 +14,18 @@ import pandas as pd
 from hotpass.config import IndustryProfile
 
 from .fetchers import FetcherResult, get_fetcher_registry
-from .fetchers.deterministic import (DerivedFieldFetcher,
-                                     HistoricalDataFetcher,
-                                     LocalRegistryFetcher, LookupTableFetcher)
-from .fetchers.research import (APILookupFetcher, DomainCrawlerFetcher,
-                                HotpassResearchFetcher, WebScrapeFetcher)
+from .fetchers.deterministic import (
+    DerivedFieldFetcher,
+    HistoricalDataFetcher,
+    LocalRegistryFetcher,
+    LookupTableFetcher,
+)
+from .fetchers.research import (
+    APILookupFetcher,
+    DomainCrawlerFetcher,
+    HotpassResearchFetcher,
+    WebScrapeFetcher,
+)
 from .provenance import ProvenanceTracker
 
 logger = logging.getLogger(__name__)
@@ -124,9 +131,7 @@ def enrich_data(
                     break
 
             except Exception as e:
-                logger.warning(
-                    f"Fetcher {fetcher.__class__.__name__} failed for row {idx}: {e}"
-                )
+                logger.warning(f"Fetcher {fetcher.__class__.__name__} failed for row {idx}: {e}")
 
         # Apply best enrichment if found
         if best_result is not None:

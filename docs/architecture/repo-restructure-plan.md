@@ -1,6 +1,6 @@
 # Hotpass Repository Restructure Plan
 
-> Draft — work-in-progress mapping to align Hotpass with the `frontier-repo-template` layout.  
+> Draft — work-in-progress mapping to align Hotpass with the `frontier-repo-template` layout.
 > Last updated: 2025-10-31
 
 ## 1. Goals

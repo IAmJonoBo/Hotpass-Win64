@@ -95,9 +95,7 @@ def run_benchmark(
             if isinstance(value, int | float):
                 metric_totals.setdefault(key, []).append(float(value))
 
-    aggregated: dict[str, Any] = {
-        key: _average(values) for key, values in metric_totals.items()
-    }
+    aggregated: dict[str, Any] = {key: _average(values) for key, values in metric_totals.items()}
     if source_totals:
         aggregated["source_load_seconds"] = {
             loader: _average(values) for loader, values in source_totals.items()

@@ -50,17 +50,13 @@ class TestEnrichmentPipeline:
             from hotpass.enrichment.provenance import ProvenanceTracker
 
             tracker = ProvenanceTracker()
-            expect(
-                hasattr(tracker, "add_entry"), "ProvenanceTracker should have add_entry"
-            )
+            expect(hasattr(tracker, "add_entry"), "ProvenanceTracker should have add_entry")
             expect(
                 hasattr(tracker, "add_provenance_columns"),
                 "ProvenanceTracker should have add_provenance_columns",
             )
         except ImportError as exc:
-            raise AssertionError(
-                f"ProvenanceTracker should be importable: {exc}"
-            ) from exc
+            raise AssertionError(f"ProvenanceTracker should be importable: {exc}") from exc
 
     def test_fetcher_registry_exists(self):
         """Sprint 2: Fetcher registry should be available."""
@@ -77,16 +73,17 @@ class TestEnrichmentPipeline:
                 "Registry should have get_research_fetchers",
             )
         except ImportError as exc:
-            raise AssertionError(
-                f"Fetcher registry should be importable: {exc}"
-            ) from exc
+            raise AssertionError(f"Fetcher registry should be importable: {exc}") from exc
 
     def test_deterministic_fetchers_exist(self):
         """Sprint 2: Deterministic fetchers should be available."""
         try:
             from hotpass.enrichment.fetchers.deterministic import (
-                DerivedFieldFetcher, HistoricalDataFetcher,
-                LocalRegistryFetcher, LookupTableFetcher)
+                DerivedFieldFetcher,
+                HistoricalDataFetcher,
+                LocalRegistryFetcher,
+                LookupTableFetcher,
+            )
 
             expect(
                 LookupTableFetcher is not None,
@@ -105,28 +102,25 @@ class TestEnrichmentPipeline:
                 "LocalRegistryFetcher should be importable",
             )
         except ImportError as exc:
-            raise AssertionError(
-                f"Deterministic fetchers should be importable: {exc}"
-            ) from exc
+            raise AssertionError(f"Deterministic fetchers should be importable: {exc}") from exc
 
     def test_research_fetchers_exist(self):
         """Sprint 2: Research fetchers should be available."""
         try:
             from hotpass.enrichment.fetchers.research import (
-                HotpassResearchFetcher, WebScrapeFetcher, requires_network)
-
-            expect(
-                WebScrapeFetcher is not None, "WebScrapeFetcher should be importable"
+                HotpassResearchFetcher,
+                WebScrapeFetcher,
+                requires_network,
             )
+
+            expect(WebScrapeFetcher is not None, "WebScrapeFetcher should be importable")
             expect(
                 HotpassResearchFetcher is not None,
                 "HotpassResearchFetcher should be importable",
             )
             expect(callable(requires_network), "requires_network should be callable")
         except ImportError as exc:
-            raise AssertionError(
-                f"Research fetchers should be importable: {exc}"
-            ) from exc
+            raise AssertionError(f"Research fetchers should be importable: {exc}") from exc
 
     def test_network_guard_decorator(self):
         """Sprint 2: Network guard decorator should respect flags."""
@@ -170,9 +164,7 @@ class TestQG3EnrichmentChainGate:
             env=env,
         )
 
-        expect(
-            result.returncode == 0, f"Enrich should succeed offline: {result.stderr}"
-        )
+        expect(result.returncode == 0, f"Enrich should succeed offline: {result.stderr}")
         expect(output_path.exists(), "Output file must exist")
 
         # Verify provenance columns
@@ -186,9 +178,7 @@ class TestQG3EnrichmentChainGate:
             "provenance_confidence" in df.columns,
             "Must have provenance_confidence column",
         )
-        expect(
-            "provenance_strategy" in df.columns, "Must have provenance_strategy column"
-        )
+        expect("provenance_strategy" in df.columns, "Must have provenance_strategy column")
         expect(
             "provenance_network_status" in df.columns,
             "Must have provenance_network_status column",
@@ -332,9 +322,7 @@ class TestEnrichmentIntegration:
         df = pd.DataFrame({"name": ["Test"]})
         df_with_prov = tracker.add_provenance_columns(df)
 
-        expect(
-            "provenance_source" in df_with_prov.columns, "Should have provenance_source"
-        )
+        expect("provenance_source" in df_with_prov.columns, "Should have provenance_source")
         expect(
             df_with_prov.iloc[0]["provenance_source"] == "test_source",
             "Source should match",

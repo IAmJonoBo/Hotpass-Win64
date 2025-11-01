@@ -119,9 +119,7 @@ def __getattr__(name: str) -> Any:
     try:
         module_name, attribute = _LAZY_ATTRS[name]
     except KeyError as exc:  # pragma: no cover - mirrors default behaviour
-        raise AttributeError(
-            f"module 'hotpass.pipeline' has no attribute {name!r}"
-        ) from exc
+        raise AttributeError(f"module 'hotpass.pipeline' has no attribute {name!r}") from exc
 
     module = import_module(module_name)
     value = getattr(module, attribute)
@@ -140,8 +138,7 @@ def run_pipeline(config: PipelineConfig | HotpassConfig) -> PipelineResult:
 
     from hotpass.config_schema import HotpassConfig as HotpassConfigType
 
-    from .orchestrator import (PipelineExecutionConfig, PipelineOrchestrator,
-                               default_feature_bundle)
+    from .orchestrator import PipelineExecutionConfig, PipelineOrchestrator, default_feature_bundle
 
     orchestrator = PipelineOrchestrator()
 

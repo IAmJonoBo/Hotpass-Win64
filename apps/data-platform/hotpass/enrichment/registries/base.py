@@ -77,9 +77,7 @@ def normalise_address(
         "line2": clean_text(payload.get("line2") or payload.get("address_line2")),
         "city": clean_text(payload.get("city") or payload.get("town")),
         "province": clean_text(payload.get("province") or payload.get("state")),
-        "postal_code": clean_text(
-            payload.get("postal_code") or payload.get("postalCode")
-        ),
+        "postal_code": clean_text(payload.get("postal_code") or payload.get("postalCode")),
         "country": clean_text(payload.get("country")),
     }
 
@@ -200,9 +198,7 @@ class BaseRegistryAdapter(ABC):
             )
         self.base_url = (base_url or self.default_base_url or "").strip()
         if not self.base_url:
-            raise RegistryConfigurationError(
-                f"{self.registry} adapter requires a base_url"
-            )
+            raise RegistryConfigurationError(f"{self.registry} adapter requires a base_url")
         self.api_key = api_key
         self.api_key_header = api_key_header
         self.timeout = float(timeout or self.default_timeout)
@@ -214,9 +210,7 @@ class BaseRegistryAdapter(ABC):
             if self.api_key_header:
                 self.default_headers.setdefault(self.api_key_header, self.api_key)
             else:
-                self.default_headers.setdefault(
-                    "Authorization", f"Bearer {self.api_key}"
-                )
+                self.default_headers.setdefault("Authorization", f"Bearer {self.api_key}")
 
     @property
     def throttle_seconds(self) -> float:
@@ -259,9 +253,7 @@ class BaseRegistryAdapter(ABC):
         try:
             return cast(dict[str, Any], response.json())
         except ValueError as exc:
-            raise RegistryTransportError(
-                "Registry response was not valid JSON"
-            ) from exc
+            raise RegistryTransportError("Registry response was not valid JSON") from exc
 
     @abstractmethod
     def lookup(self, organization: str) -> RegistryResponse:

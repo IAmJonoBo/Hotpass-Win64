@@ -131,9 +131,7 @@ class BaseIntentCollector:
         provenance: Mapping[str, Any],
     ) -> IntentSignal:
         cleaned_metadata = {
-            key: value
-            for key, value in metadata.items()
-            if value not in (None, "", [], {}, ())
+            key: value for key, value in metadata.items() if value not in (None, "", [], {}, ())
         }
         bounded = max(0.0, min(1.0, score))
         return IntentSignal(
@@ -148,9 +146,7 @@ class BaseIntentCollector:
             provenance=dict(provenance),
         )
 
-    def _normalise_key(
-        self, target_identifier: str, target_slug: str | None
-    ) -> tuple[str, ...]:
+    def _normalise_key(self, target_identifier: str, target_slug: str | None) -> tuple[str, ...]:
         keys = []
         if target_slug:
             keys.append(target_slug.lower())
@@ -317,12 +313,7 @@ class TechAdoptionCollector(BaseIntentCollector):
         for event in self._gather_events(target_identifier, target_slug):
             technology = str(event.get("technology") or "").strip()
             stage_raw = (
-                str(
-                    event.get("stage")
-                    or event.get("adoption_stage")
-                    or event.get("status")
-                    or ""
-                )
+                str(event.get("stage") or event.get("adoption_stage") or event.get("status") or "")
                 .strip()
                 .lower()
             )
@@ -382,9 +373,7 @@ class IntentCollectorRegistry:
     def register(self, name: str, collector: type[BaseIntentCollector]) -> None:
         self._collectors[name.lower()] = collector
 
-    def create(
-        self, name: str, options: Mapping[str, Any] | None = None
-    ) -> BaseIntentCollector:
+    def create(self, name: str, options: Mapping[str, Any] | None = None) -> BaseIntentCollector:
         try:
             collector_cls = self._collectors[name.lower()]
         except KeyError as exc:  # pragma: no cover - defensive

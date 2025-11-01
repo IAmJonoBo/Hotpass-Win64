@@ -46,9 +46,7 @@ def build(
         default="hotpass-staging",
         help="Prefect profile name",
     )
-    init_parser.add_argument(
-        "--prefect-url", help="Prefect API URL to set for the profile"
-    )
+    init_parser.add_argument("--prefect-url", help="Prefect API URL to set for the profile")
     init_parser.add_argument(
         "--use-net",
         action=argparse.BooleanOptionalAction,
@@ -68,9 +66,7 @@ def build(
         "--kube-context",
         help="Alias to assign the kubeconfig context; defaults to the cluster name",
     )
-    init_parser.add_argument(
-        "--kubeconfig", help="Path to the kubeconfig file to update"
-    )
+    init_parser.add_argument("--kubeconfig", help="Path to the kubeconfig file to update")
     init_parser.add_argument(
         "--namespace",
         help="Optional namespace to export alongside the context",
@@ -115,9 +111,7 @@ def _dispatch(namespace: argparse.Namespace, profile: CLIProfile | None) -> int:
     _ = profile  # context bootstrap is profile independent
     raw_handler = getattr(namespace, "handler", None)
     if not callable(raw_handler):
-        Console().print(
-            "[red]No ctx subcommand specified (use 'hotpass ctx --help').[/red]"
-        )
+        Console().print("[red]No ctx subcommand specified (use 'hotpass ctx --help').[/red]")
         return 1
     handler = cast(CommandHandler, raw_handler)
     result = handler(namespace, profile)
@@ -183,9 +177,7 @@ def _handle_init(args: argparse.Namespace, profile: CLIProfile | None) -> int:
             context=args.kube_context,
             kubeconfig=args.kubeconfig,
         )
-        console.print(
-            f"[cyan]Updating kubeconfig:[/cyan] {format_command(kube_command)}"
-        )
+        console.print(f"[cyan]Updating kubeconfig:[/cyan] {format_command(kube_command)}")
         if not dry_run:
             try:
                 run_command(kube_command, check=True)
@@ -208,9 +200,7 @@ def _handle_init(args: argparse.Namespace, profile: CLIProfile | None) -> int:
 
     if not dry_run:
         _append_context_state(result)
-        console.print(
-            "[green]Context configuration recorded under .hotpass/contexts.json.[/green]"
-        )
+        console.print("[green]Context configuration recorded under .hotpass/contexts.json.[/green]")
     else:
         console.print("[yellow]Dry-run complete; no changes written.[/yellow]")
 
@@ -253,9 +243,7 @@ def _resolve_prefect_url(args: argparse.Namespace) -> str:
     if args.prefect_url:
         return str(args.prefect_url)
     if args.use_net:
-        net_state = load_state(NET_STATE_FILE, default={"sessions": []}) or {
-            "sessions": []
-        }
+        net_state = load_state(NET_STATE_FILE, default={"sessions": []}) or {"sessions": []}
         sessions = net_state.get("sessions", [])
         if sessions:
             # use the most recent session (last element)

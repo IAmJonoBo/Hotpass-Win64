@@ -6,10 +6,14 @@ from collections.abc import Callable, Sequence
 from typing import Any
 
 import pandas as pd
-from hotpass.automation.http import (AutomationHTTPCircuitOpenError,
-                                     AutomationHTTPClient, AutomationHTTPError,
-                                     DeadLetterQueue, DeliveryAttempt,
-                                     DeliveryReport)
+from hotpass.automation.http import (
+    AutomationHTTPCircuitOpenError,
+    AutomationHTTPClient,
+    AutomationHTTPError,
+    DeadLetterQueue,
+    DeliveryAttempt,
+    DeliveryReport,
+)
 from hotpass.telemetry.metrics import PipelineMetrics
 
 try:  # pragma: no cover - optional dependency during CLI only usage

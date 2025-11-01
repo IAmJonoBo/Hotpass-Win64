@@ -98,9 +98,7 @@ def _command_handler(namespace: argparse.Namespace, profile: CLIProfile | None) 
     if console:
         console.print("[bold cyan]Applying Prefect deployments...[/bold cyan]")
         if options.flows:
-            console.print(
-                f"[dim]Selected flows:[/dim] {', '.join(sorted(options.flows))}"
-            )
+            console.print(f"[dim]Selected flows:[/dim] {', '.join(sorted(options.flows))}")
         if options.manifest_dir:
             console.print(f"[dim]Manifest directory:[/dim] {options.manifest_dir}")
         console.print(
@@ -154,15 +152,11 @@ def _command_handler(namespace: argparse.Namespace, profile: CLIProfile | None) 
                 + ", ".join(str(value) for value in deployment_ids)
             )
         else:
-            console.print(
-                "[bold yellow]No deployments matched the provided filters.[/bold yellow]"
-            )
+            console.print("[bold yellow]No deployments matched the provided filters.[/bold yellow]")
     return 0
 
 
-def _resolve_options(
-    namespace: argparse.Namespace, profile: CLIProfile | None
-) -> DeployOptions:
+def _resolve_options(namespace: argparse.Namespace, profile: CLIProfile | None) -> DeployOptions:
     log_format_value: str | None = getattr(namespace, "log_format", None)
     if log_format_value is None and profile is not None:
         log_format_value = profile.log_format
@@ -181,9 +175,7 @@ def _resolve_options(
         sensitive_iter = [str(value) for value in raw_sensitive if value is not None]
     elif raw_sensitive is not None:
         sensitive_iter = [str(raw_sensitive)]
-    sensitive_fields = normalise_sensitive_fields(
-        sensitive_iter, DEFAULT_SENSITIVE_FIELD_TOKENS
-    )
+    sensitive_fields = normalise_sensitive_fields(sensitive_iter, DEFAULT_SENSITIVE_FIELD_TOKENS)
 
     flows_value = getattr(namespace, "flows", None)
     flows: tuple[str, ...] = tuple(str(value) for value in flows_value or ())

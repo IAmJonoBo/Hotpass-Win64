@@ -71,9 +71,7 @@ def test_pipeline_orchestrator_runs_features_and_records_metrics(tmp_path: Path)
             self.context = context
             return True
 
-        def apply(
-            self, result: PipelineResult, context: FeatureContext
-        ) -> PipelineResult:
+        def apply(self, result: PipelineResult, context: FeatureContext) -> PipelineResult:
             self.applied = True
             enhanced = result.refined.copy()
             enhanced["enhanced"] = True
@@ -105,9 +103,7 @@ def test_pipeline_orchestrator_runs_features_and_records_metrics(tmp_path: Path)
     execution.base_config.input_dir.mkdir(parents=True, exist_ok=True)
     execution.base_config.output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    orchestrator = PipelineOrchestrator(
-        base_executor=cast(BasePipelineExecutor, executor)
-    )
+    orchestrator = PipelineOrchestrator(base_executor=cast(BasePipelineExecutor, executor))
     result = orchestrator.run(execution)
 
     assert executor.calls, "Base executor should be invoked."

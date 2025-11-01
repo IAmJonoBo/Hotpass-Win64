@@ -19,9 +19,7 @@ _STAGE_TO_METRIC = {
 
 
 @contextmanager
-def pipeline_stage(
-    stage: str, attributes: Mapping[str, object] | None = None
-) -> Iterator[object]:
+def pipeline_stage(stage: str, attributes: Mapping[str, object] | None = None) -> Iterator[object]:
     """Create an OpenTelemetry span for a pipeline stage."""
 
     tracer = get_tracer("hotpass.pipeline")
@@ -35,9 +33,7 @@ def pipeline_stage(
                 attr_key = f"hotpass.pipeline.{key}"
                 if isinstance(value, str | bool | int | float):
                     span.set_attribute(attr_key, value)
-                elif isinstance(value, Sequence) and not isinstance(
-                    value, str | bytes | bytearray
-                ):
+                elif isinstance(value, Sequence) and not isinstance(value, str | bytes | bytearray):
                     serialised = ", ".join(str(item) for item in value)
                     span.set_attribute(attr_key, serialised)
                 else:

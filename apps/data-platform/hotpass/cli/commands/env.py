@@ -95,9 +95,7 @@ def _command_handler(namespace: argparse.Namespace, profile: CLIProfile | None) 
     )
 
     if dry_run:
-        console.print(
-            Panel("\n".join(env_lines), title="Environment Preview", expand=False)
-        )
+        console.print(Panel("\n".join(env_lines), title="Environment Preview", expand=False))
         console.print("[yellow]Dry-run complete; file not written.[/yellow]")
         return 0
 
@@ -135,9 +133,7 @@ def _build_env_lines(
         namespace = last_entry.get("kubernetes", {}).get("namespace")
         if namespace:
             lines.append(f"HOTPASS_KUBE_NAMESPACE={namespace}")
-    lines.append(
-        f"FEATURE_ENABLE_REMOTE_RESEARCH={'true' if allow_network else 'false'}"
-    )
+    lines.append(f"FEATURE_ENABLE_REMOTE_RESEARCH={'true' if allow_network else 'false'}")
     lines.append(f"ALLOW_NETWORK_RESEARCH={'true' if allow_network else 'false'}")
     return lines
 

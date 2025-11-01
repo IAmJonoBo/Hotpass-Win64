@@ -71,7 +71,7 @@ These notes equip GitHub Copilot CLI, Copilot Agent HQ, and Codex-based agents t
    uv run python -m hotpass.mcp.server
    ```
    Use `/mcp list` (Copilot CLI) to verify `hotpass.refine`, `hotpass.enrich`, `hotpass.qa`, `hotpass.setup`, `hotpass.net`, `hotpass.ctx`, `hotpass.env`, `hotpass.aws`, `hotpass.arc`, `hotpass.explain_provenance`, `hotpass.plan.research`, `hotpass.crawl`, and `hotpass.ta.check`.
-9. **Leverage infrastructure helpers via MCP**  
+9. **Leverage infrastructure helpers via MCP**
    Preview the wizard or launch tunnels without leaving chat:
    ```
    /call hotpass.setup preset=staging host=bastion.example.com dry_run=true skip_steps=["aws","ctx","env","arc"]

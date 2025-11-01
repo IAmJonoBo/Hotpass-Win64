@@ -49,11 +49,11 @@ def main() -> int:
     root = tree.getroot()
 
     offenders: list[str] = []
-    for package in root.findall('.//package'):
-        for clazz in package.findall('class'):
-            name = clazz.get('filename') or clazz.get('name') or 'unknown'
-            lines = float(clazz.get('line-rate', 0)) * 100
-            branches = float(clazz.get('branch-rate', 0)) * 100
+    for package in root.findall(".//package"):
+        for clazz in package.findall("class"):
+            name = clazz.get("filename") or clazz.get("name") or "unknown"
+            lines = float(clazz.get("line-rate", 0)) * 100
+            branches = float(clazz.get("branch-rate", 0)) * 100
             if lines < args.min_lines or branches < args.min_branches:
                 offenders.append(
                     f"{name}: lines={lines:.1f}% (<{args.min_lines}%), branches={branches:.1f}% (<{args.min_branches}%)"

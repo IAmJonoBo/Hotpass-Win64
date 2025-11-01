@@ -7,8 +7,7 @@ from contextlib import contextmanager
 from typing import Any, cast
 
 from .telemetry.metrics import PipelineMetrics
-from .telemetry.registry import (TelemetryConfig, TelemetryRegistry,
-                                 build_default_registry)
+from .telemetry.registry import TelemetryConfig, TelemetryRegistry, build_default_registry
 
 
 def _metrics_factory(meter: Any, observation_factory: Any) -> PipelineMetrics:

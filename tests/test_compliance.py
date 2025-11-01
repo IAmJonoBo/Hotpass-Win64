@@ -7,11 +7,18 @@ import pytest
 
 pytest.importorskip("frictionless")
 
-from hotpass.compliance import (ConsentValidationError,  # noqa: E402
-                                DataClassification, LawfulBasis, PIIDetector,
-                                PIIRedactionConfig, POPIAPolicy,
-                                add_provenance_columns, anonymize_dataframe,
-                                detect_pii_in_dataframe, redact_dataframe)
+from hotpass.compliance import (
+    ConsentValidationError,  # noqa: E402
+    DataClassification,
+    LawfulBasis,
+    PIIDetector,
+    PIIRedactionConfig,
+    POPIAPolicy,
+    add_provenance_columns,
+    anonymize_dataframe,
+    detect_pii_in_dataframe,
+    redact_dataframe,
+)
 
 from tests.helpers.assertions import expect  # noqa: E402
 
@@ -20,9 +27,7 @@ from tests.helpers.assertions import expect  # noqa: E402
 def test_pii_detector_init_no_presidio():
     """Test PII detector initialization without Presidio."""
     detector = PIIDetector()
-    expect(
-        detector.analyzer is None, "Analyzer should be absent when Presidio disabled"
-    )
+    expect(detector.analyzer is None, "Analyzer should be absent when Presidio disabled")
     expect(
         detector.anonymizer is None,
         "Anonymizer should be absent when Presidio disabled",
@@ -65,9 +70,7 @@ def test_detect_pii_success():
             results[0]["entity_type"] == "EMAIL_ADDRESS",
             "Result entity type should match",
         )
-        expect(
-            results[0]["score"] == 0.95, "Result score should reflect analyzer output"
-        )
+        expect(results[0]["score"] == 0.95, "Result score should reflect analyzer output")
 
 
 @patch("hotpass.compliance.PRESIDIO_AVAILABLE", True)
@@ -156,9 +159,7 @@ def test_detect_pii_in_dataframe(mock_detector_class):
 
     result_df = detect_pii_in_dataframe(df, columns=["name", "email"])
 
-    expect(
-        "name_has_pii" in result_df.columns, "PII flags should be added for name column"
-    )
+    expect("name_has_pii" in result_df.columns, "PII flags should be added for name column")
     expect(
         "email_has_pii" in result_df.columns,
         "PII flags should be added for email column",
@@ -301,9 +302,7 @@ def test_popia_policy_init():
     policy = POPIAPolicy(config)
 
     expect(policy.config == config, "Policy should retain config payload")
-    expect(
-        policy.field_classifications["email"] == "pii", "Field classification mismatch"
-    )
+    expect(policy.field_classifications["email"] == "pii", "Field classification mismatch")
 
 
 def test_popia_policy_classify_field():
@@ -431,9 +430,7 @@ def test_popia_policy_report_compliance_issues():
     report = policy.generate_compliance_report(df)
 
     # Should have issues because no consent requirements or retention policies
-    expect(
-        len(report["compliance_issues"]) > 0, "Planned consent test should flag issues"
-    )
+    expect(len(report["compliance_issues"]) > 0, "Planned consent test should flag issues")
 
 
 def test_popia_policy_reports_consent_violation():
@@ -463,9 +460,7 @@ def test_popia_policy_enforce_consent_allows_granted_status():
     policy = POPIAPolicy(config)
     report = policy.generate_compliance_report(df)
 
-    expect(
-        report["consent_violations"] == [], "No consent violations when consent granted"
-    )
+    expect(report["consent_violations"] == [], "No consent violations when consent granted")
     policy.enforce_consent(report)
 
 
@@ -482,12 +477,8 @@ def test_add_provenance_columns():
 
     expect("data_source" in result_df.columns, "Data source column should be added")
     expect("processed_at" in result_df.columns, "Processed timestamp should be added")
-    expect(
-        "consent_status" in result_df.columns, "Consent status column should be added"
-    )
-    expect(
-        result_df.loc[0, "data_source"] == "Test Source", "Data source value mismatch"
-    )
+    expect("consent_status" in result_df.columns, "Consent status column should be added")
+    expect(result_df.loc[0, "data_source"] == "Test Source", "Data source value mismatch")
 
 
 def test_add_provenance_columns_preserves_existing_consent():
@@ -502,9 +493,7 @@ def test_add_provenance_columns_preserves_existing_consent():
 
     result_df = add_provenance_columns(df, source_name="Test Source")
 
-    expect(
-        result_df.loc[0, "consent_status"] == "granted", "Consent status value mismatch"
-    )
+    expect(result_df.loc[0, "consent_status"] == "granted", "Consent status value mismatch")
     expect(result_df.loc[0, "consent_date"] == "2025-10-01", "Consent date mismatch")
 
 
@@ -517,10 +506,6 @@ def test_add_provenance_columns_with_timestamp():
     )
 
     timestamp = "2025-01-01T00:00:00"
-    result_df = add_provenance_columns(
-        df, source_name="Test", processing_timestamp=timestamp
-    )
+    result_df = add_provenance_columns(df, source_name="Test", processing_timestamp=timestamp)
 
-    expect(
-        result_df.loc[0, "processed_at"] == timestamp, "Processed timestamp mismatch"
-    )
+    expect(result_df.loc[0, "processed_at"] == timestamp, "Processed timestamp mismatch")

@@ -1,7 +1,7 @@
 # Project Charter
 
-**Working title:** Hotpass Modernisation & Orchestration Programme  
-**Problem worth solving:** Align data refinement, enrichment, and governance workflows behind a single CLI/MCP surface with automated quality gates, staged evidence, and observable operations.  
+**Working title:** Hotpass Modernisation & Orchestration Programme
+**Problem worth solving:** Align data refinement, enrichment, and governance workflows behind a single CLI/MCP surface with automated quality gates, staged evidence, and observable operations.
 **Success criteria (measurable):**
 
 1. `uv run mypy src tests scripts` and `uv run pytest -q` stay green with ≤5 residual suppressed errors (current: 0).

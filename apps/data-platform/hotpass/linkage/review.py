@@ -36,9 +36,7 @@ class LabelStudioConnector:
         )
         try:
             response.raise_for_status()
-        except (
-            requests.HTTPError
-        ) as exc:  # pragma: no cover - network failures in production
+        except requests.HTTPError as exc:  # pragma: no cover - network failures in production
             logger.warning("Label Studio task submission failed: %s", exc)
             return
         logger.info("Submitted %s review tasks to Label Studio", len(tasks))

@@ -37,9 +37,7 @@ class DuckDBAdapter(QueryAdapter):
             raise TypeError(msg)
         self._registered.add(name)
 
-    def execute(
-        self, sql: str, *, parameters: Sequence[Any] | None = None
-    ) -> pl.DataFrame:
+    def execute(self, sql: str, *, parameters: Sequence[Any] | None = None) -> pl.DataFrame:
         if parameters:
             cursor = self._connection.execute(sql, parameters)
         else:

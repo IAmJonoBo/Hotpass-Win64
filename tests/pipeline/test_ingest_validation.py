@@ -165,9 +165,7 @@ def test_pipeline_valid_payload_creates_contract_artifacts(
     assert not result.quality_report.schema_validation_errors
 
 
-def test_pipeline_rejects_missing_required_column(
-    sample_workbooks: Path, tmp_path: Path
-) -> None:
+def test_pipeline_rejects_missing_required_column(sample_workbooks: Path, tmp_path: Path) -> None:
     # Remove a required column to trigger Frictionless schema failure
     reachout_path = sample_workbooks / "Reachout Database.xlsx"
     df = pd.read_excel(reachout_path, sheet_name="Organisation")
@@ -191,9 +189,7 @@ def test_pipeline_rejects_missing_required_column(
     assert "Organisation Name" in ";".join(context.details.get("missing_fields", []))
 
 
-def test_pipeline_enforces_expectation_suite(
-    sample_workbooks: Path, tmp_path: Path
-) -> None:
+def test_pipeline_enforces_expectation_suite(sample_workbooks: Path, tmp_path: Path) -> None:
     # Introduce an invalid email to violate Great Expectations suite
     contact_path = sample_workbooks / "Contact Database.xlsx"
     contacts = pd.read_excel(contact_path, sheet_name="Company_Contacts")

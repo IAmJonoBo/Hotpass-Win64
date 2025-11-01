@@ -12,8 +12,7 @@ import pandas as pd
 
 from ...normalization import slugify
 from ..validators import logistic_scale
-from .collectors import (COLLECTOR_REGISTRY, IntentCollectorContext,
-                         IntentCollectorError)
+from .collectors import COLLECTOR_REGISTRY, IntentCollectorContext, IntentCollectorError
 from .config import IntentPlan
 from .storage import IntentSignalStore
 
@@ -124,9 +123,7 @@ def run_intent_plan(
 
     for collector_def in plan.active_collectors():
         try:
-            collector = COLLECTOR_REGISTRY.create(
-                collector_def.name, collector_def.options
-            )
+            collector = COLLECTOR_REGISTRY.create(collector_def.name, collector_def.options)
         except IntentCollectorError as exc:
             warnings.append(str(exc))
             continue
@@ -139,9 +136,7 @@ def run_intent_plan(
             bucket["slug"] = target.slug or bucket["slug"]
 
             for signal in collector.collect(target.identifier, target.slug, context):
-                bucket["weighted_score"] += signal.score * max(
-                    collector_def.weight, 0.0
-                )
+                bucket["weighted_score"] += signal.score * max(collector_def.weight, 0.0)
                 bucket["weight_total"] += max(collector_def.weight, 0.0)
                 bucket["count"] += 1
                 bucket["types"].add(signal.signal_type)

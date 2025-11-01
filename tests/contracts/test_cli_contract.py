@@ -41,9 +41,7 @@ def _extract_options(parser: argparse.ArgumentParser) -> dict[str, argparse.Acti
     actions: list[argparse.Action] = []
     for group in parser._action_groups:
         actions.extend(group._group_actions)
-    return {
-        action.option_strings[0]: action for action in actions if action.option_strings
-    }
+    return {action.option_strings[0]: action for action in actions if action.option_strings}
 
 
 def test_cli_contract_matches_spec() -> None:
@@ -64,9 +62,7 @@ def test_cli_contract_matches_spec() -> None:
 
         for option in command_spec.get("options", []):
             opt_name = option["name"]
-            assert (
-                opt_name in options
-            ), f"Option {opt_name} missing from subcommand {name}"
+            assert opt_name in options, f"Option {opt_name} missing from subcommand {name}"
             action = options[opt_name]
             required = option.get("required", False)
             assert action.required == required

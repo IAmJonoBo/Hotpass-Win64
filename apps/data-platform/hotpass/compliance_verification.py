@@ -132,9 +132,7 @@ def record_verification_run(
     return save_verification_log(current_entries, log_path=log_path)
 
 
-def _latest_run(
-    entries: Iterable[VerificationEntry], framework: str
-) -> datetime | None:
+def _latest_run(entries: Iterable[VerificationEntry], framework: str) -> datetime | None:
     latest: datetime | None = None
     for entry in entries:
         if entry.framework.lower() != framework.lower():
@@ -217,11 +215,7 @@ def generate_summary(
 
         # Collect the most recent entry details
         latest_entry = max(
-            (
-                entry
-                for entry in entries
-                if entry.framework.lower() == framework.lower()
-            ),
+            (entry for entry in entries if entry.framework.lower() == framework.lower()),
             key=lambda entry: entry.run_at,
         )
         summary["frameworks"][framework] = {

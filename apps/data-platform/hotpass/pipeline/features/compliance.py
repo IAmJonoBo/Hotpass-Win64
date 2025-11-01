@@ -8,8 +8,12 @@ from dataclasses import dataclass
 
 from pandas import DataFrame
 
-from ...compliance import (ConsentValidationError, POPIAPolicy,
-                           add_provenance_columns, detect_pii_in_dataframe)
+from ...compliance import (
+    ConsentValidationError,
+    POPIAPolicy,
+    add_provenance_columns,
+    detect_pii_in_dataframe,
+)
 from ..base import PipelineResult
 from .base import FeatureContext, PipelineFeatureStrategy
 
@@ -37,9 +41,7 @@ class ComplianceFeature(PipelineFeatureStrategy):
             policy = POPIAPolicy()
             try:
                 if config.audit_log_enabled:
-                    result.refined = add_provenance_columns(
-                        df, source_name="hotpass_pipeline"
-                    )
+                    result.refined = add_provenance_columns(df, source_name="hotpass_pipeline")
                 else:
                     result.refined = df
 

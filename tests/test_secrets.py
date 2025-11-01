@@ -50,14 +50,10 @@ class StubSession:
             raise AssertionError(f"Unexpected request: {method} {url}")
         return self._responses[key]
 
-    def get(
-        self, url: str, **kwargs: Any
-    ) -> StubResponse:  # pragma: no cover - passthrough
+    def get(self, url: str, **kwargs: Any) -> StubResponse:  # pragma: no cover - passthrough
         return self.request("GET", url, **kwargs)
 
-    def post(
-        self, url: str, **kwargs: Any
-    ) -> StubResponse:  # pragma: no cover - passthrough
+    def post(self, url: str, **kwargs: Any) -> StubResponse:  # pragma: no cover - passthrough
         return self.request("POST", url, **kwargs)
 
 
@@ -105,9 +101,7 @@ def test_vault_manager_oidc_login(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("HOTPASS_VAULT_ADDR", "https://vault.example.com")
     monkeypatch.setenv("HOTPASS_VAULT_ROLE", "hotpass-ci")
     monkeypatch.setenv("HOTPASS_VAULT_AUTH_MOUNT", "github")
-    monkeypatch.setenv(
-        "ACTIONS_ID_TOKEN_REQUEST_URL", "https://oidc.example.com?id=stub"
-    )
+    monkeypatch.setenv("ACTIONS_ID_TOKEN_REQUEST_URL", "https://oidc.example.com?id=stub")
     monkeypatch.setenv("ACTIONS_ID_TOKEN_REQUEST_TOKEN", "oidc-request-token")
 
     session = StubSession(

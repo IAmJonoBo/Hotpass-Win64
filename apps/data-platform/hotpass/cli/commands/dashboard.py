@@ -30,9 +30,7 @@ def build(
         parents=[shared.base],
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    parser.add_argument(
-        "--port", type=int, default=8501, help="Port for Streamlit dashboard"
-    )
+    parser.add_argument("--port", type=int, default=8501, help="Port for Streamlit dashboard")
     parser.add_argument("--host", default="localhost", help="Host for dashboard server")
     return parser
 
@@ -65,9 +63,7 @@ def _command_handler(namespace: argparse.Namespace, profile: CLIProfile | None) 
         sensitive_iter = [str(value) for value in raw_sensitive if value is not None]
     elif raw_sensitive is not None:
         sensitive_iter = [str(raw_sensitive)]
-    sensitive_fields = normalise_sensitive_fields(
-        sensitive_iter, DEFAULT_SENSITIVE_FIELD_TOKENS
-    )
+    sensitive_fields = normalise_sensitive_fields(sensitive_iter, DEFAULT_SENSITIVE_FIELD_TOKENS)
     logger = StructuredLogger(log_format, sensitive_fields)
     console = logger.console if log_format == "rich" else None
 

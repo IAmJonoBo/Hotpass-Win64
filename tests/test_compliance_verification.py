@@ -11,11 +11,14 @@ from tests.helpers.fixtures import fixture
 
 pytest.importorskip("frictionless")
 
-from hotpass.compliance_verification import (DEFAULT_FRAMEWORKS,  # noqa: E402
-                                             frameworks_due, generate_summary,
-                                             is_framework_due,
-                                             load_verification_log,
-                                             record_verification_run)
+from hotpass.compliance_verification import (
+    DEFAULT_FRAMEWORKS,  # noqa: E402
+    frameworks_due,
+    generate_summary,
+    is_framework_due,
+    load_verification_log,
+    record_verification_run,
+)
 
 from tests.helpers.assertions import expect
 
@@ -112,9 +115,7 @@ def test_frameworks_due_handles_case_insensitivity(log_path: Path) -> None:
     """Framework lookups should not be case-sensitive."""
 
     timestamp = datetime(2025, 1, 1, tzinfo=UTC)
-    record_verification_run(
-        frameworks=("popia",), log_path=log_path, timestamp=timestamp
-    )
+    record_verification_run(frameworks=("popia",), log_path=log_path, timestamp=timestamp)
 
     due_frameworks = frameworks_due(
         ("POPIA",), log_path=log_path, now=timestamp + timedelta(days=30)

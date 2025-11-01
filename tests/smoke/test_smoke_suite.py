@@ -9,8 +9,7 @@ import pytest
 from hotpass.telemetry.metrics import PipelineMetrics
 
 from hotpass.config import get_default_profile, load_industry_profile
-from hotpass.telemetry.bootstrap import (TelemetryBootstrapOptions,
-                                         bootstrap_metrics)
+from hotpass.telemetry.bootstrap import TelemetryBootstrapOptions, bootstrap_metrics
 from tests.helpers.assertions import expect
 
 pytestmark = pytest.mark.bandwidth("smoke")

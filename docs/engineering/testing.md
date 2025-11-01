@@ -69,6 +69,7 @@ If any command fails, the script exits immediately with a non-zero code so CI ca
 
 **Result:** comprehensive validation (~40 minutes on hosted runners) mirroring `.github/workflows/quality-gates.yml`.
 
+> **Update (2025-11-01):** `scripts/testing/full.sh` now invokes `mypy`, `bandit`, `detect-secrets`, and `pre-commit` through `uv run` so local shells no longer need globally-installed tooling. If your branch carries large, pre-existing diffs that you do not intend to reformat, call the script with `TRUNK_SKIP_TRUNK=1` to bypass the trunk auto-format bootstrap while still running the rest of the gate.
 ### Run UI unit tests in isolation
 
 **Use when:** iterating on web components without touching the Python stack.

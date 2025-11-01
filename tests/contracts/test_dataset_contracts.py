@@ -44,9 +44,7 @@ def test_contract_roundtrip(contract: contracts.DatasetContract) -> None:
     actual_rows = [model.model_dump(by_alias=True) for model in roundtripped]
     assert actual_rows == expected_rows
 
-    schema_path = SCHEMAS_DIR / (
-        contract.schema_filename or f"{contract.name}.schema.json"
-    )
+    schema_path = SCHEMAS_DIR / (contract.schema_filename or f"{contract.name}.schema.json")
     expected_schema = json.loads(schema_path.read_text(encoding="utf-8"))
     assert contract.to_frictionless() == expected_schema
 
@@ -81,9 +79,7 @@ def test_regeneration_scripts_are_stable(tmp_path: Path) -> None:
     assert generated_schemas, "no schemas were generated"
 
     for generated in generated_schemas:
-        expected = json.loads(
-            (SCHEMAS_DIR / generated.name).read_text(encoding="utf-8")
-        )
+        expected = json.loads((SCHEMAS_DIR / generated.name).read_text(encoding="utf-8"))
         actual = json.loads(generated.read_text(encoding="utf-8"))
         assert actual == expected
 
@@ -93,6 +89,4 @@ def test_regeneration_scripts_are_stable(tmp_path: Path) -> None:
         contracts=contracts.DATASET_CONTRACTS,
         last_updated=last_updated,
     )
-    assert generated_doc.read_text(encoding="utf-8") == DOC_PATH.read_text(
-        encoding="utf-8"
-    )
+    assert generated_doc.read_text(encoding="utf-8") == DOC_PATH.read_text(encoding="utf-8")

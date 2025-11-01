@@ -10,12 +10,16 @@ from tests.helpers.fixtures import fixture
 pytest.importorskip("frictionless")
 
 import hotpass.geospatial as geospatial  # noqa: E402
-from hotpass.geospatial import (Geocoder, GeospatialError,
-                                calculate_distance_matrix,
-                                cluster_by_proximity, create_geodataframe,
-                                geocode_dataframe,
-                                infer_province_from_coordinates,
-                                normalize_address)
+from hotpass.geospatial import (
+    Geocoder,
+    GeospatialError,
+    calculate_distance_matrix,
+    cluster_by_proximity,
+    create_geodataframe,
+    geocode_dataframe,
+    infer_province_from_coordinates,
+    normalize_address,
+)
 
 
 @fixture(autouse=True)

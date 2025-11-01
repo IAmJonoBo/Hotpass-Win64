@@ -7,15 +7,21 @@ from datetime import UTC, datetime
 
 from hotpass.data_sources import RawRecord
 from hotpass.data_sources.agents.base import AgentContext
-from hotpass.data_sources.agents.config import (AcquisitionPlan,
-                                                AgentDefinition,
-                                                AgentTaskDefinition,
-                                                AgentTaskKind,
-                                                ProviderDefinition)
+from hotpass.data_sources.agents.config import (
+    AcquisitionPlan,
+    AgentDefinition,
+    AgentTaskDefinition,
+    AgentTaskKind,
+    ProviderDefinition,
+)
 from hotpass.data_sources.agents.tasks import execute_agent_tasks
-from hotpass.enrichment.providers import (BaseProvider, CredentialStore,
-                                          ProviderContext, ProviderPayload,
-                                          ProviderRegistry)
+from hotpass.enrichment.providers import (
+    BaseProvider,
+    CredentialStore,
+    ProviderContext,
+    ProviderPayload,
+    ProviderRegistry,
+)
 
 from tests.helpers.fixtures import fixture
 
@@ -137,12 +143,8 @@ def test_execute_agent_tasks_combines_search_crawl_and_api(
             ),
         ),
         tasks=(
-            AgentTaskDefinition(
-                name="search", kind=AgentTaskKind.SEARCH, options=search_options
-            ),
-            AgentTaskDefinition(
-                name="crawl", kind=AgentTaskKind.CRAWL, options=crawl_options
-            ),
+            AgentTaskDefinition(name="search", kind=AgentTaskKind.SEARCH, options=search_options),
+            AgentTaskDefinition(name="crawl", kind=AgentTaskKind.CRAWL, options=crawl_options),
             AgentTaskDefinition(
                 name="api",
                 kind=AgentTaskKind.API,
@@ -151,9 +153,7 @@ def test_execute_agent_tasks_combines_search_crawl_and_api(
             ),
         ),
     )
-    credential_store = MemoryCredentialStore(
-        value="token", cached=True, reference="vault:demo"
-    )
+    credential_store = MemoryCredentialStore(value="token", cached=True, reference="vault:demo")
     context = _build_context(agent)
 
     result = execute_agent_tasks(agent, context, provider_registry, credential_store)
@@ -214,16 +214,12 @@ def test_execute_agent_tasks_falls_back_to_providers_when_no_tasks(
         ),
         tasks=(),
     )
-    credential_store = MemoryCredentialStore(
-        value=None, cached=False, reference="ref-1"
-    )
+    credential_store = MemoryCredentialStore(value=None, cached=False, reference="ref-1")
     context = _build_context(agent)
 
     result = execute_agent_tasks(agent, context, provider_registry, credential_store)
 
-    expect(
-        result.records == [], "Missing credentials should block fallback task records"
-    )
+    expect(result.records == [], "Missing credentials should block fallback task records")
     expect(
         bool(result.warnings),
         "Fallback execution should emit missing credential warning",

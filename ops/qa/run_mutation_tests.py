@@ -21,17 +21,13 @@ def main() -> None:
 
     python_cmd = sys.executable
 
-    subprocess.run(
-        [python_cmd, "-m", "coverage", "erase"], check=True, env=env
-    )  # nosec B603
+    subprocess.run([python_cmd, "-m", "coverage", "erase"], check=True, env=env)  # nosec B603
     subprocess.run([python_cmd, "-m", "pytest"], check=True, env=env)  # nosec B603
 
     command = ["mutmut", "run"]
     subprocess.run(command, check=True, env=env)  # nosec B603
 
-    subprocess.run(
-        [python_cmd, "-m", "coverage", "erase"], check=True, env=env
-    )  # nosec B603
+    subprocess.run([python_cmd, "-m", "coverage", "erase"], check=True, env=env)  # nosec B603
 
 
 if __name__ == "__main__":

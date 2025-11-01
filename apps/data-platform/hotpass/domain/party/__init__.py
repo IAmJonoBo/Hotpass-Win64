@@ -3,10 +3,20 @@
 from . import schemas
 from .dictionary import render_dictionary
 from .loader import build_party_store_from_refined
-from .models import (AliasType, ConfidenceBand, ContactMethod,
-                     ContactMethodType, Party, PartyAlias, PartyKind,
-                     PartyRole, PartyStore, Provenance, ValidityWindow,
-                     generate_uuid7)
+from .models import (
+    AliasType,
+    ConfidenceBand,
+    ContactMethod,
+    ContactMethodType,
+    Party,
+    PartyAlias,
+    PartyKind,
+    PartyRole,
+    PartyStore,
+    Provenance,
+    ValidityWindow,
+    generate_uuid7,
+)
 
 __all__ = [
     "AliasType",

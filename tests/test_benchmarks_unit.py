@@ -40,12 +40,8 @@ def test_run_benchmark_averages_metrics(monkeypatch, tmp_path: Path) -> None:
     )
 
     expect(result.runs == 2, "Expected run count should be preserved")
-    expect(
-        abs(result.metrics["total_seconds"] - 3.0) < 1e-9, "Totals should be averaged"
-    )
-    expect(
-        result.metrics["source_load_seconds"]["excel"] == 2.0, "Nested metrics averaged"
-    )
+    expect(abs(result.metrics["total_seconds"] - 3.0) < 1e-9, "Totals should be averaged")
+    expect(result.metrics["source_load_seconds"]["excel"] == 2.0, "Nested metrics averaged")
     expect(len(result.samples) == 2, "All sample metrics captured")
 
 

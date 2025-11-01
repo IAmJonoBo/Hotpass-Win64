@@ -8,9 +8,12 @@ from collections.abc import Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 
-from hotpass.compliance_verification import (DEFAULT_FRAMEWORKS,
-                                             frameworks_due, generate_summary,
-                                             record_verification_run)
+from hotpass.compliance_verification import (
+    DEFAULT_FRAMEWORKS,
+    frameworks_due,
+    generate_summary,
+    record_verification_run,
+)
 
 
 def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:

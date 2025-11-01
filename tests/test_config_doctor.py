@@ -7,8 +7,7 @@ from pathlib import Path
 from hotpass.compliance import DataClassification
 from hotpass.config import get_default_profile
 from hotpass.config_doctor import ConfigDoctor, DiagnosticResult
-from hotpass.config_schema import (GovernanceMetadata, HotpassConfig,
-                                   PipelineRuntimeConfig)
+from hotpass.config_schema import GovernanceMetadata, HotpassConfig, PipelineRuntimeConfig
 
 
 def _make_config(tmp_path: Path) -> HotpassConfig:
@@ -47,9 +46,7 @@ def test_config_doctor_diagnose_flags_missing_governance(tmp_path: Path) -> None
     doctor = ConfigDoctor(config=config)
     results = doctor.diagnose()
 
-    assert any(
-        r.check_name == "governance.data_owner" and not r.passed for r in results
-    )
+    assert any(r.check_name == "governance.data_owner" and not r.passed for r in results)
 
 
 def test_config_doctor_autofix_injects_governance_defaults(tmp_path: Path) -> None:

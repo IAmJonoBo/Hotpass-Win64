@@ -2,9 +2,14 @@
 
 from __future__ import annotations
 
-from .orchestrator import (AuthoritySnapshot, ResearchContext,
-                           ResearchOrchestrator, ResearchOutcome, ResearchPlan,
-                           ResearchStepResult)
+from .orchestrator import (
+    AuthoritySnapshot,
+    ResearchContext,
+    ResearchOrchestrator,
+    ResearchOutcome,
+    ResearchPlan,
+    ResearchStepResult,
+)
 
 __all__ = [
     "AuthoritySnapshot",

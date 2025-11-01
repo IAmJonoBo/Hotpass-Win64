@@ -6,9 +6,13 @@ from pathlib import Path
 
 import pytest
 from hotpass.compliance import DataClassification
-from hotpass.config_schema import (ComplianceControls, FeatureSwitches,
-                                   GovernanceMetadata, HotpassConfig,
-                                   PipelineRuntimeConfig)
+from hotpass.config_schema import (
+    ComplianceControls,
+    FeatureSwitches,
+    GovernanceMetadata,
+    HotpassConfig,
+    PipelineRuntimeConfig,
+)
 from pydantic import ValidationError
 
 

@@ -10,6 +10,12 @@ repos:
     hooks:
       - id: check-merge-conflict
       - id: end-of-file-fixer
+        exclude: |
+          (?x)(
+            ^dist/ |
+            ^\.hotpass/ |
+            ^apps/data-platform/hotpass\.egg-info/
+          )
       - id: trailing-whitespace
 
   - repo: https://github.com/astral-sh/ruff-pre-commit

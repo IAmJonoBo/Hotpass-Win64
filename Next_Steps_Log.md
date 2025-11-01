@@ -153,6 +153,12 @@ _Updated 2025-10-31_
 - [x] 2025-11-01 · SBOM generation verified — `uv run python ops/supply_chain/generate_sbom.py --output dist/sbom/hotpass-sbom.json` after adding `cyclonedx-bom` to core dependencies.
   - notes: Dependency install pulled in CycloneDX tooling and produced `dist/sbom/hotpass-sbom.json` for audit evidence.
   - checks: tests=n/a, lint=n/a, type=n/a, sec=pass, build=pass
+- [x] 2025-11-01 · QA sweep — `uv run pytest tests`, `uv run coverage html`, `uv run python tools/coverage/report_low_coverage.py coverage.xml --min-lines 5 --min-branches 0`, `uv run bandit -r apps/data-platform ops --severity-level medium --confidence-level high`, `uv run python -m detect_secrets scan apps/data-platform tests ops`.
+  - notes: Full pytest run now finishes cleanly (532 passed / 1 skipped); coverage artefacts regenerated at `htmlcov/index.html`; security scans return only low-confidence subprocess findings already documented. Trunk formatting remains blocked by pre-existing repo diffs, so `make qa-full` was executed component-by-component via `uv`.
+  - checks: tests=pass, lint=blocked, type=pass, sec=pass, build=n/a
+- [x] 2025-11-01 · Aggregation guardrail restoration — Moved quality scoring into `apps/data-platform/hotpass/pipeline/quality_summary.py` and trimmed `apps/data-platform/hotpass/pipeline/aggregation.py` to 740 lines; updated tests to satisfy bandit/mypy guardrails.
+  - notes: New helper consolidates quality scoring logic for reuse; `tests/cli/test_refine_enrich_lineage_flow.py` now passes boolean expressions into the shared `expect` helper (mypy clean). Fitness gate (`python ops/quality/fitness_functions.py`) reports success.
+  - checks: tests=pass, lint=pass, type=pass, sec=pass, build=n/a
 
 ## 2025-11-02 (branch: work, pr: n/a, actor: codex)
 - [x] Land Okta/OIDC auth provider with route gating and secure HIL storage encryption.

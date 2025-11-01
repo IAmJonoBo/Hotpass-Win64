@@ -152,9 +152,7 @@ class PipelineMetrics:
         provider: str | None = None,
         extra_attributes: Mapping[str, Any] | None = None,
     ) -> None:
-        attributes = self._acquisition_attributes(
-            scope, agent, provider, extra_attributes
-        )
+        attributes = self._acquisition_attributes(scope, agent, provider, extra_attributes)
         self.acquisition_duration.record(seconds, attributes)
 
     def record_acquisition_records(
@@ -166,9 +164,7 @@ class PipelineMetrics:
         provider: str | None = None,
         extra_attributes: Mapping[str, Any] | None = None,
     ) -> None:
-        attributes = self._acquisition_attributes(
-            scope, agent, provider, extra_attributes
-        )
+        attributes = self._acquisition_attributes(scope, agent, provider, extra_attributes)
         self.acquisition_records.add(count, attributes)
 
     def record_acquisition_warnings(
@@ -180,9 +176,7 @@ class PipelineMetrics:
         provider: str | None = None,
         extra_attributes: Mapping[str, Any] | None = None,
     ) -> None:
-        attributes = self._acquisition_attributes(
-            scope, agent, provider, extra_attributes
-        )
+        attributes = self._acquisition_attributes(scope, agent, provider, extra_attributes)
         self.acquisition_warnings.add(count, attributes)
 
     @staticmethod

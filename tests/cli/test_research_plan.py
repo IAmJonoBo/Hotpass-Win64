@@ -28,9 +28,7 @@ def _write_dataset(tmp_path: Path) -> Path:
 
 
 @usefixtures("monkeypatch")
-def test_plan_research_cli_offline(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_plan_research_cli_offline(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     dataset = _write_dataset(tmp_path)
     monkeypatch.delenv("FEATURE_ENABLE_REMOTE_RESEARCH", raising=False)
     monkeypatch.delenv("ALLOW_NETWORK_RESEARCH", raising=False)

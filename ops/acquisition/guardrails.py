@@ -26,15 +26,11 @@ __all__ = [
 def _default_fetcher(url: str) -> str:
     parsed = urlparse(url)
     if parsed.scheme not in {"http", "https"}:
-        raise ValueError(
-            f"Unsupported URL scheme for fetcher: {parsed.scheme or 'none'}"
-        )
+        raise ValueError(f"Unsupported URL scheme for fetcher: {parsed.scheme or 'none'}")
     if not parsed.netloc:
         raise ValueError("Remote fetches require a hostname")
 
-    with request.urlopen(
-        url
-    ) as response:  # noqa: S310 - validated scheme  # nosec B310
+    with request.urlopen(url) as response:  # noqa: S310 - validated scheme  # nosec B310
         content_bytes = response.read()
     return cast(str, content_bytes.decode("utf-8"))
 
@@ -68,8 +64,7 @@ class ProviderPolicy:
     def from_path(cls, path: Path) -> ProviderPolicy:
         data = json.loads(path.read_text(encoding="utf-8"))
         allowed = {
-            name.lower(): dict(metadata)
-            for name, metadata in data.get("providers", {}).items()
+            name.lower(): dict(metadata) for name, metadata in data.get("providers", {}).items()
         }
         return cls(providers=allowed)
 
@@ -77,9 +72,7 @@ class ProviderPolicy:
         try:
             return self.providers[name.lower()]
         except KeyError as exc:  # pragma: no cover - defensive guard
-            raise PermissionError(
-                f"Provider '{name}' is not allowlisted for acquisition"
-            ) from exc
+            raise PermissionError(f"Provider '{name}' is not allowlisted for acquisition") from exc
 
 
 class RobotsTxtGuard:

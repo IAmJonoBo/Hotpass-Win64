@@ -17,16 +17,10 @@ if not hasattr(sys.modules["pyarrow"], "bool_"):
     sys.modules["pyarrow"].bool_ = lambda: object()  # type: ignore[attr-defined]
 
 _LINEAGE_PATH = (
-    Path(__file__).resolve().parents[1]
-    / "apps"
-    / "data-platform"
-    / "hotpass"
-    / "lineage.py"
+    Path(__file__).resolve().parents[1] / "apps" / "data-platform" / "hotpass" / "lineage.py"
 )
 _LINEAGE_SPEC = importlib.util.spec_from_file_location("hotpass.lineage", _LINEAGE_PATH)
-if (
-    _LINEAGE_SPEC is None or _LINEAGE_SPEC.loader is None
-):  # pragma: no cover - safety check
+if _LINEAGE_SPEC is None or _LINEAGE_SPEC.loader is None:  # pragma: no cover - safety check
     raise RuntimeError("Unable to load hotpass.lineage module specification")
 lineage = importlib.util.module_from_spec(_LINEAGE_SPEC)
 sys.modules.setdefault("hotpass.lineage", lineage)
@@ -41,16 +35,16 @@ def expect(condition: bool, message: str) -> None:
 
 
 class _StubDataset:
-    def __init__(
-        self, *, namespace: str, name: str, facets: Mapping[str, object]
-    ) -> None:
+    def __init__(self, *, namespace: str, name: str, facets: Mapping[str, object]) -> None:
         self.namespace = namespace
         self.name = name
         self.facets = dict(facets)
 
 
 class _StubRun:
-    def __init__(self, *, runId: str, facets: Mapping[str, object] | None = None) -> None:  # noqa: N803 - OpenLineage naming
+    def __init__(
+        self, *, runId: str, facets: Mapping[str, object] | None = None
+    ) -> None:  # noqa: N803 - OpenLineage naming
         self.runId = runId
         self.facets = dict(facets or {})
 
@@ -120,9 +114,7 @@ def test_create_emitter_returns_null_when_openlineage_unavailable(
         isinstance(emitter, lineage.NullLineageEmitter),
         "Expected NullLineageEmitter when OpenLineage is unavailable.",
     )
-    expect(
-        emitter.is_enabled is False, "Emitter should be disabled without OpenLineage."
-    )
+    expect(emitter.is_enabled is False, "Emitter should be disabled without OpenLineage.")
 
 
 def test_lineage_emitter_emits_events_with_stubbed_client(
@@ -167,9 +159,7 @@ def test_lineage_emitter_emits_events_with_stubbed_client(
     )
 
     emitter.emit_fail("boom", outputs=["output-c"])
-    expect(
-        len(_StubClient.emitted) == 3, "Expected failure event to append to the log."
-    )
+    expect(len(_StubClient.emitted) == 3, "Expected failure event to append to the log.")
     expect(
         _StubClient.emitted[-1].eventType == _StubRunState.FAIL,
         "Final event should signal a FAIL state.",
@@ -187,9 +177,7 @@ def test_lineage_emitter_honours_environment_configuration(
 
     _StubClient.emitted = []
     monkeypatch.setenv("HOTPASS_LINEAGE_NAMESPACE", "hotpass.staging")
-    monkeypatch.setenv(
-        "HOTPASS_LINEAGE_PRODUCER", "https://hotpass.dev/custom-producer"
-    )
+    monkeypatch.setenv("HOTPASS_LINEAGE_PRODUCER", "https://hotpass.dev/custom-producer")
 
     captured: dict[str, str] = {}
 

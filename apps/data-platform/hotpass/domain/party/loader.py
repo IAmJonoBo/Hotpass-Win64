@@ -10,10 +10,20 @@ from datetime import UTC, datetime
 import pandas as pd
 from hotpass.normalization import clean_string, slugify
 
-from .models import (AliasType, ConfidenceBand, ContactMethod,
-                     ContactMethodType, Party, PartyAlias, PartyKind,
-                     PartyRole, PartyStore, Provenance, ValidityWindow,
-                     generate_uuid7)
+from .models import (
+    AliasType,
+    ConfidenceBand,
+    ContactMethod,
+    ContactMethodType,
+    Party,
+    PartyAlias,
+    PartyKind,
+    PartyRole,
+    PartyStore,
+    Provenance,
+    ValidityWindow,
+    generate_uuid7,
+)
 
 
 def _parse_iso_datetime(value: str | None) -> datetime | None:
@@ -130,8 +140,7 @@ def build_party_store_from_refined(
 
     timestamp = execution_time or datetime.now(tz=UTC)
     selection_cache = [
-        _parse_selection_provenance(value)
-        for value in refined.get("selection_provenance", [])
+        _parse_selection_provenance(value) for value in refined.get("selection_provenance", [])
     ]
 
     organisation_parties: dict[str, Party] = {}
@@ -184,9 +193,7 @@ def build_party_store_from_refined(
                 aliases.append(dataset_alias)
 
         primary_contact_name = clean_string(row.get("contact_primary_name"))
-        primary_contact_role = (
-            clean_string(row.get("contact_primary_role")) or "Primary contact"
-        )
+        primary_contact_role = clean_string(row.get("contact_primary_role")) or "Primary contact"
         primary_email = clean_string(row.get("contact_primary_email"))
         primary_phone = clean_string(row.get("contact_primary_phone"))
 
@@ -201,9 +208,7 @@ def build_party_store_from_refined(
         contact_party = None
         if person_key:
             contact_party = person_parties.get(person_key)
-            name_provenance = _provenance_from(
-                provenance_map.get("contact_primary_name", {})
-            )
+            name_provenance = _provenance_from(provenance_map.get("contact_primary_name", {}))
             if contact_party is None:
                 display_contact = (
                     primary_contact_name or primary_email or primary_phone or "Unknown"
@@ -220,9 +225,7 @@ def build_party_store_from_refined(
                 )
                 person_parties[person_key] = contact_party
                 if primary_contact_name:
-                    contact_confidence = _coerce_confidence(
-                        name_provenance, default=0.55
-                    )
+                    contact_confidence = _coerce_confidence(name_provenance, default=0.55)
                     aliases.append(
                         PartyAlias(
                             party_id=contact_party.party_id,
@@ -235,9 +238,7 @@ def build_party_store_from_refined(
                         )
                     )
 
-            role_provenance = _provenance_from(
-                provenance_map.get("contact_primary_role", {})
-            )
+            role_provenance = _provenance_from(provenance_map.get("contact_primary_role", {}))
             last_seen = row.get("last_interaction_date")
             start_ts = _parse_iso_datetime(last_seen) or timestamp
             roles.append(
@@ -253,9 +254,7 @@ def build_party_store_from_refined(
             )
 
             if primary_email:
-                email_prov = _provenance_from(
-                    provenance_map.get("contact_primary_email", {})
-                )
+                email_prov = _provenance_from(provenance_map.get("contact_primary_email", {}))
                 email_confidence = _coerce_confidence(email_prov, default=0.75)
                 contact_methods.append(
                     ContactMethod(
@@ -269,9 +268,7 @@ def build_party_store_from_refined(
                     )
                 )
             if primary_phone:
-                phone_prov = _provenance_from(
-                    provenance_map.get("contact_primary_phone", {})
-                )
+                phone_prov = _provenance_from(provenance_map.get("contact_primary_phone", {}))
                 phone_confidence = _coerce_confidence(phone_prov, default=0.65)
                 contact_methods.append(
                     ContactMethod(

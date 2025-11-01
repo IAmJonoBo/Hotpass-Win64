@@ -188,9 +188,7 @@ class AutomationHTTPClient:
         self._session = session or requests.Session()
         self._sleep = sleep
         self._monotonic = monotonic
-        self._idempotency_key_factory = idempotency_key_factory or (
-            lambda: uuid.uuid4().hex
-        )
+        self._idempotency_key_factory = idempotency_key_factory or (lambda: uuid.uuid4().hex)
 
         self._consecutive_failures = 0
         self._circuit_open_until: float | None = None

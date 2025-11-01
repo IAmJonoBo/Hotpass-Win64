@@ -63,9 +63,7 @@ def _call(args: Sequence[str], config_settings: Mapping[Any, Any] | None = None)
     return lines[-1].strip()
 
 
-def build_sdist(
-    sdist_directory: str, config_settings: Mapping[Any, Any] | None = None
-) -> str:
+def build_sdist(sdist_directory: str, config_settings: Mapping[Any, Any] | None = None) -> str:
     return _call(["build-sdist", sdist_directory], config_settings)
 
 
@@ -94,17 +92,13 @@ def build_editable(
 def prepare_metadata_for_build_wheel(
     metadata_directory: str, config_settings: Mapping[Any, Any] | None = None
 ) -> str:
-    return _call(
-        ["prepare-metadata-for-build-wheel", metadata_directory], config_settings
-    )
+    return _call(["prepare-metadata-for-build-wheel", metadata_directory], config_settings)
 
 
 def prepare_metadata_for_build_editable(
     metadata_directory: str, config_settings: Mapping[Any, Any] | None = None
 ) -> str:
-    return _call(
-        ["prepare-metadata-for-build-editable", metadata_directory], config_settings
-    )
+    return _call(["prepare-metadata-for-build-editable", metadata_directory], config_settings)
 
 
 def get_requires_for_build_sdist(

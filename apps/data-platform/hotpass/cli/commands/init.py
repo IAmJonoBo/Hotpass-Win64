@@ -138,9 +138,7 @@ def _command_handler(namespace: argparse.Namespace, profile: CLIProfile | None) 
                 SAMPLE_PREFECT_DEPLOYMENT,
                 namespace.force,
             ),
-            _write_file(
-                target / "data" / "README.md", SAMPLE_DATA_README, namespace.force
-            ),
+            _write_file(target / "data" / "README.md", SAMPLE_DATA_README, namespace.force),
         )
         if wrote
     )

@@ -42,9 +42,7 @@ class TestQG1CLIIntegrity:
             text=True,
         )
         expect(result.returncode == 0, "overview command should have --help")
-        expect(
-            "overview" in result.stdout.lower(), "overview help should mention itself"
-        )
+        expect("overview" in result.stdout.lower(), "overview help should mention itself")
 
     def test_refine_command_exists(self):
         """QG-1b: Refine command should be accessible."""
@@ -102,9 +100,7 @@ class TestQG1CLIIntegrity:
 
     def test_cli_main_help_shows_all_commands(self):
         """QG-1g: Main CLI help should show all commands."""
-        result = subprocess.run(
-            ["uv", "run", "hotpass", "--help"], capture_output=True, text=True
-        )
+        result = subprocess.run(["uv", "run", "hotpass", "--help"], capture_output=True, text=True)
 
         expect(result.returncode == 0, "hotpass --help should exit successfully")
 
@@ -192,8 +188,7 @@ class TestQG3EnrichmentChain:
         )
         expect(result.returncode == 0, "enrich --help should work")
         expect(
-            "allow-network" in result.stdout.lower()
-            or "allow_network" in result.stdout.lower(),
+            "allow-network" in result.stdout.lower() or "allow_network" in result.stdout.lower(),
             "enrich should have --allow-network flag",
         )
 
@@ -272,14 +267,10 @@ class TestQG4MCPDiscoverability:
         expect(payload.get("passed") is True, "QG-4 gate should pass on healthy repo")
         steps = payload.get("steps")
         expect(isinstance(steps, list), "QG-4 payload must include steps")
-        tool_step = next(
-            (step for step in steps if step.get("id") == "required-tools"), None
-        )
+        tool_step = next((step for step in steps if step.get("id") == "required-tools"), None)
         if not isinstance(tool_step, dict):
             raise AssertionError("QG-4 steps must include required-tools step")
-        expect(
-            tool_step.get("status") == "passed", "QG-4 required-tools step must pass"
-        )
+        expect(tool_step.get("status") == "passed", "QG-4 required-tools step must pass")
 
 
 class TestQG5DocsInstruction:
@@ -291,9 +282,7 @@ class TestQG5DocsInstruction:
     def test_copilot_instructions_exists(self):
         """QG-5a: .github/copilot-instructions.md should exist."""
         copilot_instructions = Path(".github/copilot-instructions.md")
-        expect(
-            copilot_instructions.exists(), ".github/copilot-instructions.md must exist"
-        )
+        expect(copilot_instructions.exists(), ".github/copilot-instructions.md must exist")
 
         content = copilot_instructions.read_text()
         expect(len(content) > 100, "copilot-instructions.md should not be empty")
@@ -372,9 +361,7 @@ class TestTechnicalAcceptance:
 
     def test_ta1_single_tool_rule_cli_verbs(self):
         """TA-1a: All operations accessible via uv run hotpass."""
-        result = subprocess.run(
-            ["uv", "run", "hotpass", "--help"], capture_output=True, text=True
-        )
+        result = subprocess.run(["uv", "run", "hotpass", "--help"], capture_output=True, text=True)
         expect(result.returncode == 0, "CLI should be accessible via uv run hotpass")
 
     def test_ta5_mcp_server_exists(self):
@@ -394,9 +381,7 @@ class TestTechnicalAcceptance:
             "Copilot instructions must exist",
         )
         expect(Path("AGENTS.md").exists(), "AGENTS.md must exist")
-        expect(
-            Path("IMPLEMENTATION_PLAN.md").exists(), "Implementation plan must exist"
-        )
+        expect(Path("IMPLEMENTATION_PLAN.md").exists(), "Implementation plan must exist")
 
     def test_ta_summary_artifact_written(self):
         """TA-8a: Consolidated TA summary should persist to dist/quality-gates."""
@@ -420,9 +405,7 @@ class TestTechnicalAcceptance:
             raise AssertionError(f"TA summary artifact must be JSON: {exc}") from exc
         expect(isinstance(payload, dict), "TA summary artifact must be a JSON object")
         history_path = Path("dist/quality-gates/history.ndjson")
-        expect(
-            history_path.exists(), "TA history log should exist after running all gates"
-        )
+        expect(history_path.exists(), "TA history log should exist after running all gates")
         expect(
             bool(history_path.read_text(encoding="utf-8").strip()),
             "TA history log should contain entries",

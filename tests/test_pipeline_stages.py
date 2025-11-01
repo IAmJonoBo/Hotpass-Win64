@@ -22,9 +22,7 @@ def _make_config(sample_data_dir: Path, tmp_path: Path) -> PipelineConfig:
     )
 
 
-def test_ingest_sources_normalises_inputs(
-    sample_data_dir: Path, tmp_path: Path
-) -> None:
+def test_ingest_sources_normalises_inputs(sample_data_dir: Path, tmp_path: Path) -> None:
     config = _make_config(sample_data_dir, tmp_path)
 
     combined, timings, warnings = ingest_sources(config)
@@ -75,11 +73,8 @@ def test_aggregate_records_prioritises_high_quality_data(
     assert list(refined["organization_name"]) == ["Aero School", "Heli Ops"]
 
     aero = refined.loc[refined["organization_name"] == "Aero School"].iloc[0]
-    datasets = {
-        part.strip() for part in str(aero["source_datasets"]).split(";") if part
-    }
-    assert datasets == {"Contact Database",
-                        "Reachout Database", "SACAA Cleaned"}
+    datasets = {part.strip() for part in str(aero["source_datasets"]).split(";") if part}
+    assert datasets == {"Contact Database", "Reachout Database", "SACAA Cleaned"}
     assert aero["contact_primary_email"] == "jane.doe@aero.example"
     assert "ops@aero.example" in str(aero["contact_secondary_emails"])
 

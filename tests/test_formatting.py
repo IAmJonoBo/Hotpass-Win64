@@ -5,9 +5,12 @@ import pytest
 
 pytest.importorskip("frictionless")
 
-from hotpass.formatting import (OutputFormat,  # noqa: E402
-                                apply_excel_formatting, create_summary_sheet,
-                                export_to_multiple_formats)
+from hotpass.formatting import (
+    OutputFormat,  # noqa: E402
+    apply_excel_formatting,
+    create_summary_sheet,
+    export_to_multiple_formats,
+)
 
 
 def test_output_format_defaults():
@@ -161,9 +164,7 @@ def test_export_to_multiple_formats_all(tmp_path):
     df = pd.DataFrame({"name": ["Alice", "Bob"], "age": [25, 30]})
 
     base_path = tmp_path / "output"
-    result = export_to_multiple_formats(
-        df, base_path, formats=["excel", "csv", "parquet", "json"]
-    )
+    result = export_to_multiple_formats(df, base_path, formats=["excel", "csv", "parquet", "json"])
 
     assert len(result) == 4
     assert all(path.exists() for path in result.values())

@@ -131,9 +131,7 @@ class DataOptimizer:
             if pd.notna(name) and name.strip():
                 validation_result = self.validate_cipc_company(name)
                 self.df.at[idx, "cipc_status"] = validation_result.get("status")
-                self.df.at[idx, "cipc_registration"] = validation_result.get(
-                    "registration_number"
-                )
+                self.df.at[idx, "cipc_registration"] = validation_result.get("registration_number")
                 self.df.at[idx, "cipc_confidence"] = validation_result.get("confidence")
 
                 validated_count += 1
@@ -214,12 +212,8 @@ class DataOptimizer:
 
                 self.df.at[idx, "latitude"] = geocode_result.get("latitude")
                 self.df.at[idx, "longitude"] = geocode_result.get("longitude")
-                self.df.at[idx, "address_formatted"] = geocode_result.get(
-                    "formatted_address"
-                )
-                self.df.at[idx, "province_geocoded"] = geocode_result.get(
-                    "province_validated"
-                )
+                self.df.at[idx, "address_formatted"] = geocode_result.get("formatted_address")
+                self.df.at[idx, "province_geocoded"] = geocode_result.get("province_validated")
                 self.df.at[idx, "area_geocoded"] = geocode_result.get("area_validated")
                 self.df.at[idx, "geocode_confidence"] = geocode_result.get("confidence")
 
@@ -265,9 +259,7 @@ class DataOptimizer:
             + (self.df.get("contact_primary_email_valid", False)).astype(int)
         ) / 4.0
 
-        logger.info(
-            "Optimization complete. Original: %d records", self.original_shape[0]
-        )
+        logger.info("Optimization complete. Original: %d records", self.original_shape[0])
         logger.info("Duplicates identified: %d groups", len(duplicate_groups))
 
         return self.df
@@ -286,12 +278,8 @@ if __name__ == "__main__":
     # Print summary
     duplicate_count = optimized_df["duplicate_group"].notna().sum()
     valid_websites = optimized_df["website_valid"].sum()
-    valid_primary_emails = optimized_df.get(
-        "contact_primary_email_valid", pd.Series()
-    ).sum()
-    valid_secondary_emails = optimized_df.get(
-        "contact_secondary_emails_valid", pd.Series()
-    ).sum()
+    valid_primary_emails = optimized_df.get("contact_primary_email_valid", pd.Series()).sum()
+    valid_secondary_emails = optimized_df.get("contact_secondary_emails_valid", pd.Series()).sum()
 
     print("\nOptimization Summary:")
     print(f"Total records: {len(optimized_df)}")
@@ -299,6 +287,4 @@ if __name__ == "__main__":
     print(f"Valid websites: {valid_websites}")
     print(f"Valid primary emails: {valid_primary_emails}")
     print(f"Valid secondary emails: {valid_secondary_emails}")
-    print(
-        f"Average optimization score: {optimized_df['optimization_score'].mean():.2f}"
-    )
+    print(f"Average optimization score: {optimized_df['optimization_score'].mean():.2f}")

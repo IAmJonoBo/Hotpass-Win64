@@ -11,32 +11,30 @@ from typing import Any
 import pandas as pd
 import requests
 from hotpass.automation.hooks import dispatch_webhooks, push_crm_updates
-from hotpass.automation.http import (AutomationCircuitBreakerPolicy,
-                                     AutomationHTTPClient,
-                                     AutomationHTTPConfig,
-                                     AutomationRetryPolicy, DeadLetterQueue)
+from hotpass.automation.http import (
+    AutomationCircuitBreakerPolicy,
+    AutomationHTTPClient,
+    AutomationHTTPConfig,
+    AutomationRetryPolicy,
+    DeadLetterQueue,
+)
 from hotpass.telemetry.metrics import PipelineMetrics
 from requests.auth import AuthBase
 from requests.cookies import RequestsCookieJar
 from requests.models import PreparedRequest
 from requests.structures import CaseInsensitiveDict
 
-AuthLike = (
-    tuple[str, str] | AuthBase | Callable[[PreparedRequest], PreparedRequest] | None
-)
+AuthLike = tuple[str, str] | AuthBase | Callable[[PreparedRequest], PreparedRequest] | None
 HookMap = (
     Mapping[
         str,
-        Iterable[Callable[[requests.Response], Any]]
-        | Callable[[requests.Response], Any],
+        Iterable[Callable[[requests.Response], Any]] | Callable[[requests.Response], Any],
     ]
     | None
 )
 
 
-def _make_response(
-    status_code: int, *, headers: dict[str, str] | None = None
-) -> requests.Response:
+def _make_response(status_code: int, *, headers: dict[str, str] | None = None) -> requests.Response:
     response = requests.Response()
     response.status_code = status_code
     response._content = b"{}"
@@ -156,12 +154,8 @@ def test_http_client_retries_and_preserves_idempotency() -> None:
     session = FakeSession(responses)
     config = AutomationHTTPConfig(
         timeout=1.0,
-        retry=AutomationRetryPolicy(
-            attempts=3, backoff_factor=0, status_forcelist=(503,)
-        ),
-        circuit_breaker=AutomationCircuitBreakerPolicy(
-            failure_threshold=5, recovery_time=1.0
-        ),
+        retry=AutomationRetryPolicy(attempts=3, backoff_factor=0, status_forcelist=(503,)),
+        circuit_breaker=AutomationCircuitBreakerPolicy(failure_threshold=5, recovery_time=1.0),
     )
 
     client = AutomationHTTPClient(
@@ -172,18 +166,13 @@ def test_http_client_retries_and_preserves_idempotency() -> None:
         idempotency_key_factory=lambda: "fixed-key",
     )
 
-    result = client.post_json(
-        "https://automation.test/webhook", payload={"hello": "world"}
-    )
+    result = client.post_json("https://automation.test/webhook", payload={"hello": "world"})
 
     assert result.status_code == 200
     assert result.attempts == 3
     assert result.idempotency_key == "fixed-key"
     assert session.calls[0]["headers"][config.idempotency_header] == "fixed-key"
-    assert all(
-        call["headers"][config.idempotency_header] == "fixed-key"
-        for call in session.calls
-    )
+    assert all(call["headers"][config.idempotency_header] == "fixed-key" for call in session.calls)
 
 
 def test_dispatch_webhooks_records_metrics_and_logs_success() -> None:
@@ -192,9 +181,7 @@ def test_dispatch_webhooks_records_metrics_and_logs_success() -> None:
     digest = pd.DataFrame([{"id": 1, "score": 0.9}])
 
     session = FakeSession([_make_response(200), _make_response(200)])
-    client = AutomationHTTPClient(
-        AutomationHTTPConfig(), session=session, sleep=lambda _: None
-    )
+    client = AutomationHTTPClient(AutomationHTTPConfig(), session=session, sleep=lambda _: None)
 
     report = dispatch_webhooks(
         digest,
@@ -222,9 +209,7 @@ def test_push_crm_updates_persists_dead_letter_on_failure(tmp_path: Path) -> Non
     failing_client = AutomationHTTPClient(
         AutomationHTTPConfig(
             timeout=1.0,
-            retry=AutomationRetryPolicy(
-                attempts=1, backoff_factor=0.0, backoff_max=0.0
-            ),
+            retry=AutomationRetryPolicy(attempts=1, backoff_factor=0.0, backoff_max=0.0),
         ),
         session=failing_session,
         sleep=lambda _: None,

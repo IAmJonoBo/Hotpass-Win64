@@ -129,9 +129,7 @@ def validate_profile_structure(profile: dict[str, Any], profile_name: str) -> li
                 errors.append(f"compliance block missing required field: {field}")
 
         # Validate pii_fields
-        if "pii_fields" in compliance and not isinstance(
-            compliance["pii_fields"], list
-        ):
+        if "pii_fields" in compliance and not isinstance(compliance["pii_fields"], list):
             errors.append("compliance.pii_fields must be a list")
 
     # Check authority sources (optional)
@@ -148,9 +146,7 @@ def validate_profile_structure(profile: dict[str, Any], profile_name: str) -> li
                     errors.append(f"authority_sources[{index}] missing 'name'")
                 cache_key = source.get("cache_key")
                 if cache_key is not None and not isinstance(cache_key, str):
-                    errors.append(
-                        f"authority_sources[{index}].cache_key must be a string"
-                    )
+                    errors.append(f"authority_sources[{index}].cache_key must be a string")
                 category = source.get("category", "registry")
                 if category not in {"registry", "directory", "dataset"}:
                     errors.append(
@@ -171,9 +167,7 @@ def validate_profile_structure(profile: dict[str, Any], profile_name: str) -> li
                 errors.append("research_backfill.confidence_threshold must be numeric")
             elif isinstance(threshold, (int, float)):
                 if not 0 <= threshold <= 1:
-                    errors.append(
-                        "research_backfill.confidence_threshold must be between 0 and 1"
-                    )
+                    errors.append("research_backfill.confidence_threshold must be between 0 and 1")
 
     research_rate_limit = profile.get("research_rate_limit")
     if research_rate_limit is not None:
@@ -182,16 +176,12 @@ def validate_profile_structure(profile: dict[str, Any], profile_name: str) -> li
         else:
             min_interval = research_rate_limit.get("min_interval_seconds")
             if min_interval is not None and not isinstance(min_interval, (int, float)):
-                errors.append(
-                    "research_rate_limit.min_interval_seconds must be numeric"
-                )
+                errors.append("research_rate_limit.min_interval_seconds must be numeric")
             elif isinstance(min_interval, (int, float)) and min_interval < 0:
                 errors.append("research_rate_limit.min_interval_seconds must be >= 0")
             burst = research_rate_limit.get("burst")
             if burst is not None and (not isinstance(burst, int) or burst <= 0):
-                errors.append(
-                    "research_rate_limit.burst must be a positive integer when provided"
-                )
+                errors.append("research_rate_limit.burst must be a positive integer when provided")
 
     return errors
 
@@ -237,9 +227,7 @@ def main() -> int:
     Returns:
         Exit code (0 for success, 1 for failure)
     """
-    parser = argparse.ArgumentParser(
-        description="Lint Hotpass industry profiles for completeness"
-    )
+    parser = argparse.ArgumentParser(description="Lint Hotpass industry profiles for completeness")
     parser.add_argument(
         "--profile",
         type=str,
@@ -310,9 +298,7 @@ def main() -> int:
         return 0
 
     if not args.profiles_dir.exists():
-        print(
-            f"Error: Profiles directory not found: {args.profiles_dir}", file=sys.stderr
-        )
+        print(f"Error: Profiles directory not found: {args.profiles_dir}", file=sys.stderr)
         return 1
 
     # Lint specific profile or all profiles

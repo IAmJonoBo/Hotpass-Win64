@@ -20,9 +20,7 @@ from typing import Any
 import yaml
 
 
-def migrate_profile(
-    profile_path: Path, output_path: Path | None = None
-) -> dict[str, Any]:
+def migrate_profile(profile_path: Path, output_path: Path | None = None) -> dict[str, Any]:
     """
     Migrate a profile from old format to new 4-block schema.
 
@@ -44,9 +42,7 @@ def migrate_profile(
 
     migrated = {
         "name": profile.get("name", profile_path.stem),
-        "display_name": profile.get(
-            "display_name", profile.get("name", profile_path.stem)
-        ),
+        "display_name": profile.get("display_name", profile.get("name", profile_path.stem)),
     }
 
     # Migrate Block 1: Ingest
@@ -250,9 +246,7 @@ def check_all_profiles(profiles_dir: Path) -> int:
 
 def main() -> int:
     """Main entry point."""
-    parser = argparse.ArgumentParser(
-        description="Migrate industry profiles to new schema"
-    )
+    parser = argparse.ArgumentParser(description="Migrate industry profiles to new schema")
     parser.add_argument(
         "profile",
         type=str,

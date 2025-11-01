@@ -31,9 +31,7 @@ class QueryAdapter(AbstractContextManager["QueryAdapter"], ABC):
         """Register a dataset with the adapter under the provided name."""
 
     @abstractmethod
-    def execute(
-        self, sql: str, *, parameters: Sequence[Any] | None = None
-    ) -> pl.DataFrame:
+    def execute(self, sql: str, *, parameters: Sequence[Any] | None = None) -> pl.DataFrame:
         """Execute a query and return the results as a Polars DataFrame."""
 
     @abstractmethod

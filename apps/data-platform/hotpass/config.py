@@ -31,9 +31,7 @@ class IndustryProfile(ProfileConfig):
         return self.model_dump(mode="json")
 
 
-def load_industry_profile(
-    profile_name: str, config_dir: Path | None = None
-) -> IndustryProfile:
+def load_industry_profile(profile_name: str, config_dir: Path | None = None) -> IndustryProfile:
     """Load an industry profile from configuration directory."""
     if config_dir is None:
         config_dir = Path(__file__).parent / "profiles"

@@ -102,14 +102,10 @@ def _command_handler(namespace: argparse.Namespace, profile: CLIProfile | None) 
         checks_to_run.append(("Fitness Functions", run_fitness_functions))
 
     if namespace.target in ("all", "data-quality"):
-        checks_to_run.append(
-            ("Data Quality (GE)", lambda: run_data_quality(profile_name))
-        )
+        checks_to_run.append(("Data Quality (GE)", lambda: run_data_quality(profile_name)))
 
     if namespace.target in ("all", "profiles"):
-        checks_to_run.append(
-            ("Profile Validation", lambda: run_profile_validation(profile_name))
-        )
+        checks_to_run.append(("Profile Validation", lambda: run_profile_validation(profile_name)))
 
     if namespace.target in ("all", "contracts"):
         checks_to_run.append(("Contract Checks", run_contract_checks))
@@ -210,9 +206,7 @@ def _summarize_gate_success(payload: dict[str, Any] | None) -> str:
 
     data_docs = payload.get("data_docs")
     if isinstance(data_docs, str):
-        summary = (
-            f"{summary or 'Gate completed successfully'}; Data Docs at {data_docs}"
-        )
+        summary = f"{summary or 'Gate completed successfully'}; Data Docs at {data_docs}"
 
     return summary or "Gate completed successfully"
 

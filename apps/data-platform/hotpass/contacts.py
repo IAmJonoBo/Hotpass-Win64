@@ -6,10 +6,13 @@ from dataclasses import dataclass, field
 from typing import Any
 
 import pandas as pd
-from hotpass.enrichment.validators import (ContactValidationService,
-                                           EmailValidationResult,
-                                           PhoneValidationResult,
-                                           ValidationStatus, logistic_scale)
+from hotpass.enrichment.validators import (
+    ContactValidationService,
+    EmailValidationResult,
+    PhoneValidationResult,
+    ValidationStatus,
+    logistic_scale,
+)
 from hotpass.transform.scoring import LeadScorer
 
 _VALIDATION_SERVICE = ContactValidationService()
@@ -227,9 +230,7 @@ class OrganizationContacts:
             contact.validation_flags = []
             source_score = 0.0
             if contact.source_dataset and max_priority:
-                source_score = (
-                    source_priority.get(contact.source_dataset, 0) / max_priority
-                )
+                source_score = source_priority.get(contact.source_dataset, 0) / max_priority
             completeness = contact.calculate_completeness()
             role_score = 0.5
             if contact.role:
@@ -250,16 +251,12 @@ class OrganizationContacts:
                 ValidationStatus.RISKY,
                 ValidationStatus.UNDELIVERABLE,
             }:
-                contact.validation_flags.append(
-                    f"email:{contact.email_validation.status.value}"
-                )
+                contact.validation_flags.append(f"email:{contact.email_validation.status.value}")
             if contact.phone_validation and contact.phone_validation.status in {
                 ValidationStatus.RISKY,
                 ValidationStatus.UNDELIVERABLE,
             }:
-                contact.validation_flags.append(
-                    f"phone:{contact.phone_validation.status.value}"
-                )
+                contact.validation_flags.append(f"phone:{contact.phone_validation.status.value}")
             verification_score = 0.0
             if email_confidence or phone_confidence:
                 verification_score = logistic_scale(
@@ -267,18 +264,12 @@ class OrganizationContacts:
                     / (2 if email_confidence and phone_confidence else 1)
                 )
                 if contact.email_validation:
-                    if (
-                        contact.email_validation.status
-                        is ValidationStatus.UNDELIVERABLE
-                    ):
+                    if contact.email_validation.status is ValidationStatus.UNDELIVERABLE:
                         verification_score *= 0.3
                     elif contact.email_validation.status is ValidationStatus.RISKY:
                         verification_score *= 0.65
                 if contact.phone_validation:
-                    if (
-                        contact.phone_validation.status
-                        is ValidationStatus.UNDELIVERABLE
-                    ):
+                    if contact.phone_validation.status is ValidationStatus.UNDELIVERABLE:
                         verification_score *= 0.4
                     elif contact.phone_validation.status is ValidationStatus.RISKY:
                         verification_score *= 0.7
@@ -302,11 +293,7 @@ class OrganizationContacts:
                 + lead_score * lead_weight
             )
             denominator = (
-                recency_weight
-                + completeness_weight
-                + role_weight
-                + validation_weight
-                + lead_weight
+                recency_weight + completeness_weight + role_weight + validation_weight + lead_weight
             )
             contact.preference_score = numerator / denominator if denominator else 0.0
 
@@ -358,18 +345,10 @@ class OrganizationContacts:
         }
         secondary = [c for c in self.contacts if c != primary]
         if secondary:
-            result["contact_secondary_emails"] = ";".join(
-                [c.email for c in secondary if c.email]
-            )
-            result["contact_secondary_phones"] = ";".join(
-                [c.phone for c in secondary if c.phone]
-            )
-            result["contact_secondary_names"] = ";".join(
-                [c.name for c in secondary if c.name]
-            )
-            result["contact_secondary_roles"] = ";".join(
-                [c.role for c in secondary if c.role]
-            )
+            result["contact_secondary_emails"] = ";".join([c.email for c in secondary if c.email])
+            result["contact_secondary_phones"] = ";".join([c.phone for c in secondary if c.phone])
+            result["contact_secondary_names"] = ";".join([c.name for c in secondary if c.name])
+            result["contact_secondary_roles"] = ";".join([c.role for c in secondary if c.role])
         else:
             result["contact_secondary_emails"] = None
             result["contact_secondary_phones"] = None
@@ -378,9 +357,7 @@ class OrganizationContacts:
         result["total_contacts"] = len(self.contacts)
         result["contacts_with_email"] = sum(1 for c in self.contacts if c.email)
         result["contacts_with_phone"] = sum(1 for c in self.contacts if c.phone)
-        aggregated_flags = sorted(
-            {flag for c in self.contacts for flag in c.validation_flags}
-        )
+        aggregated_flags = sorted({flag for c in self.contacts for flag in c.validation_flags})
         result["contact_validation_flags"] = (
             ";".join(aggregated_flags) if aggregated_flags else None
         )
@@ -408,9 +385,7 @@ class OrganizationContacts:
                 for contact in self.contacts
                 if contact.verification_score
             ]
-            leads = [
-                contact.lead_score for contact in self.contacts if contact.lead_score
-            ]
+            leads = [contact.lead_score for contact in self.contacts if contact.lead_score]
 
             def _avg(values: list[float]) -> float | None:
                 if not values:
@@ -426,9 +401,7 @@ class OrganizationContacts:
 
         result["contact_email_confidence_avg"] = _format_metric("email_confidence_avg")
         result["contact_phone_confidence_avg"] = _format_metric("phone_confidence_avg")
-        result["contact_verification_score_avg"] = _format_metric(
-            "verification_score_avg"
-        )
+        result["contact_verification_score_avg"] = _format_metric("verification_score_avg")
         result["contact_lead_score_avg"] = _format_metric("lead_score_avg")
 
         return result

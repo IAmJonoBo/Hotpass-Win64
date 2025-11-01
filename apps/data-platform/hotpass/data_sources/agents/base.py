@@ -43,18 +43,14 @@ class AcquisitionAgent(Protocol):
 
     name: str
 
-    def collect(
-        self, context: AgentContext
-    ) -> AgentResult:  # pragma: no cover - protocol
+    def collect(self, context: AgentContext) -> AgentResult:  # pragma: no cover - protocol
         """Collect records for the provided context."""
 
 
 class TargetResolver(Protocol):
     """Protocol that resolves runtime targets for an agent."""
 
-    def resolve(
-        self, agent: AgentDefinition
-    ) -> Sequence[TargetDefinition]:  # pragma: no cover
+    def resolve(self, agent: AgentDefinition) -> Sequence[TargetDefinition]:  # pragma: no cover
         """Return the targets that should be processed for the agent."""
 
 

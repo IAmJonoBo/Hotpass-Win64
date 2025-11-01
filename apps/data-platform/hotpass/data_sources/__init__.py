@@ -11,9 +11,14 @@ from typing import Any
 import pandas as pd
 
 from ..enrichment.validators import ContactValidationService
-from ..normalization import (clean_string, join_non_empty, normalize_email,
-                             normalize_phone, normalize_province,
-                             normalize_website)
+from ..normalization import (
+    clean_string,
+    join_non_empty,
+    normalize_email,
+    normalize_phone,
+    normalize_province,
+    normalize_website,
+)
 from ..validation import validate_with_expectations, validate_with_frictionless
 
 _CONTACT_VALIDATOR = ContactValidationService()
@@ -73,10 +78,7 @@ def _read_excel(
     if options and options.should_stage():
         stage_dir = options.resolve_stage_dir(workbook_path)
         stage_dir.mkdir(parents=True, exist_ok=True)
-        stage_path = (
-            stage_dir
-            / f"{workbook_path.stem}__{_sanitise_sheet_name(sheet_name)}.parquet"
-        )
+        stage_path = stage_dir / f"{workbook_path.stem}__{_sanitise_sheet_name(sheet_name)}.parquet"
         try:
             frame.to_parquet(stage_path, index=False)
         except ImportError as exc:  # pragma: no cover - optional dependency
@@ -204,9 +206,7 @@ def _normalise_contacts(
             email_value = email_candidates
         phones: list[str] = []
         for field in phone_fields:
-            normalised_phone = normalize_phone(
-                row.get(field), country_code=country_code
-            )
+            normalised_phone = normalize_phone(row.get(field), country_code=country_code)
             if normalised_phone:
                 phones.append(normalised_phone)
         role = clean_string(row.get(role_field)) if role_field else None
@@ -289,9 +289,7 @@ def load_reachout_database(
         if not org_name:
             continue
         group = (
-            contact_groups.get_group(org_id)
-            if org_id in contact_groups.groups
-            else pd.DataFrame()
+            contact_groups.get_group(org_id) if org_id in contact_groups.groups else pd.DataFrame()
         )
         contacts = _normalise_contacts(
             group,
@@ -395,9 +393,7 @@ def load_contact_database(
     address_map: dict[str, str] = {}
     for _, addr in addresses_df.iterrows():
         cid = addr.get("C_ID")
-        address = join_non_empty(
-            [addr.get("Airport"), addr.get("Unnamed: 4")], separator=", "
-        )
+        address = join_non_empty([addr.get("Airport"), addr.get("Unnamed: 4")], separator=", ")
         if cid not in address_map and address:
             address_map[cid] = address
 
@@ -418,9 +414,7 @@ def load_contact_database(
             continue
         cid = company.get("C_ID")
         contacts_subset = (
-            contacts_grouped.get_group(cid)
-            if cid in contacts_grouped.groups
-            else pd.DataFrame()
+            contacts_grouped.get_group(cid) if cid in contacts_grouped.groups else pd.DataFrame()
         )
         contacts = _normalise_contacts(
             contacts_subset,
@@ -457,9 +451,7 @@ def load_contact_database(
     return pd.DataFrame([record.as_dict() for record in records])
 
 
-def _annotate_contact_verification(
-    df: pd.DataFrame, *, country_code: str
-) -> pd.DataFrame:
+def _annotate_contact_verification(df: pd.DataFrame, *, country_code: str) -> pd.DataFrame:
     if df.empty:
         return df
 
@@ -526,9 +518,7 @@ def load_sacaa_cleaned(
         contact_row = {
             "name": clean_string(row.get("Contact Person")),
             "email": contact_email,
-            "phones": [
-                normalize_phone(row.get("Contact Number"), country_code=country_code)
-            ],
+            "phones": [normalize_phone(row.get("Contact Number"), country_code=country_code)],
             "role": None,
         }
         names, roles, emails, phones = _split_contact_fields([contact_row])

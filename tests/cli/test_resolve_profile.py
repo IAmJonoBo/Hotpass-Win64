@@ -12,7 +12,6 @@ from hotpass.cli.main import main as cli_main
 from hotpass.linkage import LabelStudioConfig
 
 
-
 def expect(condition: bool, message: str) -> None:
     if not condition:
         raise AssertionError(message)
@@ -31,9 +30,7 @@ class DummyLogger:
         self.events.append((name, payload))
 
 
-def test_resolve_profile_defaults(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_resolve_profile_defaults(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     input_path = tmp_path / "duplicates.csv"
     output_path = tmp_path / "deduped.csv"
     dataset = pd.DataFrame(
@@ -63,9 +60,7 @@ sensitive_fields = ["contact_email"]
 
     captured: dict[str, object] = {}
 
-    def fake_structured_logger(
-        log_format: str, sensitive_fields: tuple[str, ...]
-    ) -> DummyLogger:
+    def fake_structured_logger(log_format: str, sensitive_fields: tuple[str, ...]) -> DummyLogger:
         captured["log_format"] = log_format
         captured["sensitive_fields"] = tuple(sensitive_fields)
         return DummyLogger()
@@ -85,12 +80,8 @@ sensitive_fields = ["contact_email"]
         captured["threshold_review"] = config.thresholds.review
         return DummyResult(df.iloc[[0]].copy())
 
-    monkeypatch.setattr(
-        "hotpass.cli.commands.resolve.StructuredLogger", fake_structured_logger
-    )
-    monkeypatch.setattr(
-        "hotpass.cli.commands.resolve.link_entities", fake_link_entities
-    )
+    monkeypatch.setattr("hotpass.cli.commands.resolve.StructuredLogger", fake_structured_logger)
+    monkeypatch.setattr("hotpass.cli.commands.resolve.link_entities", fake_link_entities)
 
     exit_code = cli_main(
         [
@@ -106,9 +97,7 @@ sensitive_fields = ["contact_email"]
 
     expect(exit_code == 0, "Resolve command should succeed with advanced profile")
     expect(output_path.exists(), "Deduplicated output should be written")
-    expect(
-        captured.get("log_format") == "json", "Profile should enforce JSON log format"
-    )
+    expect(captured.get("log_format") == "json", "Profile should enforce JSON log format")
     sensitive_fields = captured.get("sensitive_fields", ())
     expect(
         isinstance(sensitive_fields, tuple) and "contact_email" in sensitive_fields,
@@ -182,17 +171,15 @@ def test_resolve_profile_supports_label_studio_configuration(
 ) -> None:
     input_path = tmp_path / "input.csv"
     output_path = tmp_path / "deduped.csv"
-    pd.DataFrame(
-        {"organization_name": ["Example"], "contact_email": ["one@example.com"]}
-    ).to_csv(input_path, index=False)
+    pd.DataFrame({"organization_name": ["Example"], "contact_email": ["one@example.com"]}).to_csv(
+        input_path, index=False
+    )
 
     captured: dict[str, Any] = {}
 
     class DummyResult:
         def __init__(self) -> None:
-            frame = pd.DataFrame(
-                {"organization_name": ["Example"], "classification": ["match"]}
-            )
+            frame = pd.DataFrame({"organization_name": ["Example"], "classification": ["match"]})
             self.deduplicated = frame[["organization_name"]]
             self.matches = frame
             self.review_queue = pd.DataFrame()
@@ -203,9 +190,7 @@ def test_resolve_profile_supports_label_studio_configuration(
 
     monkeypatch.delenv("FEATURE_ENABLE_REMOTE_RESEARCH", raising=False)
     monkeypatch.delenv("ALLOW_NETWORK_RESEARCH", raising=False)
-    monkeypatch.setattr(
-        "hotpass.cli.commands.resolve.link_entities", fake_link_entities
-    )
+    monkeypatch.setattr("hotpass.cli.commands.resolve.link_entities", fake_link_entities)
 
     exit_code = cli_main(
         [

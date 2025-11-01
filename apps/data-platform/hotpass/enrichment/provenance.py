@@ -159,20 +159,14 @@ class ProvenanceTracker:
                 # Sort by confidence and use the best entry
                 best_entry = max(entries, key=lambda e: e.confidence)
                 provenance_data["provenance_source"].append(best_entry.source)
-                provenance_data["provenance_timestamp"].append(
-                    best_entry.timestamp.isoformat()
-                )
+                provenance_data["provenance_timestamp"].append(best_entry.timestamp.isoformat())
                 provenance_data["provenance_confidence"].append(best_entry.confidence)
                 provenance_data["provenance_strategy"].append(best_entry.strategy)
-                provenance_data["provenance_network_status"].append(
-                    best_entry.network_status
-                )
+                provenance_data["provenance_network_status"].append(best_entry.network_status)
             else:
                 # No enrichment for this row
                 provenance_data["provenance_source"].append("original")
-                provenance_data["provenance_timestamp"].append(
-                    datetime.now(UTC).isoformat()
-                )
+                provenance_data["provenance_timestamp"].append(datetime.now(UTC).isoformat())
                 provenance_data["provenance_confidence"].append(1.0)
                 provenance_data["provenance_strategy"].append("none")
                 provenance_data["provenance_network_status"].append("not_used")

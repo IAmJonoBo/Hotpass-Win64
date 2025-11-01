@@ -5,9 +5,14 @@ from __future__ import annotations
 from collections.abc import Mapping, MutableMapping
 from typing import Any
 
-from .base import (BaseRegistryAdapter, RegistryConfigurationError,
-                   RegistryError, RegistryRateLimitError, RegistryResponse,
-                   RegistryTransportError)
+from .base import (
+    BaseRegistryAdapter,
+    RegistryConfigurationError,
+    RegistryError,
+    RegistryRateLimitError,
+    RegistryResponse,
+    RegistryTransportError,
+)
 from .cipc import CIPCRegistryAdapter
 from .sacaa import SACAARegistryAdapter
 

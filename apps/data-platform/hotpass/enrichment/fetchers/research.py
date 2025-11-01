@@ -65,9 +65,7 @@ def requires_network(func: Callable[..., Any]) -> Callable[..., Any]:
         # Check environment variables
         feature_enabled = os.getenv("FEATURE_ENABLE_REMOTE_RESEARCH", "0") == "1"
         if not feature_enabled:
-            logger.debug(
-                "Network fetch skipped: FEATURE_ENABLE_REMOTE_RESEARCH not enabled"
-            )
+            logger.debug("Network fetch skipped: FEATURE_ENABLE_REMOTE_RESEARCH not enabled")
             return None
 
         runtime_allowed = os.getenv("ALLOW_NETWORK_RESEARCH", "false").lower() in (

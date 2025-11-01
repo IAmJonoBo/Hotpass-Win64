@@ -126,9 +126,7 @@ def test_broker_agent_run_executes_pipeline_with_approval() -> None:
     )
     log_sink: list[orchestration.AgentAuditRecord] = []
 
-    with patch(
-        "hotpass.orchestration.run_pipeline_once", return_value=summary
-    ) as mock_runner:
+    with patch("hotpass.orchestration.run_pipeline_once", return_value=summary) as mock_runner:
         result = orchestration.broker_agent_run(
             request,
             policy,

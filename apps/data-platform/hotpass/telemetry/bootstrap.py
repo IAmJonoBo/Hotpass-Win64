@@ -7,8 +7,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass, field
 from typing import Any
 
-from ..observability import (get_pipeline_metrics, initialize_observability,
-                             shutdown_observability)
+from ..observability import get_pipeline_metrics, initialize_observability, shutdown_observability
 from .metrics import PipelineMetrics
 
 
@@ -21,9 +20,7 @@ class TelemetryBootstrapOptions:
     environment: str | None = None
     exporters: tuple[str, ...] = field(default_factory=tuple)
     resource_attributes: Mapping[str, str | None] = field(default_factory=dict)
-    exporter_settings: Mapping[str, Mapping[str, Any] | object] = field(
-        default_factory=dict
-    )
+    exporter_settings: Mapping[str, Mapping[str, Any] | object] = field(default_factory=dict)
 
     def resolved_exporters(self) -> tuple[str, ...]:
         """Return the exporter tuple accounting for enabled state and defaults."""
@@ -97,9 +94,7 @@ def telemetry_session(
     if not options.enabled:
         yield None
     else:
-        metrics = bootstrap_metrics(
-            options, additional_attributes=additional_attributes
-        )
+        metrics = bootstrap_metrics(options, additional_attributes=additional_attributes)
         try:
             yield metrics
         finally:

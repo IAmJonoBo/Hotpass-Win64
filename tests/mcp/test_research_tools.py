@@ -191,9 +191,7 @@ async def test_plan_research_includes_rate_limit(tmp_path, monkeypatch):
         },
     )
 
-    expect(
-        result["success"] is True, "Plan research should succeed with custom profile"
-    )
+    expect(result["success"] is True, "Plan research should succeed with custom profile")
     plan = result["outcome"]["plan"]
     rate_limit = plan.get("rate_limit")
     if rate_limit is None:

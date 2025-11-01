@@ -46,9 +46,7 @@ def build(
         parents=[shared.base, shared.pipeline, shared.reporting, shared.excel],
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    parser.add_argument(
-        "--start-date", type=_parse_date, help="Inclusive ISO start date"
-    )
+    parser.add_argument("--start-date", type=_parse_date, help="Inclusive ISO start date")
     parser.add_argument("--end-date", type=_parse_date, help="Inclusive ISO end date")
     parser.add_argument(
         "--version",
@@ -127,9 +125,7 @@ def _command_handler(namespace: argparse.Namespace, profile: CLIProfile | None) 
             concurrency_limit=options.concurrency_limit,
             concurrency_key=options.concurrency_key,
         )
-    except (
-        Exception
-    ) as exc:  # pragma: no cover - defensive guard for unexpected Prefect errors
+    except Exception as exc:  # pragma: no cover - defensive guard for unexpected Prefect errors
         logger.log_error(f"Backfill failed: {exc}")
         return 1
 
@@ -181,19 +177,11 @@ def _resolve_backfill_options(
                     )
                 )
 
-    archive_root = (
-        getattr(namespace, "archive_root", None) or backfill_config.archive_root
-    )
-    restore_root = (
-        getattr(namespace, "restore_root", None) or backfill_config.restore_root
-    )
-    archive_pattern = (
-        getattr(namespace, "archive_pattern", None) or backfill_config.archive_pattern
-    )
+    archive_root = getattr(namespace, "archive_root", None) or backfill_config.archive_root
+    restore_root = getattr(namespace, "restore_root", None) or backfill_config.restore_root
+    archive_pattern = getattr(namespace, "archive_pattern", None) or backfill_config.archive_pattern
     concurrency_limit_raw = getattr(namespace, "concurrency_limit", None)
-    concurrency_key = (
-        getattr(namespace, "concurrency_key", None) or backfill_config.concurrency_key
-    )
+    concurrency_key = getattr(namespace, "concurrency_key", None) or backfill_config.concurrency_key
 
     if concurrency_limit_raw is None:
         concurrency_limit_raw = backfill_config.concurrency_limit
@@ -214,9 +202,7 @@ def _resolve_backfill_options(
     )
 
 
-def _expand_runs(
-    start: date, end: date, versions: Iterable[str]
-) -> list[dict[str, str]]:
+def _expand_runs(start: date, end: date, versions: Iterable[str]) -> list[dict[str, str]]:
     runs: list[dict[str, str]] = []
     cursor = start
     while cursor <= end:

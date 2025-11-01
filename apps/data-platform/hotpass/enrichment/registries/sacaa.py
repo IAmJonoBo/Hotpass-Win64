@@ -5,9 +5,15 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
-from .base import (BaseRegistryAdapter, RegistryResponse,
-                   RegistryTransportError, clean_text, normalise_address,
-                   normalise_date, normalise_officer)
+from .base import (
+    BaseRegistryAdapter,
+    RegistryResponse,
+    RegistryTransportError,
+    clean_text,
+    normalise_address,
+    normalise_date,
+    normalise_officer,
+)
 
 
 class SACAARegistryAdapter(BaseRegistryAdapter):
@@ -31,9 +37,7 @@ class SACAARegistryAdapter(BaseRegistryAdapter):
         body = self._json(response)
         status = response.status_code
         if status is not None and status >= 500:
-            raise RegistryTransportError(
-                f"{self.registry.upper()} service error ({status})"
-            )
+            raise RegistryTransportError(f"{self.registry.upper()} service error ({status})")
 
         data = _extract_data(body)
         if not data:
@@ -125,9 +129,7 @@ def _normalise_entry(entry: Mapping[str, Any]) -> dict[str, Any]:
         "officers": officers,
         "extra": {
             "aircraft": (
-                entry.get("aircraft")
-                if isinstance(entry.get("aircraft"), list)
-                else None
+                entry.get("aircraft") if isinstance(entry.get("aircraft"), list) else None
             ),
         },
     }

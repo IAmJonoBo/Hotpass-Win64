@@ -88,9 +88,7 @@ class LookupTableFetcher:
             return None
 
         # Search for match
-        matches = lookup_table[
-            lookup_table["organization_name"].str.lower() == org_name.lower()
-        ]
+        matches = lookup_table[lookup_table["organization_name"].str.lower() == org_name.lower()]
 
         if matches.empty:
             return None

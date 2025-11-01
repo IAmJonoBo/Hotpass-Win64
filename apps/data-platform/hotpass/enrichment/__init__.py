@@ -36,9 +36,14 @@ try:
 except ImportError:
     TRAFILATURA_AVAILABLE = False
 
-from .registries import (RegistryConfigurationError, RegistryError,
-                         RegistryRateLimitError, RegistryResponse,
-                         RegistryTransportError, get_registry_adapter)
+from .registries import (
+    RegistryConfigurationError,
+    RegistryError,
+    RegistryRateLimitError,
+    RegistryResponse,
+    RegistryTransportError,
+    get_registry_adapter,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -95,9 +100,7 @@ def _load_registry_options(
     return config
 
 
-def _initialise_website_enrichment(
-    df: pd.DataFrame, website_column: str
-) -> pd.DataFrame | None:
+def _initialise_website_enrichment(df: pd.DataFrame, website_column: str) -> pd.DataFrame | None:
     """Prepare dataframe for website enrichment by adding enrichment columns.
 
     Args:
@@ -140,9 +143,7 @@ def _apply_website_content(df: pd.DataFrame, idx: int, content: dict[str, Any]) 
 class CacheManager:
     """Simple SQLite-based cache for API responses and web content."""
 
-    def __init__(
-        self, db_path: str = "data/.cache/enrichment.db", ttl_hours: int = 168
-    ):
+    def __init__(self, db_path: str = "data/.cache/enrichment.db", ttl_hours: int = 168):
         """Initialize cache manager.
 
         Args:
@@ -199,9 +200,7 @@ class CacheManager:
             Cached value if found and not expired, None otherwise
         """
         with self._connect() as conn:
-            cursor = conn.execute(
-                "SELECT value, created_at FROM cache WHERE key = ?", (key,)
-            )
+            cursor = conn.execute("SELECT value, created_at FROM cache WHERE key = ?", (key,))
             row = cursor.fetchone()
 
             if row is None:
@@ -297,9 +296,7 @@ class CacheManager:
             }
 
 
-def extract_website_content(
-    url: str, cache: CacheManager | None = None
-) -> dict[str, Any]:
+def extract_website_content(url: str, cache: CacheManager | None = None) -> dict[str, Any]:
     """Extract structured content from a website.
 
     Args:
@@ -379,9 +376,7 @@ def enrich_from_registry(
     """Fetch organization data from external registries."""
 
     if not REQUESTS_AVAILABLE:
-        raise RegistryLookupError(
-            "The 'requests' dependency is required for registry lookups"
-        )
+        raise RegistryLookupError("The 'requests' dependency is required for registry lookups")
 
     cache_key = f"registry:{registry_type}:{org_name}"
     if cache:
@@ -405,9 +400,7 @@ def enrich_from_registry(
     try:
         response: RegistryResponse = adapter.lookup(org_name)
     except RegistryRateLimitError as exc:
-        raise RegistryLookupError(
-            f"{registry_type} rate limit exceeded: {exc}"
-        ) from exc
+        raise RegistryLookupError(f"{registry_type} rate limit exceeded: {exc}") from exc
     except RegistryTransportError as exc:
         raise RegistryLookupError(str(exc)) from exc
     except RegistryError as exc:
@@ -461,9 +454,7 @@ def enrich_dataframe_with_websites(
         _apply_website_content(enriched_df, idx, content)
 
     enriched_count = enriched_df["website_enriched"].sum()
-    logger.info(
-        f"Enriched {enriched_count}/{len(df)} organizations with website content"
-    )
+    logger.info(f"Enriched {enriched_count}/{len(df)} organizations with website content")
 
     return enriched_df
 
@@ -610,14 +601,10 @@ def enrich_dataframe_with_registries(
         payload_obj = registry_data.get("payload")
         payload = payload_obj if isinstance(payload_obj, Mapping) else {}
 
-        enriched_df.at[idx, "registry_type"] = registry_data.get(
-            "registry", registry_type
-        )
+        enriched_df.at[idx, "registry_type"] = registry_data.get("registry", registry_type)
         enriched_df.at[idx, "registry_status"] = payload.get("status")
         enriched_df.at[idx, "registry_number"] = payload.get("registration_number")
-        enriched_df.at[idx, "registry_enriched"] = bool(
-            registry_data.get("success") and payload
-        )
+        enriched_df.at[idx, "registry_enriched"] = bool(registry_data.get("success") and payload)
 
     enriched_count = enriched_df["registry_enriched"].sum()
     logger.info(

@@ -1,7 +1,7 @@
 # Hotpass Agent Guide
 
-**Audience:** GitHub Copilot, Codex, and other AI coding assistants  
-**Last Updated:** 2025-11-01  
+**Audience:** GitHub Copilot, Codex, and other AI coding assistants
+**Last Updated:** 2025-11-01
 **Maintainers:** Platform Engineering (platform@hotpass.example)
 
 > This guide follows the [Diátaxis](https://diataxis.fr/) framework. Each section is labelled as a tutorial, how-to, reference, or explanation so agents can quickly find the right level of detail.
@@ -23,9 +23,9 @@ flowchart LR
 
 **Core principles**
 
-1. **Profile first** – always select a profile (`aviation`, `generic`, or custom) to load the correct rules.  
-2. **Deterministic first** – prefer offline enrichment before enabling network fetches.  
-3. **Provenance mandatory** – every new field must record source, timestamp, and confidence.  
+1. **Profile first** – always select a profile (`aviation`, `generic`, or custom) to load the correct rules.
+2. **Deterministic first** – prefer offline enrichment before enabling network fetches.
+3. **Provenance mandatory** – every new field must record source, timestamp, and confidence.
 4. **Safe by default** – network operations and mutating commands run only with explicit opt-in.
 
 ---
@@ -47,7 +47,7 @@ Follow these steps to refine, enrich, and validate a workbook end-to-end.
      --archive
    ```
 3. **Review results**
-   - Confirm `dist/refined.xlsx` exists.  
+   - Confirm `dist/refined.xlsx` exists.
    - Inspect QA notes under `dist/quality-gates/`.
 4. **Enrich deterministically**
    ```bash
@@ -118,14 +118,14 @@ Smoke executes Ruff lint, the Python smoke marker set, coverage export, and Vite
 
 ### Working Safely on Ephemeral Runners
 
-1. Stick to smoke scripts unless you need deep coverage—full suite can exhaust short-lived runners.  
-2. Network extras are blocked by default; declare domains via `HOTPASS_UV_EXTRAS` and environment exports before execution.  
+1. Stick to smoke scripts unless you need deep coverage—full suite can exhaust short-lived runners.
+2. Network extras are blocked by default; declare domains via `HOTPASS_UV_EXTRAS` and environment exports before execution.
 3. Use the Playwright config defaults (`workers: 2`, `trace: on-first-retry`) when running UX tests from automation.
 
 ### Handling Failures
 
-- **Coverage regression:** inspect `htmlcov/index.html` and the per-file summary printed by `report_low_coverage.py`. Add focused unit tests before retrying.  
-- **QA failures:** rerun the specific QA target (fitness, profiles, docs, ta) with `-vv` for detail.  
+- **Coverage regression:** inspect `htmlcov/index.html` and the per-file summary printed by `report_low_coverage.py`. Add focused unit tests before retrying.
+- **QA failures:** rerun the specific QA target (fitness, profiles, docs, ta) with `-vv` for detail.
 - **Network errors:** confirm the allow-list in `.github/workflows/quality-gates.yml` or environment overrides before escalating network operations.
 
 ---
@@ -170,20 +170,20 @@ Smoke executes Ruff lint, the Python smoke marker set, coverage export, and Vite
 
 ### Network Safety
 
-- CLI commands default to offline operations.  
-- Network enrichment and crawling require both environment flags *and* allow-listed domains in CI (`quality-gates.yml`).  
+- CLI commands default to offline operations.
+- Network enrichment and crawling require both environment flags *and* allow-listed domains in CI (`quality-gates.yml`).
 - For MCP, reject requests that combine `allow_network=true` with missing approvals.
 
 ### Telemetry & Provenance
 
-- `TelemetryBootstrapOptions` control OpenTelemetry export; by default agents should leave telemetry disabled (`enabled=False`).  
+- `TelemetryBootstrapOptions` control OpenTelemetry export; by default agents should leave telemetry disabled (`enabled=False`).
 - Every enriched dataset must include `provenance_source`, `provenance_timestamp`, `provenance_confidence`, and `provenance_strategy`. Network-based enrichment sets `provenance_network_status` to `online`.
 
 ### Testing Lifecycle
 
-1. **PRs** run the smoke workflow (`ci-smoke.yml`) capturing smoke pytest + Vitest coverage.  
-2. **Nightly** quality gate workflow executes full pytest, gate-specific tests, coverage guard, and a Playwright shard.  
-3. **Scheduled e2e** (`playwright-nightly.yml`) runs Playwright across Chromium with traces for diagnostics.  
+1. **PRs** run the smoke workflow (`ci-smoke.yml`) capturing smoke pytest + Vitest coverage.
+2. **Nightly** quality gate workflow executes full pytest, gate-specific tests, coverage guard, and a Playwright shard.
+3. **Scheduled e2e** (`playwright-nightly.yml`) runs Playwright across Chromium with traces for diagnostics.
 4. Coverage guard thresholds currently surface modules below 5 % line coverage—ratchet upwards as components gain tests.
 
 ---

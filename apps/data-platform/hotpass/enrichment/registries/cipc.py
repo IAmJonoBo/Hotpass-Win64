@@ -5,9 +5,15 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
-from .base import (BaseRegistryAdapter, RegistryResponse,
-                   RegistryTransportError, clean_text, normalise_address,
-                   normalise_date, normalise_officer)
+from .base import (
+    BaseRegistryAdapter,
+    RegistryResponse,
+    RegistryTransportError,
+    clean_text,
+    normalise_address,
+    normalise_date,
+    normalise_officer,
+)
 
 
 class CIPCRegistryAdapter(BaseRegistryAdapter):
@@ -32,9 +38,7 @@ class CIPCRegistryAdapter(BaseRegistryAdapter):
 
         status = response.status_code
         if status is not None and status >= 500:
-            raise RegistryTransportError(
-                f"{self.registry.upper()} service error ({status})"
-            )
+            raise RegistryTransportError(f"{self.registry.upper()} service error ({status})")
 
         results = _extract_results(body)
         if not results:
@@ -115,12 +119,8 @@ def _normalise_entry(entry: Mapping[str, Any]) -> dict[str, Any]:
         "registration_number": clean_text(
             entry.get("enterprise_number") or entry.get("registration_number")
         ),
-        "registered_name": clean_text(
-            entry.get("enterprise_name") or entry.get("name")
-        ),
-        "entity_type": clean_text(
-            entry.get("enterprise_type") or entry.get("entity_type")
-        ),
+        "registered_name": clean_text(entry.get("enterprise_name") or entry.get("name")),
+        "entity_type": clean_text(entry.get("enterprise_type") or entry.get("entity_type")),
         "status": clean_text(entry.get("status")),
         "status_effective": normalise_date(
             entry.get("status_date") or entry.get("status_effective_date")

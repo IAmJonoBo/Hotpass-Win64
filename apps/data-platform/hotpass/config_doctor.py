@@ -85,11 +85,7 @@ class ConfigDoctor:
                 "data_contract.expectation_suite",
                 bool(contract.expectation_suite),
                 f"Expectation suite set to '{contract.expectation_suite}'.",
-                (
-                    "Specify an expectation suite name."
-                    if not contract.expectation_suite
-                    else None
-                ),
+                ("Specify an expectation suite name." if not contract.expectation_suite else None),
                 "error" if not contract.expectation_suite else "info",
             )
         )
@@ -116,12 +112,8 @@ class ConfigDoctor:
         changes = False
         governance = self.config.governance
         if not governance.data_owner.strip():
-            updated_governance = governance.model_copy(
-                update={"data_owner": "Data Governance"}
-            )
-            self.config = self.config.model_copy(
-                update={"governance": updated_governance}
-            )
+            updated_governance = governance.model_copy(update={"data_owner": "Data Governance"})
+            self.config = self.config.model_copy(update={"governance": updated_governance})
             changes = True
         if changes:
             self.diagnose()

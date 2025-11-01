@@ -7,8 +7,7 @@ from typing import Any, cast
 
 import pytest
 import requests
-from hotpass.enrichment import (CacheManager, RegistryLookupError,
-                                enrich_from_registry)
+from hotpass.enrichment import CacheManager, RegistryLookupError, enrich_from_registry
 from requests import Response
 from requests.structures import CaseInsensitiveDict
 
@@ -41,9 +40,7 @@ class DummySession:
         if self._error is not None:
             raise self._error
         key = (url, tuple(sorted((params or {}).items())) if params else None)
-        self.calls.append(
-            {"url": url, "params": params, "headers": headers, "timeout": timeout}
-        )
+        self.calls.append({"url": url, "params": params, "headers": headers, "timeout": timeout})
         try:
             payload = self._responses[key]
         except KeyError as exc:  # pragma: no cover - defensive
@@ -87,9 +84,7 @@ def test_cipc_lookup_success(tmp_path: Path) -> None:
         "Registered name mismatch",
     )
     expect(len(result["payload"]["addresses"]) == 2, "Two addresses expected")
-    expect(
-        result["payload"]["officers"][0]["name"] == "Jane Doe", "Officer name mismatch"
-    )
+    expect(result["payload"]["officers"][0]["name"] == "Jane Doe", "Officer name mismatch")
 
 
 def test_cipc_not_found_returns_structured_error(tmp_path: Path) -> None:
@@ -145,9 +140,7 @@ def test_sacaa_lookup_success(tmp_path: Path) -> None:
         result["payload"]["officers"][0]["name"] == "Lerato Mokoena",
         "Officer name mismatch",
     )
-    expect(
-        result["meta"]["provider_meta"]["source"] == "SACAA API", "Meta source mismatch"
-    )
+    expect(result["meta"]["provider_meta"]["source"] == "SACAA API", "Meta source mismatch")
 
 
 def test_enrich_from_registry_raises_on_transport_error(tmp_path: Path) -> None:
@@ -195,6 +188,4 @@ def test_enrich_from_registry_uses_cache_before_rate_limit(tmp_path: Path) -> No
     )
 
     expect(result_second == result_first, "Second call should return cached result")
-    expect(
-        len(dummy_session.calls) == 1, "Session should be called once due to caching"
-    )
+    expect(len(dummy_session.calls) == 1, "Session should be called once due to caching")

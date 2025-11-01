@@ -175,9 +175,7 @@ class DVCManager:
         except (json.JSONDecodeError, KeyError, TypeError) as e:
             logger.warning(f"Failed to read version file: {e}")
 
-        return DatasetVersion(
-            major=0, minor=1, patch=0, timestamp=datetime.now(UTC).isoformat()
-        )
+        return DatasetVersion(major=0, minor=1, patch=0, timestamp=datetime.now(UTC).isoformat())
 
     def set_version(
         self,

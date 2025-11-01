@@ -27,13 +27,18 @@ _STREAMLIT_MODULE.warning = lambda *args, **kwargs: None
 sys.modules.setdefault("streamlit", _STREAMLIT_MODULE)
 
 from hotpass import dashboard  # noqa: E402
-from hotpass.dashboard import (ALLOWED_ROOTS_ENV,  # noqa: E402
-                               AUTH_PASSWORD_ENV, AUTH_STATE_KEY,
-                               _ensure_path_within_allowlist,
-                               _load_allowed_roots, _require_authentication,
-                               _validate_input_directory,
-                               _validate_output_path, load_pipeline_history,
-                               save_pipeline_run)
+from hotpass.dashboard import (
+    ALLOWED_ROOTS_ENV,  # noqa: E402
+    AUTH_PASSWORD_ENV,
+    AUTH_STATE_KEY,
+    _ensure_path_within_allowlist,
+    _load_allowed_roots,
+    _require_authentication,
+    _validate_input_directory,
+    _validate_output_path,
+    load_pipeline_history,
+    save_pipeline_run,
+)
 
 from tests.helpers.assertions import expect  # noqa: E402
 
@@ -94,9 +99,7 @@ def test_load_allowed_roots_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv(ALLOWED_ROOTS_ENV, raising=False)
     roots = _load_allowed_roots()
     expect(len(roots) == 3, "Default allowlist should expose three directories")
-    expect(
-        str(roots[0]).endswith("data"), "Default entry should include data directory"
-    )
+    expect(str(roots[0]).endswith("data"), "Default entry should include data directory")
 
 
 def test_load_allowed_roots_from_environment(
@@ -137,9 +140,7 @@ def test_validate_directory_helpers_return_resolved(
     output_file = tmp_path / "results" / "out.xlsx"
     output_file.parent.mkdir()
     resolved_output = _validate_output_path(output_file, allowed)
-    expect(
-        resolved_output == output_file, "Output path should resolve and pass validation"
-    )
+    expect(resolved_output == output_file, "Output path should resolve and pass validation")
 
     with pytest.raises(ValueError):
         _validate_output_path(tmp_path.parent / "out.xlsx", allowed)

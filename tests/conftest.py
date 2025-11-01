@@ -87,7 +87,9 @@ def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
                 rel_path = abs_path.relative_to(Path.cwd())
             except ValueError:
                 rel_path = abs_path
-            if rel_path in QUALITY_GATE_FILES or any(rel_path.is_relative_to(dir_path) for dir_path in QUALITY_GATE_DIRS):
+            if rel_path in QUALITY_GATE_FILES or any(
+                rel_path.is_relative_to(dir_path) for dir_path in QUALITY_GATE_DIRS
+            ):
                 bucket = "quality_gate"
             elif any(rel_path.is_relative_to(dir_path) for dir_path in SLOW_DIRS):
                 bucket = "slow"

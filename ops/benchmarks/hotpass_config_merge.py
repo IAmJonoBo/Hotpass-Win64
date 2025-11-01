@@ -82,18 +82,14 @@ def _build_payload(size: int) -> dict[str, Any]:
     payload: dict[str, Any] = {
         "pipeline": {
             "sensitive_fields": [f"field_{idx}" for idx in range(size)],
-            "intent_webhooks": [
-                f"https://hooks.example/{idx}" for idx in range(webhook_count)
-            ],
+            "intent_webhooks": [f"https://hooks.example/{idx}" for idx in range(webhook_count)],
             "excel_chunk_size": 500,
         },
         "telemetry": {
             "enabled": True,
             "service_name": "hotpass-benchmark",
             "environment": "benchmark",
-            "resource_attributes": {
-                f"attr_{idx}": f"value_{idx}" for idx in range(size // 2)
-            },
+            "resource_attributes": {f"attr_{idx}": f"value_{idx}" for idx in range(size // 2)},
         },
         "features": {
             "enrichment": True,
@@ -102,21 +98,17 @@ def _build_payload(size: int) -> dict[str, Any]:
             "acquisition": size % 3 == 0,
         },
         "governance": {
-            "intent": [
-                f"Benchmark intent {idx}" for idx in range(intent_count)
-            ],
+            "intent": [f"Benchmark intent {idx}" for idx in range(intent_count)],
             "policy_reference": "benchmark-policy",
         },
         "orchestrator": {
-            "parameters": {
-                f"param_{idx}": f"value_{idx}" for idx in range(size)
-            },
+            "parameters": {f"param_{idx}": f"value_{idx}" for idx in range(size)},
             "backfill": {
                 "windows": [
                     {
                         "start_date": f"2025-01-{idx + 1:02d}",
                         "end_date": f"2025-01-{idx + 2:02d}",
-                        "versions": [f"v{idx}", f"v{idx+1}"],
+                        "versions": [f"v{idx}", f"v{idx + 1}"],
                     }
                     for idx in range(backfill_windows)
                 ],
@@ -151,7 +143,9 @@ def _benchmark_payload(size: int, iterations: int, chain_depth: int) -> Benchmar
     )
 
 
-def run_benchmarks(sizes: Iterable[int], iterations: int, chain_depth: int) -> list[BenchmarkSample]:
+def run_benchmarks(
+    sizes: Iterable[int], iterations: int, chain_depth: int
+) -> list[BenchmarkSample]:
     results: list[BenchmarkSample] = []
     for size in sizes:
         results.append(_benchmark_payload(size, iterations, chain_depth))

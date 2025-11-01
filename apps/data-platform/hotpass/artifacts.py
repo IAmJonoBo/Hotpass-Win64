@@ -55,21 +55,13 @@ def create_refined_archive(
     archive_name = f"refined-data-{timestamp_label}-{checksum}.zip"
     archive_path = archive_dir / archive_name
 
-    with zipfile.ZipFile(
-        archive_path, mode="w", compression=zipfile.ZIP_DEFLATED
-    ) as zip_file:
+    with zipfile.ZipFile(archive_path, mode="w", compression=zipfile.ZIP_DEFLATED) as zip_file:
         zip_file.write(excel_path, excel_path.name)
         zip_file.writestr("SHA256SUMS", f"{checksum}  {excel_path.name}\n")
 
-        if (
-            include_version_metadata
-            and version_metadata_path
-            and version_metadata_path.exists()
-        ):
+        if include_version_metadata and version_metadata_path and version_metadata_path.exists():
             zip_file.write(version_metadata_path, "version.json")
-            logger.info(
-                f"Included version metadata in archive from {version_metadata_path}"
-            )
+            logger.info(f"Included version metadata in archive from {version_metadata_path}")
 
     return archive_path
 

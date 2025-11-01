@@ -20,12 +20,19 @@ from tests.helpers.pytest_marks import parametrize
 pytest.importorskip("frictionless")
 
 import hotpass.enrichment as enrichment  # noqa: E402
-from hotpass.enrichment import (CacheManager, enrich_dataframe_with_registries,
-                                enrich_dataframe_with_websites,
-                                enrich_dataframe_with_websites_concurrent,
-                                extract_website_content)
-from hotpass.enrichment.intent import (IntentCollectorDefinition, IntentPlan,
-                                       IntentTargetDefinition, run_intent_plan)
+from hotpass.enrichment import (
+    CacheManager,
+    enrich_dataframe_with_registries,
+    enrich_dataframe_with_websites,
+    enrich_dataframe_with_websites_concurrent,
+    extract_website_content,
+)
+from hotpass.enrichment.intent import (
+    IntentCollectorDefinition,
+    IntentPlan,
+    IntentTargetDefinition,
+    run_intent_plan,
+)
 
 from tests.helpers.assertions import expect
 
@@ -84,9 +91,7 @@ def test_cache_hit_count(temp_cache):
         temp_cache.get("test_key")
 
     stats = temp_cache.stats()
-    expect(
-        stats["total_hits"] == 5, "Cache should count five hits after repeated access"
-    )
+    expect(stats["total_hits"] == 5, "Cache should count five hits after repeated access")
 
 
 def test_cache_stats(temp_cache):
@@ -144,16 +149,12 @@ def test_extract_website_content_success(mock_trafilatura, mock_requests, temp_c
     result = extract_website_content("https://example.com", cache=temp_cache)
 
     expect(result["success"] is True, "Successful extraction should flag success")
-    expect(
-        result["title"] == "Test Title", "Metadata title should match extractor output"
-    )
+    expect(result["title"] == "Test Title", "Metadata title should match extractor output")
     expect(
         result["text"] == "Extracted text content",
         "Extracted text should match payload",
     )
-    expect(
-        result["url"] == "https://example.com", "Result URL should echo the request URL"
-    )
+    expect(result["url"] == "https://example.com", "Result URL should echo the request URL")
 
 
 @patch("hotpass.enrichment.TRAFILATURA_AVAILABLE", True)
@@ -354,9 +355,7 @@ def test_enrich_dataframe_with_websites_concurrent_runs_tasks_in_parallel(monkey
 
     monkeypatch.setattr(enrichment, "extract_website_content", fake_extract)
 
-    result = enrich_dataframe_with_websites_concurrent(
-        df, website_column="website", concurrency=4
-    )
+    result = enrich_dataframe_with_websites_concurrent(df, website_column="website", concurrency=4)
 
     expect(
         peak_active >= 2,
@@ -401,9 +400,7 @@ def test_enrich_dataframe_with_registries(mock_enrich_registry, temp_cache):
         },
     ]
 
-    result_df = enrich_dataframe_with_registries(
-        df, registry_type="cipc", cache=temp_cache
-    )
+    result_df = enrich_dataframe_with_registries(df, registry_type="cipc", cache=temp_cache)
 
     expect(
         "registry_type" in result_df.columns,
@@ -584,16 +581,12 @@ def test_run_intent_plan_generates_digest() -> None:
 
     summary = result.summary["aero-school"]
     expect(summary.signal_count == 2, "Aero School should emit two signals in summary")
-    assert (
-        summary.last_observed_at is not None
-    ), "Summary should include last observed timestamp"
+    assert summary.last_observed_at is not None, "Summary should include last observed timestamp"
     expect(
         summary.last_observed_at.date().isoformat() == issued.date().isoformat(),
         "Last observed date should align with issued date for most recent event",
     )
-    expect(
-        "hiring" in summary.signal_types, "Summary should include hiring signal type"
-    )
+    expect("hiring" in summary.signal_types, "Summary should include hiring signal type")
 
     digest = result.digest
     expect(isinstance(digest, pd.DataFrame), "Digest should materialise as a DataFrame")
@@ -602,12 +595,8 @@ def test_run_intent_plan_generates_digest() -> None:
         "intent_signal_score" in digest.columns,
         "Digest should include intent score column",
     )
-    aero_score = digest.loc[
-        digest["target_slug"] == "aero-school", "intent_signal_score"
-    ].iloc[0]
-    heli_score = digest.loc[
-        digest["target_slug"] == "heli-ops", "intent_signal_score"
-    ].iloc[0]
+    aero_score = digest.loc[digest["target_slug"] == "aero-school", "intent_signal_score"].iloc[0]
+    heli_score = digest.loc[digest["target_slug"] == "heli-ops", "intent_signal_score"].iloc[0]
     expect(aero_score > heli_score, "Aero School score should exceed Heli Ops score")
 
 
@@ -673,9 +662,7 @@ def test_intent_plan_persists_signals_and_reuses_cache(tmp_path: Path) -> None:
                             {
                                 "headline": "Aero School modernises ops",
                                 "intent": 0.4,
-                                "timestamp": (
-                                    issued + timedelta(minutes=5)
-                                ).isoformat(),
+                                "timestamp": (issued + timedelta(minutes=5)).isoformat(),
                                 "url": "https://example.test/aero/modern",
                             }
                         ]

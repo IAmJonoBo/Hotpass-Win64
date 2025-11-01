@@ -38,9 +38,7 @@ def capture_lineage(
             captured.append(event)
 
     class _StubDataset:
-        def __init__(
-            self, *, namespace: str, name: str, facets: Mapping[str, object]
-        ) -> None:
+        def __init__(self, *, namespace: str, name: str, facets: Mapping[str, object]) -> None:
             self.namespace = namespace
             self.name = name
             self.facets = dict(facets)

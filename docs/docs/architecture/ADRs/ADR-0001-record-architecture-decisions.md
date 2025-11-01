@@ -1,6 +1,6 @@
 # ADR-0001: Record Architecture Decisions
 
-_Status:_ Proposed  
+_Status:_ Proposed
 _Date:_ YYYY‑MM‑DD
 
 ## Context

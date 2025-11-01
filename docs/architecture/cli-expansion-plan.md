@@ -1,6 +1,6 @@
 # Hotpass CLI Expansion Plan
 
-> Implemented CLI expansion covering tunnels, AWS checks, contexts, and env generation.  
+> Implemented CLI expansion covering tunnels, AWS checks, contexts, and env generation.
 > Last updated: 2025-10-31
 
 ## 1. Objectives

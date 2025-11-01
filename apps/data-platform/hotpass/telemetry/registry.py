@@ -74,9 +74,7 @@ class TelemetryPolicy:
 
         exporters = config.exporters or ("console",)
         settings_input = dict(config.exporter_settings or {})
-        invalid = [
-            exporter for exporter in exporters if exporter not in self.allowed_exporters
-        ]
+        invalid = [exporter for exporter in exporters if exporter not in self.allowed_exporters]
         if invalid:
             errors.append(f"unsupported exporters: {', '.join(sorted(invalid))}")
 
@@ -87,9 +85,7 @@ class TelemetryPolicy:
                 f"{', '.join(sorted(extra_settings))}"
             )
 
-        env_source = (
-            config.environment or os.getenv("HOTPASS_ENVIRONMENT") or "development"
-        )
+        env_source = config.environment or os.getenv("HOTPASS_ENVIRONMENT") or "development"
         environment = env_source.strip()
         if not environment:
             errors.append("environment is required")
@@ -101,9 +97,7 @@ class TelemetryPolicy:
         for exporter in exporters:
             values = settings_input.get(exporter, {})
             if values and not isinstance(values, Mapping):
-                raise ValueError(
-                    f"settings for exporter '{exporter}' must be a mapping"
-                )
+                raise ValueError(f"settings for exporter '{exporter}' must be a mapping")
             normalised_settings[exporter] = {
                 str(key): value for key, value in dict(values or {}).items()
             }
@@ -137,9 +131,7 @@ class TelemetryRegistry:
         modules: TelemetryModules,
         policy: TelemetryPolicy | None = None,
         metrics_factory: Callable[[Any, Callable[[float], Any]], Any],
-        register_shutdown: Callable[
-            [Callable[[], None]], None
-        ] = _default_register_shutdown,
+        register_shutdown: Callable[[Callable[[], None]], None] = _default_register_shutdown,
     ) -> None:
         self.modules = modules
         self._policy = policy or TelemetryPolicy()
@@ -348,9 +340,7 @@ class _SafeExporterProxy:
         self._delegate = delegate
         self._fallback = fallback
 
-    def export(
-        self, *args: Any, **kwargs: Any
-    ) -> Any:  # pragma: no cover - runtime guard
+    def export(self, *args: Any, **kwargs: Any) -> Any:  # pragma: no cover - runtime guard
         try:
             return self._delegate.export(*args, **kwargs)
         except ValueError as exc:
@@ -402,18 +392,14 @@ def _build_noop_modules() -> TelemetryModules:
         def set_attribute(self, *_: Any, **__: Any) -> None:  # pragma: no cover - noop
             return None
 
-        def record_exception(
-            self, *_: Any, **__: Any
-        ) -> None:  # pragma: no cover - noop
+        def record_exception(self, *_: Any, **__: Any) -> None:  # pragma: no cover - noop
             return None
 
         def set_status(self, *_: Any, **__: Any) -> None:  # pragma: no cover - noop
             return None
 
     class _NoopTracer:
-        def start_as_current_span(
-            self, *_: Any, **__: Any
-        ) -> Any:  # pragma: no cover - noop
+        def start_as_current_span(self, *_: Any, **__: Any) -> Any:  # pragma: no cover - noop
             span = _NoopSpan()
             return SimpleNamespace(
                 __enter__=lambda: span,
@@ -478,18 +464,24 @@ def build_default_modules() -> TelemetryModules:
         from opentelemetry import trace as otel_trace
         from opentelemetry.sdk.metrics import MeterProvider
         from opentelemetry.sdk.metrics.export import (
-            ConsoleMetricExporter, PeriodicExportingMetricReader)
+            ConsoleMetricExporter,
+            PeriodicExportingMetricReader,
+        )
         from opentelemetry.sdk.resources import Resource
         from opentelemetry.sdk.trace import TracerProvider
-        from opentelemetry.sdk.trace.export import (BatchSpanProcessor,
-                                                    ConsoleSpanExporter,
-                                                    SpanExportResult)
+        from opentelemetry.sdk.trace.export import (
+            BatchSpanProcessor,
+            ConsoleSpanExporter,
+            SpanExportResult,
+        )
 
         try:
-            from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import \
-                OTLPMetricExporter as _OTLPMetricExporter
-            from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import \
-                OTLPSpanExporter as _OTLPSpanExporter
+            from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import (
+                OTLPMetricExporter as _OTLPMetricExporter,
+            )
+            from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (
+                OTLPSpanExporter as _OTLPSpanExporter,
+            )
         except ImportError:  # pragma: no cover - optional exporter dependency
             _OTLPMetricExporter = None
             _OTLPSpanExporter = None
@@ -504,9 +496,7 @@ def build_default_modules() -> TelemetryModules:
     def _build_console_metric(_: Mapping[str, Any]) -> Any:
         return ConsoleMetricExporter()
 
-    def _parse_otlp_kwargs(
-        config: Mapping[str, Any], *, metrics: bool = False
-    ) -> dict[str, Any]:
+    def _parse_otlp_kwargs(config: Mapping[str, Any], *, metrics: bool = False) -> dict[str, Any]:
         kwargs: dict[str, Any] = {}
         endpoint_key = "metrics_endpoint" if metrics else "endpoint"
         endpoint_value = config.get(endpoint_key) or config.get("endpoint")

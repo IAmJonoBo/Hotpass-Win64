@@ -8,10 +8,8 @@ from collections.abc import Callable
 from pathlib import Path
 
 import pandas as pd
-from hotpass.config import (IndustryProfile, get_default_profile,
-                            load_industry_profile)
-from hotpass.research import (ResearchContext, ResearchOrchestrator,
-                              ResearchOutcome)
+from hotpass.config import IndustryProfile, get_default_profile, load_industry_profile
+from hotpass.research import ResearchContext, ResearchOrchestrator, ResearchOutcome
 from rich.console import Console
 from rich.table import Table
 
@@ -105,18 +103,14 @@ def register() -> CLICommand:
 def _dispatch_plan(namespace: argparse.Namespace, profile: CLIProfile | None) -> int:
     handler: PlanHandler | None = getattr(namespace, "plan_handler", None)
     if handler is None:
-        plan_parser: argparse.ArgumentParser | None = getattr(
-            namespace, "plan_parser", None
-        )
+        plan_parser: argparse.ArgumentParser | None = getattr(namespace, "plan_parser", None)
         if plan_parser is not None:
             plan_parser.print_help()
         return 1
     return handler(namespace, profile)
 
 
-def _handle_research_plan(
-    namespace: argparse.Namespace, cli_profile: CLIProfile | None
-) -> int:
+def _handle_research_plan(namespace: argparse.Namespace, cli_profile: CLIProfile | None) -> int:
     console = Console()
     industry_profile = _resolve_industry_profile(namespace, cli_profile)
 
@@ -193,9 +187,7 @@ def _load_row(
                 return match.iloc[0]
 
     if entity:
-        mask = (
-            frame["organization_name"].astype(str).str.casefold() == entity.casefold()
-        )
+        mask = frame["organization_name"].astype(str).str.casefold() == entity.casefold()
         match = frame[mask]
         if not match.empty:
             return match.iloc[0]

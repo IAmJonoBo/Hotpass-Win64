@@ -6,8 +6,12 @@ import json
 from pathlib import Path
 from textwrap import dedent
 
-from hotpass.config import (IndustryProfile, get_default_profile,
-                            load_industry_profile, save_industry_profile)
+from hotpass.config import (
+    IndustryProfile,
+    get_default_profile,
+    load_industry_profile,
+    save_industry_profile,
+)
 
 import pytest
 

@@ -142,9 +142,7 @@ def test_deploy_command_disables_schedule(
 
     monkeypatch.setattr(deployments_module, "deploy_pipeline", _record)
 
-    args = cli_parser.parse_args(
-        ["deploy", "--schedule", "none", "--log-format", "json"]
-    )
+    args = cli_parser.parse_args(["deploy", "--schedule", "none", "--log-format", "json"])
 
     exit_code = args.handler(args, None)
 

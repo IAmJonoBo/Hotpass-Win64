@@ -21,19 +21,17 @@ from hotpass.data_sources import ExcelReadOptions
 from hotpass.pipeline import PipelineConfig, run_pipeline
 
 # Environment variable names reference secrets intentionally.
-AUTH_PASSWORD_ENV = (
-    "HOTPASS_DASHBOARD_PASSWORD"  # nosec B105  # pragma: allowlist secret
-)
+AUTH_PASSWORD_ENV = "HOTPASS_DASHBOARD_PASSWORD"  # nosec B105  # pragma: allowlist secret
 ALLOWED_ROOTS_ENV = "HOTPASS_DASHBOARD_ALLOWED_ROOTS"
 AUTH_STATE_KEY = "hotpass_dashboard_authenticated"
 # UI labels include the word "password" by design.
 PASSWORD_INPUT_LABEL = "Dashboard Password"  # nosec B105  # pragma: allowlist secret
 UNLOCK_BUTTON_LABEL = "Unlock dashboard"
 RUN_BUTTON_LABEL = "▶️ Run Pipeline"
-DOCS_URL = "https://github.com/IAmJonoBo/Hotpass/tree/main/docs/how-to-guides/orchestrate-and-observe.md"
-GLOSSARY_URL = (
-    "https://github.com/IAmJonoBo/Hotpass/tree/main/docs/reference/data-model.md"
+DOCS_URL = (
+    "https://github.com/IAmJonoBo/Hotpass/tree/main/docs/how-to-guides/orchestrate-and-observe.md"
 )
+GLOSSARY_URL = "https://github.com/IAmJonoBo/Hotpass/tree/main/docs/reference/data-model.md"
 DATA_PREVIEW_CAPTION = (
     "Preview of the first 20 refined records. Use arrow keys or J/K to move between rows, "
     "and consult the glossary for field definitions."
@@ -107,9 +105,7 @@ def _validate_output_path(path: Path, allowlist: Iterable[Path]) -> Path:
     """Validate output path selection against allowlist."""
 
     resolved = path.expanduser().resolve()
-    _ensure_path_within_allowlist(
-        resolved.parent, allowlist, description="Output directory"
-    )
+    _ensure_path_within_allowlist(resolved.parent, allowlist, description="Output directory")
     return resolved
 
 
@@ -223,9 +219,7 @@ def main() -> None:
     )
 
     # Main tabs
-    tab1, tab2, tab3 = st.tabs(
-        ["Pipeline Control", "Execution History", "Quality Metrics"]
-    )
+    tab1, tab2, tab3 = st.tabs(["Pipeline Control", "Execution History", "Quality Metrics"])
 
     with tab1:
         st.header("Pipeline Execution")
@@ -233,24 +227,16 @@ def main() -> None:
         col1, col2 = st.columns([3, 1])
 
         with col1:
-            st.info(
-                "Configure settings in the sidebar, then click 'Run Pipeline' to execute"
-            )
+            st.info("Configure settings in the sidebar, then click 'Run Pipeline' to execute")
 
         with col2:
-            run_button = st.button(
-                RUN_BUTTON_LABEL, type="primary", use_container_width=True
-            )
+            run_button = st.button(RUN_BUTTON_LABEL, type="primary", use_container_width=True)
 
         if run_button:
             with st.spinner("Running pipeline..."):
                 try:
-                    input_dir_path = _validate_input_directory(
-                        Path(input_dir), allowlist
-                    )
-                    output_path_obj = _validate_output_path(
-                        Path(output_path), allowlist
-                    )
+                    input_dir_path = _validate_input_directory(Path(input_dir), allowlist)
+                    output_path_obj = _validate_output_path(Path(output_path), allowlist)
 
                     # Build configuration
                     profile = get_default_profile(profile_name)
@@ -259,9 +245,7 @@ def main() -> None:
                         output_path=output_path_obj,
                         industry_profile=profile,
                         excel_options=ExcelReadOptions(
-                            chunk_size=(
-                                excel_chunk_size if excel_chunk_size > 0 else None
-                            )
+                            chunk_size=(excel_chunk_size if excel_chunk_size > 0 else None)
                         ),
                     )
 
@@ -331,9 +315,7 @@ def main() -> None:
                             "Need help interpreting fields? See the [data model glossary]"
                             f"({GLOSSARY_URL})."
                         )
-                        preview_panel.dataframe(
-                            result.refined.head(20), use_container_width=True
-                        )
+                        preview_panel.dataframe(result.refined.head(20), use_container_width=True)
 
                 except ValueError as error:
                     st.error(
@@ -400,9 +382,7 @@ def main() -> None:
                 chart_data = df[["timestamp", "total_records"]].set_index("timestamp")
                 st.line_chart(chart_data)
         else:
-            st.info(
-                "No execution history available. Run the pipeline to see results here."
-            )
+            st.info("No execution history available. Run the pipeline to see results here.")
 
     with tab3:
         st.header("Quality Metrics")
@@ -438,9 +418,7 @@ def main() -> None:
                 ).round(2)
                 st.dataframe(perf_stats, use_container_width=True)
         else:
-            st.info(
-                "No quality metrics available yet. Run the pipeline to collect metrics."
-            )
+            st.info("No quality metrics available yet. Run the pipeline to collect metrics.")
 
     # Footer
     st.markdown("---")

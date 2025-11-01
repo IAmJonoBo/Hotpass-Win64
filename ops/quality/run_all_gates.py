@@ -68,9 +68,7 @@ def _summarize_success(payload: dict[str, object] | None) -> str:
 
     data_docs = payload.get("data_docs")
     if isinstance(data_docs, str):
-        summary = (
-            f"{summary or 'Gate completed successfully'}; Data Docs at {data_docs}"
-        )
+        summary = f"{summary or 'Gate completed successfully'}; Data Docs at {data_docs}"
 
     return summary or "Gate completed successfully"
 

@@ -24,4 +24,3 @@ export const CardPreview: Story = {
     </div>
   ),
 }
-

@@ -57,9 +57,7 @@ def test_plan_offline_path(tmp_path):
         encoding="utf-8",
     )
 
-    orchestrator = ResearchOrchestrator(
-        cache_root=cache_root, audit_log=cache_root / "audit.log"
-    )
+    orchestrator = ResearchOrchestrator(cache_root=cache_root, audit_log=cache_root / "audit.log")
     context = ResearchContext(profile=profile, row=row, allow_network=False)
     outcome = orchestrator.plan(context)
 
@@ -69,12 +67,8 @@ def test_plan_offline_path(tmp_path):
     )
     statuses = {step.name: step.status for step in outcome.steps}
     expect(statuses.get("local_snapshot") == "success", "Local snapshot should load")
-    expect(
-        statuses.get("authority_sources") == "success", "Authority snapshot should load"
-    )
-    expect(
-        statuses.get("network_enrichment") == "skipped", "Network step disabled offline"
-    )
+    expect(statuses.get("authority_sources") == "success", "Authority snapshot should load")
+    expect(statuses.get("network_enrichment") == "skipped", "Network step disabled offline")
     expect(statuses.get("native_crawl") == "skipped", "Crawl skipped without network")
     expect(
         statuses.get("backfill") == "success",
@@ -103,9 +97,7 @@ def test_crawl_summary_without_network(tmp_path):
     cache_root.mkdir()
     profile = IndustryProfile.from_dict({"name": "generic", "display_name": "Generic"})
 
-    orchestrator = ResearchOrchestrator(
-        cache_root=cache_root, audit_log=cache_root / "audit.log"
-    )
+    orchestrator = ResearchOrchestrator(cache_root=cache_root, audit_log=cache_root / "audit.log")
     outcome = orchestrator.crawl(
         profile=profile,
         query_or_url="https://example.test",
@@ -140,9 +132,7 @@ def test_crawl_persists_artifact_and_rate_limit(tmp_path, monkeypatch):
         }
     )
 
-    orchestrator = ResearchOrchestrator(
-        cache_root=cache_root, audit_log=cache_root / "audit.log"
-    )
+    orchestrator = ResearchOrchestrator(cache_root=cache_root, audit_log=cache_root / "audit.log")
 
     class _StubResponse:
         def __init__(self, url: str) -> None:
@@ -154,12 +144,8 @@ def test_crawl_persists_artifact_and_rate_limit(tmp_path, monkeypatch):
         def get(self, url: str, timeout: float):
             return _StubResponse(url)
 
-    monkeypatch.setattr(
-        "hotpass.research.orchestrator.CrawlerProcess", None, raising=False
-    )
-    monkeypatch.setattr(
-        "hotpass.research.orchestrator.requests", _StubRequests(), raising=False
-    )
+    monkeypatch.setattr("hotpass.research.orchestrator.CrawlerProcess", None, raising=False)
+    monkeypatch.setattr("hotpass.research.orchestrator.requests", _StubRequests(), raising=False)
 
     outcome = orchestrator.crawl(
         profile=profile,
@@ -173,9 +159,7 @@ def test_crawl_persists_artifact_and_rate_limit(tmp_path, monkeypatch):
         "Native crawl should succeed under stubbed requests",
     )
 
-    native_crawl_step = next(
-        step for step in outcome.steps if step.name == "native_crawl"
-    )
+    native_crawl_step = next(step for step in outcome.steps if step.name == "native_crawl")
     artifacts = native_crawl_step.artifacts
     if artifacts is None:
         raise AssertionError("Native crawl artifacts should be populated")

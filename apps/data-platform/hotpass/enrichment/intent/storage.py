@@ -139,8 +139,7 @@ class IntentSignalStore:
         }
 
     def _to_signal(self, record: Mapping[str, object]) -> IntentSignal:
-        from .collectors import \
-            IntentSignal  # Local import to avoid circular dependency
+        from .collectors import IntentSignal  # Local import to avoid circular dependency
 
         observed_at = _parse_datetime(str(record.get("observed_at", "")))
         retrieved_at = _parse_datetime(str(record.get("retrieved_at", "")))

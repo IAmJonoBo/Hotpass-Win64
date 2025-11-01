@@ -1,9 +1,9 @@
 # Hotpass Agent Runbook (E2E)
 
-**Version:** 1.1  
+**Version:** 1.1
 **Date:**
-**Audience:** GitHub Copilot CLI / Copilot Agent HQ / Codex (with MCP)  
-**Goal:** upgrade Hotpass so agents can, from natural language, refine a spreadsheet, enrich or double-check a row, and enforce data-quality gates — all through one CLI and one MCP surface.  
+**Audience:** GitHub Copilot CLI / Copilot Agent HQ / Codex (with MCP)
+**Goal:** upgrade Hotpass so agents can, from natural language, refine a spreadsheet, enrich or double-check a row, and enforce data-quality gates — all through one CLI and one MCP surface.
 **Supersedes:** `UPGRADE_B.md` and `GAP_ANALYSIS_30_10_25.md`; this runbook is now the canonical plan.
 
 ---

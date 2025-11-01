@@ -8,10 +8,12 @@ from typing import Any
 
 import pytest
 from hotpass import cli
-from hotpass.pipeline import (PIPELINE_EVENT_AGGREGATE_COMPLETED,
-                              PIPELINE_EVENT_AGGREGATE_PROGRESS,
-                              PIPELINE_EVENT_AGGREGATE_STARTED,
-                              PIPELINE_EVENT_START)
+from hotpass.pipeline import (
+    PIPELINE_EVENT_AGGREGATE_COMPLETED,
+    PIPELINE_EVENT_AGGREGATE_PROGRESS,
+    PIPELINE_EVENT_AGGREGATE_STARTED,
+    PIPELINE_EVENT_START,
+)
 from rich.console import Console
 
 
@@ -29,18 +31,14 @@ class _RecordingTask:
 
 
 class _RecordingProgress:
-    def __init__(
-        self, *args: Any, **kwargs: Any
-    ) -> None:  # noqa: D401 - parity with Progress
+    def __init__(self, *args: Any, **kwargs: Any) -> None:  # noqa: D401 - parity with Progress
         self.tasks: list[_RecordingTask] = []
         self.log_messages: list[str] = []
 
     def __enter__(self) -> _RecordingProgress:
         return self
 
-    def __exit__(
-        self, exc_type, exc, tb
-    ) -> None:  # pragma: no cover - no cleanup needed
+    def __exit__(self, exc_type, exc, tb) -> None:  # pragma: no cover - no cleanup needed
         return None
 
     def add_task(self, description: str, total: int = 1) -> int:
@@ -95,17 +93,13 @@ def test_pipeline_progress_throttles_high_volume_events() -> None:
 
     recording_progress: _RecordingProgress = progress._progress
     aggregate_task = next(
-        task
-        for task in recording_progress.tasks
-        if task.description == "Aggregating organisations"
+        task for task in recording_progress.tasks if task.description == "Aggregating organisations"
     )
     expect(
         aggregate_task.completed == aggregate_task.total,
         "high volume updates should fill aggregate task",
     )
-    suppression_logs = [
-        msg for msg in recording_progress.log_messages if "Suppressed" in msg
-    ]
+    suppression_logs = [msg for msg in recording_progress.log_messages if "Suppressed" in msg]
     expect(
         bool(suppression_logs),
         "high volume updates should emit suppression summary",
@@ -142,17 +136,14 @@ def test_pipeline_progress_replays_high_volume_fixture() -> None:
         "aggregate task should finish when replaying fixture",
     )
     suppression_logs = [
-        message
-        for message in recording_progress.log_messages
-        if "Suppressed" in message
+        message for message in recording_progress.log_messages if "Suppressed" in message
     ]
     expect(
         bool(suppression_logs),
         "fixture playback should emit suppression summary",
     )
     suppressed_counts = [
-        int("".join(ch for ch in message if ch.isdigit()) or "0")
-        for message in suppression_logs
+        int("".join(ch for ch in message if ch.isdigit()) or "0") for message in suppression_logs
     ]
     expect(
         any(count > 0 for count in suppressed_counts),

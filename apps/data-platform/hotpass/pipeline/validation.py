@@ -14,8 +14,7 @@ from .config import PipelineConfig
 
 
 def _get_ssot_schema() -> Any:
-    from . import \
-        build_ssot_schema  # Local import to avoid circular dependency
+    from . import build_ssot_schema  # Local import to avoid circular dependency
 
     return build_ssot_schema()
 
@@ -45,13 +44,10 @@ def validate_dataset(
             validated_df = schema.validate(refined_df, lazy=True)
         except SchemaErrors as exc:
             schema_errors = [
-                f"{row['column']}: {row['failure_case']}"
-                for _, row in exc.failure_cases.iterrows()
+                f"{row['column']}: {row['failure_case']}" for _, row in exc.failure_cases.iterrows()
             ]
             invalid_indices = exc.failure_cases["index"].unique().tolist()
-            valid_indices = [
-                idx for idx in refined_df.index if idx not in invalid_indices
-            ]
+            valid_indices = [idx for idx in refined_df.index if idx not in invalid_indices]
             if not valid_indices:
                 validated_df = refined_df
                 schema_errors.append(
@@ -59,15 +55,10 @@ def validate_dataset(
                     "Output contains unvalidated data."
                 )
             else:
-                validated_df = schema.validate(
-                    refined_df.loc[valid_indices], lazy=False
-                )
+                validated_df = schema.validate(refined_df.loc[valid_indices], lazy=False)
         if len(validated_df) == 0 and len(refined_df) > 0:
             validated_df = refined_df
-            if (
-                "CRITICAL: Schema validation resulted in complete data loss"
-                not in schema_errors
-            ):
+            if "CRITICAL: Schema validation resulted in complete data loss" not in schema_errors:
                 schema_errors.append(
                     f"CRITICAL: Schema validation resulted in complete data loss. "
                     f"All {len(refined_df)} records would have been filtered out. "

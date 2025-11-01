@@ -7,8 +7,7 @@ import pytest
 
 pytest.importorskip("frictionless")
 
-from hotpass.evidence import (record_consent_audit_log,  # noqa: E402
-                              record_export_access_event)
+from hotpass.evidence import record_consent_audit_log, record_export_access_event  # noqa: E402
 
 
 def expect(condition: bool, message: str) -> None:

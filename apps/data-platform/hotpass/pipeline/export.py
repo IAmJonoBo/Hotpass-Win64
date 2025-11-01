@@ -9,8 +9,7 @@ import pandas as pd
 import polars as pl
 
 from ..domain.party import PartyStore, build_party_store_from_refined
-from ..formatting import (OutputFormat, apply_excel_formatting,
-                          create_summary_sheet)
+from ..formatting import OutputFormat, apply_excel_formatting, create_summary_sheet
 from ..storage import DuckDBAdapter, PolarsDataset
 from ..transform.scoring import build_daily_list
 from .config import PipelineConfig
@@ -21,8 +20,7 @@ if TYPE_CHECKING:  # pragma: no cover - typing only
 
 
 def _write_csvw_metadata(output_path: Path) -> None:
-    from ..validation import \
-        load_schema_descriptor  # Local import to avoid cycle
+    from ..validation import load_schema_descriptor  # Local import to avoid cycle
 
     schema_descriptor = load_schema_descriptor("ssot.schema.json")
     sidecar = output_path.with_suffix(f"{output_path.suffix}-metadata.json")
@@ -89,9 +87,7 @@ def publish_outputs(
         validated_df.to_csv(config.output_path, index=False)
         _write_csvw_metadata(config.output_path)
     elif suffix == ".parquet":
-        pl.from_pandas(validated_df, include_index=False).write_parquet(
-            config.output_path
-        )
+        pl.from_pandas(validated_df, include_index=False).write_parquet(config.output_path)
     else:
         validated_df.to_excel(config.output_path, index=False)
 
@@ -107,9 +103,7 @@ def publish_outputs(
 
     daily_list_df: pd.DataFrame | None = None
     if config.daily_list_path is not None or config.daily_list_size:
-        digest_frame = (
-            intent_result.digest if intent_result is not None else pd.DataFrame()
-        )
+        digest_frame = intent_result.digest if intent_result is not None else pd.DataFrame()
         daily_list_df = build_daily_list(
             refined_df=validated_df,
             intent_digest=digest_frame,

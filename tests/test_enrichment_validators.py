@@ -4,9 +4,13 @@ from __future__ import annotations
 
 from datetime import timedelta
 
-from hotpass.enrichment.validators import (ContactValidationService,
-                                           EmailValidator, PhoneValidator,
-                                           ValidationStatus, logistic_scale)
+from hotpass.enrichment.validators import (
+    ContactValidationService,
+    EmailValidator,
+    PhoneValidator,
+    ValidationStatus,
+    logistic_scale,
+)
 
 from tests.helpers.assertions import expect
 
@@ -45,9 +49,7 @@ def test_phone_validator_normalises_and_scores_numbers() -> None:
         "Number should be classified",
     )
     if result.status is ValidationStatus.DELIVERABLE:
-        expect(
-            result.confidence >= 0.85, "Deliverable numbers should have high confidence"
-        )
+        expect(result.confidence >= 0.85, "Deliverable numbers should have high confidence")
 
 
 def test_contact_validation_service_caches_per_channel() -> None:

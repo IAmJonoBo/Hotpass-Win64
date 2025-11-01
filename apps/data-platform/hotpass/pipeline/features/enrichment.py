@@ -7,8 +7,11 @@ from dataclasses import dataclass
 
 from pandas import DataFrame
 
-from ...enrichment import (CacheManager, enrich_dataframe_with_websites,
-                           enrich_dataframe_with_websites_concurrent)
+from ...enrichment import (
+    CacheManager,
+    enrich_dataframe_with_websites,
+    enrich_dataframe_with_websites_concurrent,
+)
 from ..base import PipelineResult
 from .base import FeatureContext, PipelineFeatureStrategy
 

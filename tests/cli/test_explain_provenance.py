@@ -48,15 +48,11 @@ def test_explain_provenance_json_success(tmp_path: Path) -> None:
         capture_output=True,
         text=True,
     )
-    expect(
-        result.returncode == 0, f"explain-provenance should succeed: {result.stderr}"
-    )
+    expect(result.returncode == 0, f"explain-provenance should succeed: {result.stderr}")
     try:
         payload = json.loads(result.stdout)
     except json.JSONDecodeError as exc:
-        raise AssertionError(
-            f"CLI output must be JSON when --json passed: {exc}"
-        ) from exc
+        raise AssertionError(f"CLI output must be JSON when --json passed: {exc}") from exc
 
     provenance = payload.get("provenance", {})
     expect(payload.get("success") is True, "Payload should indicate success")
@@ -64,9 +60,7 @@ def test_explain_provenance_json_success(tmp_path: Path) -> None:
         provenance.get("provenance_source") == "deterministic",
         "Provenance source should match row",
     )
-    expect(
-        payload.get("organization_name") == "Test Org", "Should echo organization name"
-    )
+    expect(payload.get("organization_name") == "Test Org", "Should echo organization name")
 
 
 def test_explain_provenance_row_not_found(tmp_path: Path) -> None:

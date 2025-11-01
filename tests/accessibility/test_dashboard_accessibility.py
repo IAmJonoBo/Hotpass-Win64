@@ -94,9 +94,7 @@ class AccessibilityStreamlit:
         self.tabs_requested = tuple(labels)
         return tuple(self for _ in labels)
 
-    def columns(
-        self, spec: list[int] | tuple[int, ...] | int
-    ) -> list[AccessibilityStreamlit]:
+    def columns(self, spec: list[int] | tuple[int, ...] | int) -> list[AccessibilityStreamlit]:
         if isinstance(spec, int):
             count = spec
         else:
@@ -194,9 +192,7 @@ def test_run_button_uses_accessible_configuration(
     if button_kwargs is None:  # pragma: no cover - defensive guard for mypy
         pytest.fail("Run button was not configured")
     assert button_kwargs is not None
-    expect(
-        button_kwargs.get("type") == "primary", "Run button should use primary styling"
-    )
+    expect(button_kwargs.get("type") == "primary", "Run button should use primary styling")
     expect(
         button_kwargs.get("use_container_width") is True,
         "Run button should occupy the available width",
@@ -204,9 +200,7 @@ def test_run_button_uses_accessible_configuration(
 
 
 @accessibility_mark
-def test_tabs_cover_primary_journeys(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
+def test_tabs_cover_primary_journeys(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """Tabs should align with pipeline control, execution history, and quality metrics."""
 
     stub = AccessibilityStreamlit()
@@ -228,9 +222,7 @@ def test_tabs_cover_primary_journeys(
 
 
 @accessibility_mark
-def test_spinner_announces_status(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
+def test_spinner_announces_status(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """Spinner must provide textual status for assistive tech."""
 
     stub = AccessibilityStreamlit()

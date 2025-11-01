@@ -77,13 +77,9 @@ class LineageEmitter:
         facets: Mapping[str, Any] | None = None,
     ) -> None:
         self.job_name = job_name
-        self.namespace = namespace or os.getenv(
-            "HOTPASS_LINEAGE_NAMESPACE", DEFAULT_NAMESPACE
-        )
+        self.namespace = namespace or os.getenv("HOTPASS_LINEAGE_NAMESPACE", DEFAULT_NAMESPACE)
         self.run_id = str(run_id or uuid4())
-        resolved_producer = producer or os.getenv(
-            "HOTPASS_LINEAGE_PRODUCER", DEFAULT_PRODUCER
-        )
+        resolved_producer = producer or os.getenv("HOTPASS_LINEAGE_PRODUCER", DEFAULT_PRODUCER)
         self.producer = str(resolved_producer)
         self._inputs: Sequence[Any] | None = None
         self._run_facets = _build_facet_block(facets, self.producer)
@@ -176,9 +172,7 @@ class LineageEmitter:
             inputs=list(self._inputs or []),
             outputs=self._build_datasets(outputs or (), OutputDataset),
         )
-        logger.debug(
-            "Emitting OpenLineage FAIL event for %s: %s", self.job_name, message
-        )
+        logger.debug("Emitting OpenLineage FAIL event for %s: %s", self.job_name, message)
         self._emit(event)
 
     def _initialise_client(self) -> Any | None:

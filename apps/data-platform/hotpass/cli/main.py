@@ -9,13 +9,40 @@ from pathlib import Path
 from typing import Protocol, cast
 
 from .builder import CLIBuilder
-from .commands import (arc, aws, backfill, contracts, crawl, ctx, dashboard,
-                       deploy, distro, doctor, enrich, env, explain_provenance,
-                       init, net, orchestrate, overview, plan, qa, refine,
-                       resolve, run, setup, version)
-from .configuration import (DEFAULT_PROFILE_DIRS, CLIProfile,
-                            ProfileIntentError, ProfileNotFoundError,
-                            ProfileValidationError, load_profile)
+from .commands import (
+    arc,
+    aws,
+    backfill,
+    contracts,
+    crawl,
+    ctx,
+    dashboard,
+    deploy,
+    distro,
+    doctor,
+    enrich,
+    env,
+    explain_provenance,
+    init,
+    net,
+    orchestrate,
+    overview,
+    plan,
+    qa,
+    refine,
+    resolve,
+    run,
+    setup,
+    version,
+)
+from .configuration import (
+    DEFAULT_PROFILE_DIRS,
+    CLIProfile,
+    ProfileIntentError,
+    ProfileNotFoundError,
+    ProfileValidationError,
+    load_profile,
+)
 
 EPILOG = (
     "Profiles may be defined as TOML or YAML files. Use --profile-search-path to locate "

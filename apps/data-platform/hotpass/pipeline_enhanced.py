@@ -7,9 +7,11 @@ from collections.abc import Mapping
 
 from .pipeline.base import PipelineConfig, PipelineResult
 from .pipeline.features import EnhancedPipelineConfig
-from .pipeline.orchestrator import (PipelineExecutionConfig,
-                                    PipelineOrchestrator,
-                                    default_feature_bundle)
+from .pipeline.orchestrator import (
+    PipelineExecutionConfig,
+    PipelineOrchestrator,
+    default_feature_bundle,
+)
 from .telemetry.bootstrap import TelemetryBootstrapOptions, bootstrap_metrics
 from .telemetry.metrics import PipelineMetrics
 

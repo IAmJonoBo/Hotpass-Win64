@@ -16,8 +16,7 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
-from hotpass.config import (IndustryProfile, get_default_profile,
-                            load_industry_profile)
+from hotpass.config import IndustryProfile, get_default_profile, load_industry_profile
 from hotpass.research import ResearchContext, ResearchOrchestrator
 
 # Configure logging
@@ -675,9 +674,7 @@ class HotpassMCPServer:
                 id=request.id,
             )
 
-    async def _execute_tool(
-        self, tool_name: str, args: dict[str, Any]
-    ) -> dict[str, Any]:
+    async def _execute_tool(self, tool_name: str, args: dict[str, Any]) -> dict[str, Any]:
         """Execute a Hotpass tool."""
         logger.info(f"Executing tool: {tool_name} with args: {args}")
 
@@ -854,9 +851,7 @@ class HotpassMCPServer:
         row = None
         dataset_path = args.get("dataset_path")
         if dataset_path:
-            row = self._load_dataset_row(
-                Path(dataset_path), args.get("row_id"), args.get("entity")
-            )
+            row = self._load_dataset_row(Path(dataset_path), args.get("row_id"), args.get("entity"))
 
         if row is None and isinstance(args.get("row"), dict):
             row = pd.Series(args["row"])
@@ -1197,10 +1192,7 @@ class HotpassMCPServer:
                     return match.iloc[0]
 
         if entity and "organization_name" in frame.columns:
-            mask = (
-                frame["organization_name"].astype(str).str.casefold()
-                == entity.casefold()
-            )
+            mask = frame["organization_name"].astype(str).str.casefold() == entity.casefold()
             match = frame[mask]
             if not match.empty:
                 return match.iloc[0]
@@ -1279,9 +1271,7 @@ class HotpassMCPServer:
         try:
             while True:
                 # Read line from stdin
-                line = await asyncio.get_event_loop().run_in_executor(
-                    None, sys.stdin.readline
-                )
+                line = await asyncio.get_event_loop().run_in_executor(None, sys.stdin.readline)
 
                 if not line:
                     break

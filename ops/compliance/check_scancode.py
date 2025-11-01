@@ -37,9 +37,9 @@ def evaluate(report_path: Path, policy_path: Path) -> int:
     for entry in data.get("files", []):
         expressions: set[str] = set()
         for license_record in entry.get("licenses", []):
-            expression = license_record.get(
-                "spdx_license_expression"
-            ) or license_record.get("license_expression")
+            expression = license_record.get("spdx_license_expression") or license_record.get(
+                "license_expression"
+            )
             if expression:
                 expressions.add(expression)
         for symbol in _iter_license_symbols(expressions):

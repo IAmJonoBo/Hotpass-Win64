@@ -96,9 +96,7 @@ def _command_handler(namespace: argparse.Namespace, profile: CLIProfile | None) 
     return 0 if not failures else 1
 
 
-def _resolve_config(
-    namespace: argparse.Namespace, profile: CLIProfile | None
-) -> HotpassConfig:
+def _resolve_config(namespace: argparse.Namespace, profile: CLIProfile | None) -> HotpassConfig:
     config = HotpassConfig()
 
     config_paths: list[Path] = []
@@ -128,9 +126,7 @@ def _environment_checks(config: HotpassConfig) -> list[DiagnosticResult]:
     results: list[DiagnosticResult] = []
 
     version_ok = sys.version_info >= MIN_PYTHON_VERSION
-    version_message = (
-        f"Python {sys.version_info.major}.{sys.version_info.minor} detected"
-    )
+    version_message = f"Python {sys.version_info.major}.{sys.version_info.minor} detected"
     version_fix = None
     if not version_ok:
         version_fix = f"Upgrade to Python {MIN_PYTHON_VERSION[0]}.{MIN_PYTHON_VERSION[1]} or newer."

@@ -14,8 +14,7 @@ pytest.importorskip("frictionless")
 
 from hotpass import cli
 from hotpass.pipeline import QualityReport
-from hotpass.pipeline.orchestrator import (PipelineExecutionConfig,
-                                           PipelineOrchestrator)
+from hotpass.pipeline.orchestrator import PipelineExecutionConfig, PipelineOrchestrator
 
 
 def _collect_json_lines(output: str) -> list[dict[str, Any]]:
@@ -113,9 +112,7 @@ def test_run_command_merges_config_file(
     assert exit_code == 0
     captured = capsys.readouterr()
     log_records = _collect_json_lines(captured.out)
-    archive_event = next(
-        item for item in log_records if item["event"] == "archive.created"
-    )
+    archive_event = next(item for item in log_records if item["event"] == "archive.created")
 
     assert output_path.exists()
     assert Path(archive_event["data"]["path"]).exists()
@@ -304,14 +301,10 @@ def test_run_command_accepts_excel_tuning_options(
     assert exit_code == 0
     captured = capsys.readouterr()
     summary = next(
-        item
-        for item in _collect_json_lines(captured.out)
-        if item["event"] == "pipeline.summary"
+        item for item in _collect_json_lines(captured.out) if item["event"] == "pipeline.summary"
     )
     assert summary["data"]["total_records"] == 2
-    assert (
-        calls
-    ), "staging to parquet should be attempted when a stage directory is provided"
+    assert calls, "staging to parquet should be attempted when a stage directory is provided"
 
 
 def test_structured_logger_json_logs_redact_sensitive_fields(

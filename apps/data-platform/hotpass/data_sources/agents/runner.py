@@ -11,13 +11,11 @@ from typing import TYPE_CHECKING
 import pandas as pd
 
 from ...enrichment.providers import REGISTRY as provider_registry
-from ...enrichment.providers import (BaseProvider, ProviderContext,
-                                     ProviderPayload)
+from ...enrichment.providers import BaseProvider, ProviderContext, ProviderPayload
 from ...normalization import clean_string
 from .. import RawRecord
 from .base import AgentContext, AgentResult, normalise_records
-from .config import (AcquisitionPlan, AgentDefinition, ProviderDefinition,
-                     TargetDefinition)
+from .config import AcquisitionPlan, AgentDefinition, ProviderDefinition, TargetDefinition
 
 if TYPE_CHECKING:
     from ...telemetry.metrics import PipelineMetrics
@@ -57,9 +55,7 @@ class AcquisitionManager:
             self._metrics = observability.get_pipeline_metrics()
         return self._metrics
 
-    def run(
-        self, *, country_code: str
-    ) -> tuple[pd.DataFrame, list[AgentTiming], list[str]]:
+    def run(self, *, country_code: str) -> tuple[pd.DataFrame, list[AgentTiming], list[str]]:
         all_records: list[RawRecord] = []
         timings: list[AgentTiming] = []
         warnings: list[str] = []
@@ -74,9 +70,7 @@ class AcquisitionManager:
             "hotpass.acquisition.deduplicate": self.plan.deduplicate,
         }
 
-        with observability.trace_operation(
-            "acquisition.plan", plan_attributes
-        ) as plan_span:
+        with observability.trace_operation("acquisition.plan", plan_attributes) as plan_span:
             plan_start = time.perf_counter()
 
             for agent in active_agents:
@@ -93,9 +87,7 @@ class AcquisitionManager:
 
             if all_records:
                 records = (
-                    normalise_records(all_records)
-                    if self.plan.deduplicate
-                    else list(all_records)
+                    normalise_records(all_records) if self.plan.deduplicate else list(all_records)
                 )
                 frame = pd.DataFrame([record.as_dict() for record in records])
             else:
@@ -124,18 +116,14 @@ class AcquisitionManager:
                     extra_attributes={"country": country_code},
                 )
 
-            plan_span.set_attribute(
-                "hotpass.acquisition.duration_ms", plan_duration * 1000
-            )
+            plan_span.set_attribute("hotpass.acquisition.duration_ms", plan_duration * 1000)
             plan_span.set_attribute("hotpass.acquisition.records", len(records))
             if total_warnings:
                 plan_span.set_attribute("hotpass.acquisition.warnings", total_warnings)
 
         return frame, timings, warnings
 
-    def _run_agent(
-        self, agent: AgentDefinition, *, country_code: str
-    ) -> tuple[AgentResult, float]:
+    def _run_agent(self, agent: AgentDefinition, *, country_code: str) -> tuple[AgentResult, float]:
         context = AgentContext(
             plan=self.plan,
             agent=agent,
@@ -160,9 +148,7 @@ class AcquisitionManager:
         }
 
         observability = self._observability()
-        with observability.trace_operation(
-            "acquisition.agent", agent_attributes
-        ) as agent_span:
+        with observability.trace_operation("acquisition.agent", agent_attributes) as agent_span:
             agent_start = time.perf_counter()
 
             for provider_definition in provider_definitions:
@@ -202,9 +188,7 @@ class AcquisitionManager:
             agent_span.set_attribute("hotpass.acquisition.duration_ms", duration * 1000)
             agent_span.set_attribute("hotpass.acquisition.records", len(result.records))
             if result.warnings:
-                agent_span.set_attribute(
-                    "hotpass.acquisition.warnings", len(result.warnings)
-                )
+                agent_span.set_attribute("hotpass.acquisition.warnings", len(result.warnings))
 
         return result, duration
 
@@ -262,9 +246,7 @@ class AcquisitionManager:
                 provider=definition.name,
             )
 
-            provider_span.set_attribute(
-                "hotpass.acquisition.duration_ms", duration * 1000
-            )
+            provider_span.set_attribute("hotpass.acquisition.duration_ms", duration * 1000)
             provider_span.set_attribute("hotpass.acquisition.records", len(payloads))
 
         return payloads

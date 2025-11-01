@@ -123,9 +123,7 @@ def _locate_row(frame: pd.DataFrame, row_identifier: str) -> tuple[int, pd.Serie
     try:
         index = int(row_identifier)
         if index < 0 or index >= len(frame):
-            raise ValueError(
-                f"Row index {index} out of range (dataset has {len(frame)} rows)"
-            )
+            raise ValueError(f"Row index {index} out of range (dataset has {len(frame)} rows)")
         return index, frame.iloc[index]
     except ValueError:
         pass
@@ -139,13 +137,9 @@ def _locate_row(frame: pd.DataFrame, row_identifier: str) -> tuple[int, pd.Serie
     raise ValueError(f"Unable to locate row '{row_identifier}' in dataset")
 
 
-def _build_payload(
-    row_identifier: str, row_index: int, row: pd.Series
-) -> dict[str, Any]:
+def _build_payload(row_identifier: str, row_index: int, row: pd.Series) -> dict[str, Any]:
     provenance = {
-        column: str(row.get(column, "N/A"))
-        for column in PROVENANCE_COLUMNS
-        if column in row.index
+        column: str(row.get(column, "N/A")) for column in PROVENANCE_COLUMNS if column in row.index
     }
     payload: dict[str, Any] = {
         "success": bool(provenance),

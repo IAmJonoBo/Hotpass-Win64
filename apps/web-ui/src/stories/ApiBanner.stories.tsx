@@ -49,4 +49,3 @@ export const Success: Story = {
     description: 'Prefect API health and flow runs synced successfully.',
   },
 }
-

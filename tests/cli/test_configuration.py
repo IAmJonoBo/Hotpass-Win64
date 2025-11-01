@@ -62,9 +62,7 @@ enrichment = true
 
 
 def test_normalise_sensitive_fields_deduplicates_and_lowercases() -> None:
-    values = shared.normalise_sensitive_fields(
-        ["Email", "", "PHONE", "email"], ("contact",)
-    )
+    values = shared.normalise_sensitive_fields(["Email", "", "PHONE", "email"], ("contact",))
     assert values == ("contact", "email", "phone")
 
 

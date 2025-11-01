@@ -9,8 +9,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from rich.console import Console
-from rich.progress import (Progress, SpinnerColumn, TextColumn,
-                           TimeElapsedColumn)
+from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 from rich.prompt import Confirm
 
 DEFAULT_EXTRAS = ["dev", "docs"]
@@ -130,9 +129,7 @@ def execute_plan(steps: list[BootstrapStep], *, execute: bool, console: Console)
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description="Bootstrap Hotpass developer environments"
-    )
+    parser = argparse.ArgumentParser(description="Bootstrap Hotpass developer environments")
     parser.add_argument(
         "--extras",
         action="append",
@@ -171,9 +168,7 @@ def main(argv: list[str] | None = None) -> int:
     console = Console()
 
     extras = args.extras or DEFAULT_EXTRAS
-    plan = build_bootstrap_plan(
-        extras, args.prefect_profile, args.env_file, args.vault_address
-    )
+    plan = build_bootstrap_plan(extras, args.prefect_profile, args.env_file, args.vault_address)
 
     console.print("[bold]Hotpass bootstrap plan[/bold]")
     for step in plan:
@@ -186,9 +181,7 @@ def main(argv: list[str] | None = None) -> int:
         if not check_prerequisites(console):
             return 1
         if not args.assume_yes and sys.stdin.isatty():
-            confirmed = Confirm.ask(
-                "Proceed with executing the bootstrap plan?", default=True
-            )
+            confirmed = Confirm.ask("Proceed with executing the bootstrap plan?", default=True)
             if not confirmed:
                 console.print("[yellow]Bootstrap aborted by user.[/yellow]")
                 return 0

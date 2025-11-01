@@ -9,9 +9,7 @@ from rich.console import Console
 
 from tests.helpers.assertions import expect
 
-BOOTSTRAP_MODULE_PATH = (
-    Path(__file__).resolve().parents[1] / "ops" / "idp" / "bootstrap.py"
-)
+BOOTSTRAP_MODULE_PATH = Path(__file__).resolve().parents[1] / "ops" / "idp" / "bootstrap.py"
 
 
 def _load_bootstrap_module() -> ModuleType:
@@ -24,9 +22,7 @@ def _load_bootstrap_module() -> ModuleType:
         idp_pkg.__path__ = [str(BOOTSTRAP_MODULE_PATH.parent)]
         sys.modules["ops.idp"] = idp_pkg
 
-    spec = importlib.util.spec_from_file_location(
-        "ops.idp.bootstrap", BOOTSTRAP_MODULE_PATH
-    )
+    spec = importlib.util.spec_from_file_location("ops.idp.bootstrap", BOOTSTRAP_MODULE_PATH)
     if spec is None or spec.loader is None:  # pragma: no cover - defensive guard
         msg = "Unable to load bootstrap module specification"
         raise RuntimeError(msg)
@@ -41,9 +37,7 @@ bootstrap = _load_bootstrap_module()
 
 def test_build_bootstrap_plan_includes_supply_chain(tmp_path: Path) -> None:
     env_file = tmp_path / ".env.hotpass"
-    plan = bootstrap.build_bootstrap_plan(
-        ["dev", "docs"], "hotpass-dev", env_file, None
-    )
+    plan = bootstrap.build_bootstrap_plan(["dev", "docs"], "hotpass-dev", env_file, None)
 
     commands = [step.command for step in plan if step.command]
     expect(["uv", "venv"] in commands, "Bootstrap plan should include uv venv command")

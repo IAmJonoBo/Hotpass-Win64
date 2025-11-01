@@ -254,9 +254,7 @@ class ResearchOrchestrator:
             for source in getattr(context.profile, "authority_sources", tuple())
         )
 
-        backfill_fields = tuple(
-            _filter_blank(context.backfill_fields or profile_backfill_fields)
-        )
+        backfill_fields = tuple(_filter_blank(context.backfill_fields or profile_backfill_fields))
 
         rate_limit_policy: RateLimitPolicy | None = None
         profile_rate_limit = getattr(context.profile, "research_rate_limit", None)
@@ -276,9 +274,7 @@ class ResearchOrchestrator:
             entity_name=entity_name,
             entity_slug=entity_slug,
             query=context.query,
-            target_urls=tuple(
-                dict.fromkeys(urls)
-            ),  # preserve order while removing duplicates
+            target_urls=tuple(dict.fromkeys(urls)),  # preserve order while removing duplicates
             row=row,
             profile=context.profile,
             allow_network=context.allow_network,
@@ -291,9 +287,7 @@ class ResearchOrchestrator:
     # Execution
     # --------------------------------------------------------------------- #
 
-    def _execute(
-        self, plan: ResearchPlan, *, crawl_only: bool = False
-    ) -> ResearchOutcome:
+    def _execute(self, plan: ResearchPlan, *, crawl_only: bool = False) -> ResearchOutcome:
         start = time.perf_counter()
         steps: list[ResearchStepResult] = []
         enriched_row: dict[str, Any] | None = None
@@ -317,9 +311,7 @@ class ResearchOrchestrator:
 
         network_step = self._run_network_enrichment(plan, enriched_row=enriched_row)
         steps.append(network_step)
-        if network_step.status == "success" and network_step.artifacts.get(
-            "enriched_row"
-        ):
+        if network_step.status == "success" and network_step.artifacts.get("enriched_row"):
             enriched_row = network_step.artifacts["enriched_row"]
             provenance = network_step.artifacts.get("provenance", provenance)
 
@@ -399,9 +391,7 @@ class ResearchOrchestrator:
                 status="skipped",
                 message="No authority snapshots found for entity",
                 artifacts={
-                    "authority_sources": [
-                        snapshot.name for snapshot in plan.authority_sources
-                    ],
+                    "authority_sources": [snapshot.name for snapshot in plan.authority_sources],
                 },
             )
 
@@ -712,9 +702,7 @@ class ResearchOrchestrator:
         except Exception:  # pragma: no cover - audit logging is best effort
             LOGGER.debug("Failed to persist research audit entry", exc_info=True)
 
-    def _persist_crawl_results(
-        self, plan: ResearchPlan, payload: dict[str, Any]
-    ) -> str | None:
+    def _persist_crawl_results(self, plan: ResearchPlan, payload: dict[str, Any]) -> str | None:
         try:
             timestamp = datetime.now(UTC)
             directory = self.artefact_root / plan.entity_slug / "crawl"

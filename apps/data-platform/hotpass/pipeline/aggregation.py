@@ -17,7 +17,12 @@ from ..pipeline_reporting import collect_unique
 from ..storage import PolarsDataset
 from ..telemetry import pipeline_stage
 from ..transform.scoring import LeadScorer
-from .config import DEFAULT_LEAD_SCORER, SSOT_COLUMNS as CONFIG_SSOT_COLUMNS, PipelineConfig
+from .config import (
+    DEFAULT_LEAD_SCORER,
+    PipelineConfig,
+)
+from .config import SSOT_COLUMNS as CONFIG_SSOT_COLUMNS
+from .quality_summary import summarise_quality as _summarise_quality
 
 SSOT_COLUMNS = CONFIG_SSOT_COLUMNS
 
@@ -131,24 +136,6 @@ def _latest_iso_date(values: Iterable[object | None]) -> str | None:
     if pd.isna(latest):
         return None
     return str(latest.date().isoformat())
-
-
-def _summarise_quality(row: dict[str, str | None]) -> dict[str, object]:
-    checks = {
-        "contact_email": bool(row.get("contact_primary_email")),
-        "contact_phone": bool(row.get("contact_primary_phone")),
-        "website": bool(row.get("website")),
-        "province": bool(row.get("province")),
-        "address": bool(row.get("address_primary")),
-    }
-    score = sum(1 for flag in checks.values() if flag) / max(len(checks), 1)
-    missing_flags = [
-        f"missing_{name}" for name, present in checks.items() if not present
-    ]
-    return {
-        "score": round(score, 2),
-        "flags": ";".join(missing_flags) if missing_flags else "none",
-    }
 
 
 def _resolve_intent_summary(
@@ -295,9 +282,7 @@ def _aggregate_group(
     ) -> ValueSelection | None:
         if not selections:
             return None
-        primary_selection = next(
-            (sel for sel in selections if sel.value == value), selections[0]
-        )
+        primary_selection = next((sel for sel in selections if sel.value == value), selections[0])
         entry = _build_provenance(field, primary_selection, value)
         contributors = [sel for sel in selections if sel is not primary_selection]
         if contributors:
@@ -381,16 +366,12 @@ def _aggregate_group(
     website = websites[0].value if websites else None
     _record_provenance("website", websites, website)
 
-    planes_value = (
-        "; ".join(selection.value for selection in planes) if planes else None
-    )
+    planes_value = "; ".join(selection.value for selection in planes) if planes else None
     if planes_value:
         _record_provenance("planes", planes, planes_value)
 
     description_value = (
-        "; ".join(selection.value for selection in descriptions)
-        if descriptions
-        else None
+        "; ".join(selection.value for selection in descriptions) if descriptions else None
     )
     if description_value:
         _record_provenance("description", descriptions, description_value)
@@ -411,9 +392,7 @@ def _aggregate_group(
     secondary_email_values = email_values[1:]
     secondary_emails = ";".join(selection.value for selection in secondary_email_values)
     if secondary_emails:
-        _record_provenance(
-            "contact_secondary_emails", secondary_email_values, secondary_emails
-        )
+        _record_provenance("contact_secondary_emails", secondary_email_values, secondary_emails)
 
     primary_phone_selection = _record_provenance(
         "contact_primary_phone",
@@ -424,13 +403,9 @@ def _aggregate_group(
     secondary_phone_values = phone_values[1:]
     secondary_phones = ";".join(selection.value for selection in secondary_phone_values)
     if secondary_phones:
-        _record_provenance(
-            "contact_secondary_phones", secondary_phone_values, secondary_phones
-        )
+        _record_provenance("contact_secondary_phones", secondary_phone_values, secondary_phones)
 
-    def _first_value_from_row(
-        selection: ValueSelection | None, column: str
-    ) -> str | None:
+    def _first_value_from_row(selection: ValueSelection | None, column: str) -> str | None:
         if selection is None:
             return None
         row = entries[selection.row_metadata.index]
@@ -465,18 +440,10 @@ def _aggregate_group(
         phone=primary_phone,
         country_code=country_code,
     )
-    email_confidence = (
-        validation_summary.email.confidence if validation_summary.email else None
-    )
-    phone_confidence = (
-        validation_summary.phone.confidence if validation_summary.phone else None
-    )
-    email_status = (
-        validation_summary.email.status.value if validation_summary.email else None
-    )
-    phone_status = (
-        validation_summary.phone.status.value if validation_summary.phone else None
-    )
+    email_confidence = validation_summary.email.confidence if validation_summary.email else None
+    phone_confidence = validation_summary.phone.confidence if validation_summary.phone else None
+    email_status = validation_summary.email.status.value if validation_summary.email else None
+    phone_status = validation_summary.phone.status.value if validation_summary.phone else None
     validation_flags = validation_summary.flags()
     deliverability_score = validation_summary.deliverability_score()
     completeness_inputs = [primary_name, primary_email, primary_phone, primary_role]
@@ -548,9 +515,7 @@ def _aggregate_group(
         ),
         "contact_email_confidence_avg": email_confidence,
         "contact_phone_confidence_avg": phone_confidence,
-        "contact_verification_score_avg": (
-            deliverability_score if deliverability_score else None
-        ),
+        "contact_verification_score_avg": (deliverability_score if deliverability_score else None),
         "contact_lead_score_avg": lead_score if lead_score else None,
         "intent_signal_score": round(intent_score, 6) if intent_summary else 0.0,
         "intent_signal_count": intent_summary.signal_count if intent_summary else 0,
@@ -658,9 +623,7 @@ def aggregate_records(
     ):
         aggregated_rows = []
         all_conflicts: list[dict[str, Any]] = []
-        slug_series = (
-            group_table.get_column("organization_slug") if group_total else None
-        )
+        slug_series = group_table.get_column("organization_slug") if group_total else None
         index_series = group_table.get_column("groups") if group_total else None
 
         for index in range(group_total):
@@ -679,10 +642,7 @@ def aggregate_records(
             aggregated_rows.append(row_dict)
             if group_total > 0:
                 completed = index + 1
-                if (
-                    completed == group_total
-                    or completed % max(group_total // 10, 1) == 0
-                ):
+                if completed == group_total or completed % max(group_total // 10, 1) == 0:
                     notify_progress(
                         "aggregate_progress",
                         {
@@ -706,13 +666,9 @@ def aggregate_records(
             dataset.timings.construction_seconds + dataset.timings.sort_seconds
         )
         if dataset.timings.sort_seconds > 0:
-            metrics["polars_sort_speedup"] = (
-                pandas_sort_seconds / dataset.timings.sort_seconds
-            )
+            metrics["polars_sort_speedup"] = pandas_sort_seconds / dataset.timings.sort_seconds
         else:
-            metrics["polars_sort_speedup"] = (
-                float("inf") if pandas_sort_seconds > 0 else 0.0
-            )
+            metrics["polars_sort_speedup"] = float("inf") if pandas_sort_seconds > 0 else 0.0
 
         materialize_start = perf_counter()
         refined_df = dataset.to_pandas().reset_index(drop=True)

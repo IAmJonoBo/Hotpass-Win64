@@ -34,16 +34,10 @@ class CheckpointSpec:
 CHECKPOINTS: tuple[CheckpointSpec, ...] = (
     CheckpointSpec("reachout_organisation", "Reachout Database.xlsx", "Organisation"),
     CheckpointSpec("reachout_contact_info", "Reachout Database.xlsx", "Contact Info"),
-    CheckpointSpec(
-        "sacaa_cleaned", "SACAA Flight Schools - Refined copy__CLEANED.xlsx", "Cleaned"
-    ),
+    CheckpointSpec("sacaa_cleaned", "SACAA Flight Schools - Refined copy__CLEANED.xlsx", "Cleaned"),
     CheckpointSpec("contact_company_cat", "Contact Database.xlsx", "Company_Cat"),
-    CheckpointSpec(
-        "contact_company_contacts", "Contact Database.xlsx", "Company_Contacts"
-    ),
-    CheckpointSpec(
-        "contact_company_addresses", "Contact Database.xlsx", "Company_Addresses"
-    ),
+    CheckpointSpec("contact_company_contacts", "Contact Database.xlsx", "Company_Contacts"),
+    CheckpointSpec("contact_company_addresses", "Contact Database.xlsx", "Company_Addresses"),
     CheckpointSpec("contact_capture", "Contact Database.xlsx", "10-10-25 Capture"),
 )
 
@@ -164,9 +158,7 @@ def main(argv: list[str] | None = None) -> int:
                 data_docs_dir=docs_dir,
             )
             message = (
-                "Validation passed"
-                if validation_result.success
-                else "Validation reported failure"
+                "Validation passed" if validation_result.success else "Validation reported failure"
             )
             results.append(
                 {
@@ -230,9 +222,7 @@ def main(argv: list[str] | None = None) -> int:
     else:
         for item in results:
             status = "PASS" if item["status"] == "passed" else "FAIL"
-            print(
-                f"{status}: {item['checkpoint']} ({item['workbook']}#{item['sheet']})"
-            )
+            print(f"{status}: {item['checkpoint']} ({item['workbook']}#{item['sheet']})")
             print(f"  {item['message']}")
         doc_summary = summary["stats"]["docs_html_files"]
         print(

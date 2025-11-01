@@ -15,12 +15,8 @@ class SharedParsers:
     """Parent parsers shared across individual command registrations."""
 
     base: argparse.ArgumentParser = field(default_factory=shared.make_base_parser)
-    pipeline: argparse.ArgumentParser = field(
-        default_factory=shared.make_pipeline_parser
-    )
-    reporting: argparse.ArgumentParser = field(
-        default_factory=shared.make_reporting_parser
-    )
+    pipeline: argparse.ArgumentParser = field(default_factory=shared.make_pipeline_parser)
+    reporting: argparse.ArgumentParser = field(default_factory=shared.make_reporting_parser)
     excel: argparse.ArgumentParser = field(default_factory=shared.make_excel_parser)
 
 
@@ -44,9 +40,7 @@ class CLICommand:
 class CLIBuilder:
     """Aggregate shared option parsers and command registrations."""
 
-    def __init__(
-        self, *, description: str | None = None, epilog: str | None = None
-    ) -> None:
+    def __init__(self, *, description: str | None = None, epilog: str | None = None) -> None:
         self.description = description
         self.epilog = epilog
         self.shared = SharedParsers()

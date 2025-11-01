@@ -34,9 +34,7 @@ def check_import(module: str, module_path: str, symbol: str) -> None:
         and any(alias.name == symbol for alias in node.names)
         for node in ast.walk(tree)
     ):
-        raise FitnessFailure(
-            f"{module} missing instrumentation import {symbol} from {module_path}"
-        )
+        raise FitnessFailure(f"{module} missing instrumentation import {symbol} from {module_path}")
 
 
 def check_public_api(module: str, symbols: list[str]) -> None:
@@ -51,9 +49,7 @@ def check_public_api(module: str, symbols: list[str]) -> None:
                 value = node.value
                 if isinstance(value, ast.List | ast.Tuple):
                     for element in value.elts:
-                        if isinstance(element, ast.Constant) and isinstance(
-                            element.value, str
-                        ):
+                        if isinstance(element, ast.Constant) and isinstance(element.value, str):
                             exported.add(element.value)
     missing = [symbol for symbol in symbols if symbol not in exported]
     if missing:
@@ -72,12 +68,7 @@ def check_profile_completeness(profile_name: str) -> None:
     import yaml
 
     profile_path = (
-        PROJECT_ROOT
-        / "apps"
-        / "data-platform"
-        / "hotpass"
-        / "profiles"
-        / f"{profile_name}.yaml"
+        PROJECT_ROOT / "apps" / "data-platform" / "hotpass" / "profiles" / f"{profile_name}.yaml"
     )
     if not profile_path.exists():
         raise FitnessFailure(f"Profile {profile_name} not found at {profile_path}")
@@ -107,10 +98,7 @@ def main() -> None:
     }
 
     checks: list[Callable[[], None]] = [
-        *(
-            _module_length_check(module, limit)
-            for module, limit in module_thresholds.items()
-        ),
+        *(_module_length_check(module, limit) for module, limit in module_thresholds.items()),
         lambda: check_import(
             "observability.py",
             ".telemetry.registry",

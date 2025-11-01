@@ -8,11 +8,18 @@ from ..data_sources.agents import run_plan as run_acquisition_plan
 from ..observability import PipelineMetrics
 from .base import BasePipelineExecutor
 from .config import PipelineConfig, PipelineResult
-from .features import (ComplianceFeature, EnhancedPipelineConfig,
-                       EnrichmentFeature, EntityResolutionFeature,
-                       FeatureContext, GeospatialFeature,
-                       PipelineFeatureStrategy, TraceFactory,
-                       default_trace_factory, ensure_feature_sequence)
+from .features import (
+    ComplianceFeature,
+    EnhancedPipelineConfig,
+    EnrichmentFeature,
+    EntityResolutionFeature,
+    FeatureContext,
+    GeospatialFeature,
+    PipelineFeatureStrategy,
+    TraceFactory,
+    default_trace_factory,
+    ensure_feature_sequence,
+)
 
 
 @dataclass(slots=True)
@@ -20,18 +27,14 @@ class PipelineExecutionConfig:
     """Configuration describing how the orchestrator should execute the pipeline."""
 
     base_config: PipelineConfig
-    enhanced_config: EnhancedPipelineConfig = field(
-        default_factory=EnhancedPipelineConfig
-    )
+    enhanced_config: EnhancedPipelineConfig = field(default_factory=EnhancedPipelineConfig)
     features: tuple[PipelineFeatureStrategy, ...] = field(default_factory=tuple)
     trace_factory: TraceFactory | None = None
     metrics: PipelineMetrics | None = None
 
     def with_default_trace_factory(self) -> PipelineExecutionConfig:
         if self.trace_factory is None:
-            self.trace_factory = default_trace_factory(
-                self.enhanced_config.enable_observability
-            )
+            self.trace_factory = default_trace_factory(self.enhanced_config.enable_observability)
         return self
 
 
@@ -66,9 +69,7 @@ class PipelineOrchestrator:
         result: PipelineResult = self._base_executor.run(execution.base_config)
 
         if execution.metrics:
-            execution.metrics.record_records_processed(
-                len(result.refined), source="base_pipeline"
-            )
+            execution.metrics.record_records_processed(len(result.refined), source="base_pipeline")
 
         if execution.trace_factory is None:
             raise RuntimeError(

@@ -20,9 +20,7 @@ class FeatureContext:
 
     base_config: PipelineConfig
     enhanced_config: EnhancedPipelineConfig
-    trace_factory: TraceFactory = field(
-        default_factory=lambda: (lambda _name: nullcontext())
-    )
+    trace_factory: TraceFactory = field(default_factory=lambda: (lambda _name: nullcontext()))
     metrics: PipelineMetrics | None = None
 
 
@@ -44,8 +42,7 @@ def default_trace_factory(enabled: bool) -> TraceFactory:
     if not enabled:
         return lambda _name: nullcontext()
 
-    from ...observability import \
-        trace_operation  # Local import to avoid cycles
+    from ...observability import trace_operation  # Local import to avoid cycles
 
     def factory(operation: str) -> AbstractContextManager[object]:
         return trace_operation(operation)

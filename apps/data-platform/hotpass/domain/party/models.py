@@ -74,9 +74,7 @@ class DomainModel(BaseModel):
 class Provenance(DomainModel):
     """Capture the origin of a record and supporting metadata."""
 
-    source: str = Field(
-        ..., description="Human friendly name of the contributing dataset"
-    )
+    source: str = Field(..., description="Human friendly name of the contributing dataset")
     record_id: str | None = Field(
         default=None,
         description="Source specific identifier for the contributing record",
@@ -114,9 +112,7 @@ class ValidityWindow(DomainModel):
 class Party(DomainModel):
     """Canonical representation of a person, organisation, or location."""
 
-    party_id: uuid.UUID = Field(
-        default_factory=generate_uuid7, description="Canonical identifier"
-    )
+    party_id: uuid.UUID = Field(default_factory=generate_uuid7, description="Canonical identifier")
     kind: PartyKind = Field(..., description="Type of party represented")
     display_name: str = Field(..., description="Preferred display name for the party")
     normalized_name: str | None = Field(
@@ -144,9 +140,7 @@ class Party(DomainModel):
 class PartyAlias(DomainModel):
     """Alias record mapped back to a canonical party."""
 
-    alias_id: uuid.UUID = Field(
-        default_factory=generate_uuid7, description="Alias identifier"
-    )
+    alias_id: uuid.UUID = Field(default_factory=generate_uuid7, description="Alias identifier")
     party_id: uuid.UUID = Field(..., description="Party the alias belongs to")
     alias: str = Field(..., description="Alias text as captured from the source")
     alias_type: AliasType = Field(
@@ -176,9 +170,7 @@ class PartyAlias(DomainModel):
 class PartyRole(DomainModel):
     """Role linking two parties with temporal validity."""
 
-    role_id: uuid.UUID = Field(
-        default_factory=generate_uuid7, description="Role identifier"
-    )
+    role_id: uuid.UUID = Field(default_factory=generate_uuid7, description="Role identifier")
     subject_party_id: uuid.UUID = Field(
         ..., description="Party fulfilling the role (e.g. the person)"
     )
@@ -211,12 +203,8 @@ class ContactMethod(DomainModel):
         default_factory=generate_uuid7, description="Contact method identifier"
     )
     party_id: uuid.UUID = Field(..., description="Party the contact method belongs to")
-    method_type: ContactMethodType = Field(
-        ..., description="Type of communication channel"
-    )
-    value: str = Field(
-        ..., description="Contact value (email address, phone number, URL)"
-    )
+    method_type: ContactMethodType = Field(..., description="Type of communication channel")
+    value: str = Field(..., description="Contact value (email address, phone number, URL)")
     is_primary: bool = Field(
         default=False,
         description="Whether the contact method is preferred/primary",
@@ -274,7 +262,5 @@ class PartyStore(DomainModel):
             "party": [party.model_dump(mode="json") for party in self.parties],
             "party_alias": [alias.model_dump(mode="json") for alias in self.aliases],
             "party_role": [role.model_dump(mode="json") for role in self.roles],
-            "contact_method": [
-                contact.model_dump(mode="json") for contact in self.contact_methods
-            ],
+            "contact_method": [contact.model_dump(mode="json") for contact in self.contact_methods],
         }

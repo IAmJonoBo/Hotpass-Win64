@@ -72,16 +72,13 @@ class FileNotFoundError(HotpassError):
     """Raised when a required file is not found."""
 
     @classmethod
-    def create(
-        cls, file_path: str, suggested_fix: str | None = None
-    ) -> FileNotFoundError:
+    def create(cls, file_path: str, suggested_fix: str | None = None) -> FileNotFoundError:
         context = ErrorContext(
             category=ErrorCategory.FILE_NOT_FOUND,
             severity=ErrorSeverity.ERROR,
             message=f"File not found: {file_path}",
             details={"file_path": file_path},
-            suggested_fix=suggested_fix
-            or "Check the file path and ensure the file exists",
+            suggested_fix=suggested_fix or "Check the file path and ensure the file exists",
             recoverable=False,
         )
         return cls(context)
@@ -236,9 +233,7 @@ class ErrorReport:
         return {
             "total_errors": len(self.errors),
             "total_warnings": len(self.warnings),
-            "critical_errors": sum(
-                1 for e in self.errors if e.severity == ErrorSeverity.CRITICAL
-            ),
+            "critical_errors": sum(1 for e in self.errors if e.severity == ErrorSeverity.CRITICAL),
             "recoverable_errors": sum(1 for e in self.errors if e.recoverable),
             "errors_by_category": self._count_by_category(),
         }

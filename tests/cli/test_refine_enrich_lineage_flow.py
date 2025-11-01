@@ -31,9 +31,7 @@ def test_refine_enrich_lineage_from_archived_bundle(
     """End-to-end refine→enrich→lineage flow for archived multi-workbook bundles."""
 
     restore_dir = tmp_path / "rehydrated"
-    extracted_dir = rehydrate_archive_task(
-        multi_workbook_bundle.archive_path, restore_dir
-    )
+    extracted_dir = rehydrate_archive_task(multi_workbook_bundle.archive_path, restore_dir)
     expect(extracted_dir.exists(), "Rehydrated archive should exist for refine run.")
 
     refined_path = tmp_path / "refined.xlsx"
@@ -57,7 +55,10 @@ def test_refine_enrich_lineage_from_archived_bundle(
     expect(refined_path.exists(), "Refined workbook should be created.")
 
     archives = list(dist_dir.glob("refined-data-*.zip"))
-    expect(archives, "Archive packaging should produce a refined-data zip artifact.")
+    expect(
+        bool(archives),
+        "Archive packaging should produce a refined-data zip artifact.",
+    )
 
     events = capture_lineage.events
     expect(len(events) >= 2, "Lineage capture should record start and complete events.")
@@ -73,7 +74,10 @@ def test_refine_enrich_lineage_from_archived_bundle(
         "Lineage inputs should list multiple workbooks from the bundle.",
     )
     expect(
-        any(name.endswith("refined.xlsx") for name in (dataset.name for dataset in complete_event.outputs)),
+        any(
+            name.endswith("refined.xlsx")
+            for name in (dataset.name for dataset in complete_event.outputs)
+        ),
         "Output lineage should reference the refined workbook.",
     )
 
@@ -182,7 +186,10 @@ def test_backfill_cli_prepares_runs_for_archived_bundle(
     )
 
     expect(exit_code == 0, "Backfill command should return success exit code.")
-    expect(recorded, "Backfill pipeline flow should be invoked during CLI execution.")
+    expect(
+        bool(recorded),
+        "Backfill pipeline flow should be invoked during CLI execution.",
+    )
     expect(
         str(archive_root) == recorded.get("archive_root"),
         "CLI should forward archive root to orchestration layer.",
@@ -192,6 +199,6 @@ def test_backfill_cli_prepares_runs_for_archived_bundle(
         "CLI should forward restore root to orchestration layer.",
     )
     expect(
-        recorded.get("runs"),
+        bool(recorded.get("runs")),
         "Backfill orchestration should receive expanded run definitions.",
     )

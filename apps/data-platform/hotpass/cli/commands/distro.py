@@ -72,9 +72,7 @@ def _dispatch(namespace: argparse.Namespace, profile: CLIProfile | None) -> int:
     _ = profile
     raw_handler = getattr(namespace, "handler", None)
     if not callable(raw_handler):
-        Console().print(
-            "[red]No distro subcommand specified (use 'hotpass distro --help').[/red]"
-        )
+        Console().print("[red]No distro subcommand specified (use 'hotpass distro --help').[/red]")
         return 1
     handler = cast(CommandHandler, raw_handler)
     result = handler(namespace, profile)
@@ -110,7 +108,5 @@ def _handle_docs(args: argparse.Namespace, profile: CLIProfile | None) -> int:
 
     for src in sources:
         shutil.copy2(src, output_dir / src.name)
-    console.print(
-        f"[green]Copied {len(sources)} documentation files to {output_dir}[/green]"
-    )
+    console.print(f"[green]Copied {len(sources)} documentation files to {output_dir}[/green]")
     return 0

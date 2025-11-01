@@ -66,9 +66,7 @@ def test_collection_guards_guard_many(tmp_path: Path) -> None:
     )
 
     records = [("1", {"value": "a"}), ("2", {"value": "b"})]
-    guards.guard_many(
-        records, source_url="https://example.com/data.csv", license="ODC-BY"
-    )
+    guards.guard_many(records, source_url="https://example.com/data.csv", license="ODC-BY")
 
     ledger_contents = (tmp_path / "ledger.jsonl").read_text(encoding="utf-8")
     logged = [json.loads(line) for line in ledger_contents.splitlines()]

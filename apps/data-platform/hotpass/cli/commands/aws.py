@@ -127,9 +127,7 @@ def _command_handler(namespace: argparse.Namespace, profile: CLIProfile | None) 
             profile=aws_profile,
             region=aws_region,
         )
-        console.print(
-            f"[cyan]Describing cluster:[/cyan] {format_command(describe_command)}"
-        )
+        console.print(f"[cyan]Describing cluster:[/cyan] {format_command(describe_command)}")
         if not dry_run:
             try:
                 proc = run_command(describe_command, capture_output=True, check=True)
@@ -148,9 +146,7 @@ def _command_handler(namespace: argparse.Namespace, profile: CLIProfile | None) 
                 kube_command.extend(["--alias", namespace.kube_context])
             if namespace.kubeconfig:
                 kube_command.extend(["--kubeconfig", namespace.kubeconfig])
-            console.print(
-                f"[cyan]Updating kubeconfig:[/cyan] {format_command(kube_command)}"
-            )
+            console.print(f"[cyan]Updating kubeconfig:[/cyan] {format_command(kube_command)}")
             if not dry_run:
                 try:
                     run_command(kube_command, check=True)

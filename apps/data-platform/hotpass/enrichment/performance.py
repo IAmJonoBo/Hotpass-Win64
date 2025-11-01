@@ -60,9 +60,7 @@ class FetcherCache:
             Cache key string
         """
         # Create a deterministic hash of row data
-        row_str = "|".join(
-            f"{k}:{v}" for k, v in sorted(row_data.items()) if v is not None
-        )
+        row_str = "|".join(f"{k}:{v}" for k, v in sorted(row_data.items()) if v is not None)
         row_hash = hashlib.sha256(row_str.encode()).hexdigest()[:16]
         return f"fetcher:{fetcher_name}:{row_hash}"
 
@@ -160,9 +158,7 @@ def enrich_parallel(
     if cache is None:
         cache = FetcherCache(enabled=True)
 
-    def process_row_fetcher(
-        row_idx: int, fetcher: Fetcher, row: pd.Series
-    ) -> tuple[int, str, Any]:
+    def process_row_fetcher(row_idx: int, fetcher: Fetcher, row: pd.Series) -> tuple[int, str, Any]:
         """Process a single row with a single fetcher."""
         fetcher_name = fetcher.__class__.__name__
 
@@ -276,8 +272,6 @@ def benchmark_enrichment(
         enrich_parallel(df, fetchers, max_workers=max_workers)
         parallel_time = time.time() - start
         results["parallel_time"] = parallel_time
-        results["speedup"] = (
-            sequential_time / parallel_time if parallel_time > 0 else 0.0
-        )
+        results["speedup"] = sequential_time / parallel_time if parallel_time > 0 else 0.0
 
     return results

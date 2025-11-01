@@ -17,12 +17,7 @@ def expect(condition: bool, message: str) -> None:
 
 
 def _load_compose() -> dict[str, Any]:
-    compose_path = (
-        Path(__file__).resolve().parents[2]
-        / "infra"
-        / "marquez"
-        / "docker-compose.yaml"
-    )
+    compose_path = Path(__file__).resolve().parents[2] / "infra" / "marquez" / "docker-compose.yaml"
     payload = yaml.safe_load(compose_path.read_text(encoding="utf-8"))
     expect(isinstance(payload, dict), "Compose file should parse into a mapping.")
     return cast(dict[str, Any], payload)

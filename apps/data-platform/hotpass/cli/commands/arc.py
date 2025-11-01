@@ -39,25 +39,17 @@ def build(
         default="arc-runners",
         help="Kubernetes namespace for runners",
     )
-    parser.add_argument(
-        "--timeout", type=float, default=600.0, help="Timeout in seconds"
-    )
+    parser.add_argument("--timeout", type=float, default=600.0, help="Timeout in seconds")
     parser.add_argument(
         "--poll-interval",
         type=float,
         default=10.0,
         help="Polling interval in seconds",
     )
-    parser.add_argument(
-        "--snapshot", type=Path, help="Snapshot file for offline verification"
-    )
-    parser.add_argument(
-        "--verify-oidc", action="store_true", help="Also verify AWS OIDC identity"
-    )
+    parser.add_argument("--snapshot", type=Path, help="Snapshot file for offline verification")
+    parser.add_argument("--verify-oidc", action="store_true", help="Also verify AWS OIDC identity")
     parser.add_argument("--aws-region", help="AWS region override for identity checks")
-    parser.add_argument(
-        "--aws-profile", help="AWS profile override for identity checks"
-    )
+    parser.add_argument("--aws-profile", help="AWS profile override for identity checks")
     parser.add_argument(
         "--output",
         choices={"text", "json"},
@@ -123,9 +115,7 @@ def _command_handler(namespace: argparse.Namespace, profile: CLIProfile | None) 
     if proc.stdout:
         console.print(proc.stdout.strip())
     if proc.stderr:
-        console.print(
-            Panel(proc.stderr.strip(), title="stderr", expand=False, style="red")
-        )
+        console.print(Panel(proc.stderr.strip(), title="stderr", expand=False, style="red"))
 
     if proc.returncode != 0:
         console.print("[red]ARC verification failed.[/red]")
@@ -143,9 +133,7 @@ def _command_handler(namespace: argparse.Namespace, profile: CLIProfile | None) 
             "scale_set": namespace.scale_set,
             "timestamp": datetime.now(tz=UTC).isoformat(),
         }
-        (output_dir / "metadata.json").write_text(
-            json.dumps(metadata, indent=2), encoding="utf-8"
-        )
+        (output_dir / "metadata.json").write_text(json.dumps(metadata, indent=2), encoding="utf-8")
         console.print(f"[green]Stored verification output under {output_dir}[/green]")
 
     if namespace.status_path:

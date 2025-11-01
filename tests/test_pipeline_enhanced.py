@@ -13,13 +13,17 @@ from tests.helpers.fixtures import fixture
 pytest.importorskip("frictionless")
 
 import hotpass.pipeline_enhanced as pipeline_enhanced
-from hotpass.pipeline import (PIIRedactionConfig, PipelineConfig,
-                              PipelineExecutionConfig, PipelineOrchestrator,
-                              PipelineResult, QualityReport,
-                              default_feature_bundle)
+from hotpass.pipeline import (
+    PIIRedactionConfig,
+    PipelineConfig,
+    PipelineExecutionConfig,
+    PipelineOrchestrator,
+    PipelineResult,
+    QualityReport,
+    default_feature_bundle,
+)
 from hotpass.pipeline.features import EnhancedPipelineConfig
-from hotpass.pipeline_enhanced import (_initialize_observability,
-                                       run_enhanced_pipeline)
+from hotpass.pipeline_enhanced import _initialize_observability, run_enhanced_pipeline
 from hotpass.telemetry.bootstrap import TelemetryBootstrapOptions
 
 
@@ -77,15 +81,9 @@ def test_enhanced_pipeline_config_defaults():
         not config.enable_geospatial,
         "Geospatial enrichment should be disabled by default.",
     )
-    expect(
-        not config.enable_enrichment, "Web enrichment should be disabled by default."
-    )
-    expect(
-        not config.enable_compliance, "Compliance checks should be disabled by default."
-    )
-    expect(
-        not config.enable_observability, "Observability should be disabled by default."
-    )
+    expect(not config.enable_enrichment, "Web enrichment should be disabled by default.")
+    expect(not config.enable_compliance, "Compliance checks should be disabled by default.")
+    expect(not config.enable_observability, "Observability should be disabled by default.")
     expect(
         config.entity_resolution_threshold == 0.75,
         "Default entity resolution threshold should be 0.75.",
@@ -137,9 +135,7 @@ def test_initialize_observability_enabled_invokes_dependencies(monkeypatch):
     monkeypatch.setattr(pipeline_enhanced, "bootstrap_metrics", _fake_bootstrap)
 
     expect(
-        _initialize_observability(
-            config, additional_attributes={"hotpass.command": "prefect"}
-        )
+        _initialize_observability(config, additional_attributes={"hotpass.command": "prefect"})
         is metrics_mock,
         "Bootstrap should return the metrics instance from the delegate.",
     )
@@ -150,9 +146,7 @@ def test_initialize_observability_enabled_invokes_dependencies(monkeypatch):
     )
     expect(options.enabled is True, "Telemetry should be enabled when requested.")
     expect(options.environment == "qa", "Environment override should propagate.")
-    expect(
-        options.service_name == "hotpass", "Default service name should be 'hotpass'."
-    )
+    expect(options.service_name == "hotpass", "Default service name should be 'hotpass'.")
     expect(
         options.resource_attributes["hotpass.profile"] == "aviation",
         "Profile attribute should propagate to resource attributes.",
@@ -164,14 +158,10 @@ def test_initialize_observability_enabled_invokes_dependencies(monkeypatch):
     )
 
 
-def test_run_enhanced_pipeline_uses_orchestrator(
-    monkeypatch, base_pipeline_config, sample_result
-):
+def test_run_enhanced_pipeline_uses_orchestrator(monkeypatch, base_pipeline_config, sample_result):
     orchestrator_mock = Mock(spec=PipelineOrchestrator)
     orchestrator_mock.run.return_value = sample_result
-    monkeypatch.setattr(
-        pipeline_enhanced, "PipelineOrchestrator", lambda: orchestrator_mock
-    )
+    monkeypatch.setattr(pipeline_enhanced, "PipelineOrchestrator", lambda: orchestrator_mock)
     monkeypatch.setattr(pipeline_enhanced, "_initialize_observability", lambda *_: None)
 
     enhanced_config = EnhancedPipelineConfig(enable_entity_resolution=True)
@@ -201,14 +191,10 @@ def test_run_enhanced_pipeline_uses_orchestrator(
     )
 
 
-def test_run_enhanced_pipeline_sets_default_linkage_dir(
-    monkeypatch, tmp_path, sample_result
-):
+def test_run_enhanced_pipeline_sets_default_linkage_dir(monkeypatch, tmp_path, sample_result):
     orchestrator_mock = Mock(spec=PipelineOrchestrator)
     orchestrator_mock.run.return_value = sample_result
-    monkeypatch.setattr(
-        pipeline_enhanced, "PipelineOrchestrator", lambda: orchestrator_mock
-    )
+    monkeypatch.setattr(pipeline_enhanced, "PipelineOrchestrator", lambda: orchestrator_mock)
     monkeypatch.setattr(pipeline_enhanced, "_initialize_observability", lambda *_: None)
 
     config = PipelineConfig(
@@ -228,15 +214,11 @@ def test_run_enhanced_pipeline_sets_default_linkage_dir(
     )
 
 
-def test_run_enhanced_pipeline_initializes_observability(
-    monkeypatch, base_pipeline_config
-):
+def test_run_enhanced_pipeline_initializes_observability(monkeypatch, base_pipeline_config):
     metrics_mock = Mock()
     orchestrator_mock = Mock(spec=PipelineOrchestrator)
     orchestrator_mock.run.return_value = Mock(spec=PipelineResult)
-    monkeypatch.setattr(
-        pipeline_enhanced, "PipelineOrchestrator", lambda: orchestrator_mock
-    )
+    monkeypatch.setattr(pipeline_enhanced, "PipelineOrchestrator", lambda: orchestrator_mock)
     monkeypatch.setattr(
         pipeline_enhanced,
         "_initialize_observability",
@@ -253,14 +235,10 @@ def test_run_enhanced_pipeline_initializes_observability(
     )
 
 
-def test_run_enhanced_pipeline_uses_provided_metrics(
-    monkeypatch, base_pipeline_config
-) -> None:
+def test_run_enhanced_pipeline_uses_provided_metrics(monkeypatch, base_pipeline_config) -> None:
     orchestrator_mock = Mock(spec=PipelineOrchestrator)
     orchestrator_mock.run.return_value = Mock(spec=PipelineResult)
-    monkeypatch.setattr(
-        pipeline_enhanced, "PipelineOrchestrator", lambda: orchestrator_mock
-    )
+    monkeypatch.setattr(pipeline_enhanced, "PipelineOrchestrator", lambda: orchestrator_mock)
     sentinel_metrics = Mock()
     called = False
 

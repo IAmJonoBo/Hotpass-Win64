@@ -83,9 +83,7 @@ class TestProfileSchema:
         enrich = profile["enrich"]
         expect("allow_network" in enrich, "enrich block must have allow_network")
         expect("fetcher_chain" in enrich, "enrich block must have fetcher_chain")
-        expect(
-            isinstance(enrich["fetcher_chain"], list), "fetcher_chain must be a list"
-        )
+        expect(isinstance(enrich["fetcher_chain"], list), "fetcher_chain must be a list")
 
     def test_compliance_block_structure(self):
         """Sprint 3: Compliance block should have required fields."""
@@ -105,9 +103,7 @@ class TestProfileLinter:
     def test_profile_linter_exists(self):
         """Sprint 3: Profile linter tool should exist."""
         linter_path = Path("tools/profile_lint.py")
-        expect(
-            linter_path.exists(), "Profile linter should exist at tools/profile_lint.py"
-        )
+        expect(linter_path.exists(), "Profile linter should exist at tools/profile_lint.py")
 
     def test_profile_linter_runs_successfully(self):
         """Sprint 3: Profile linter should validate all profiles."""

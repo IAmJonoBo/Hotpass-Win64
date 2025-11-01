@@ -8,9 +8,7 @@ from hotpass.validation import run_checkpoint
 
 def test_checkpoint_validation_passes_with_valid_data(tmp_path):
     """Checkpoint validation succeeds with conforming data."""
-    df = pd.DataFrame(
-        {"Organisation Name": ["Test Org"], "ID": [1], "Type": ["Flight School"]}
-    )
+    df = pd.DataFrame({"Organisation Name": ["Test Org"], "ID": [1], "Type": ["Flight School"]})
 
     result = run_checkpoint(
         df,
@@ -89,9 +87,7 @@ def test_checkpoint_with_invalid_suite_name_raises_error():
 
 def test_checkpoint_validation_without_data_docs_succeeds(tmp_path):
     """Checkpoint can run without Data Docs generation."""
-    df = pd.DataFrame(
-        {"Organisation Name": ["Test Org"], "ID": [1], "Type": ["Flight School"]}
-    )
+    df = pd.DataFrame({"Organisation Name": ["Test Org"], "ID": [1], "Type": ["Flight School"]})
 
     # Don't pass data_docs_dir
     result = run_checkpoint(

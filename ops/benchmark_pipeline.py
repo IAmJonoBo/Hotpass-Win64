@@ -16,9 +16,7 @@ def _format_line(label: str, value: Any) -> str:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        description="Run pipeline benchmarks and summarise results"
-    )
+    parser = argparse.ArgumentParser(description="Run pipeline benchmarks and summarise results")
     parser.add_argument("--input-dir", type=Path, default=Path.cwd() / "data")
     parser.add_argument(
         "--output-path",

@@ -6,8 +6,7 @@ import argparse
 import json
 from pathlib import Path
 
-from hotpass.config import (IndustryProfile, get_default_profile,
-                            load_industry_profile)
+from hotpass.config import IndustryProfile, get_default_profile, load_industry_profile
 from hotpass.research import ResearchOrchestrator, ResearchOutcome
 from rich.console import Console
 from rich.table import Table
@@ -64,9 +63,7 @@ def register() -> CLICommand:
     )
 
 
-def _command_handler(
-    namespace: argparse.Namespace, cli_profile: CLIProfile | None
-) -> int:
+def _command_handler(namespace: argparse.Namespace, cli_profile: CLIProfile | None) -> int:
     console = Console()
     orchestrator = ResearchOrchestrator()
     profile = _resolve_profile(namespace, cli_profile)
@@ -87,12 +84,8 @@ def _command_handler(
         _render(console, outcome)
         if namespace.output:
             namespace.output.parent.mkdir(parents=True, exist_ok=True)
-            namespace.output.write_text(
-                json.dumps(outcome.to_dict(), indent=2), encoding="utf-8"
-            )
-            console.print(
-                f"[green]Crawl metadata written to[/green] {namespace.output}"
-            )
+            namespace.output.write_text(json.dumps(outcome.to_dict(), indent=2), encoding="utf-8")
+            console.print(f"[green]Crawl metadata written to[/green] {namespace.output}")
 
     return 0 if outcome.success else 2
 

@@ -8,8 +8,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from hotpass.versioning import (DatasetVersion, DVCManager,
-                                record_version_metadata)
+from hotpass.versioning import DatasetVersion, DVCManager, record_version_metadata
 
 pytestmark = pytest.mark.bandwidth("smoke")
 
@@ -25,9 +24,7 @@ class TestDatasetVersion:
 
     def test_semver_property(self) -> None:
         """Test semantic version string generation."""
-        version = DatasetVersion(
-            major=1, minor=2, patch=3, timestamp="2025-01-01T00:00:00Z"
-        )
+        version = DatasetVersion(major=1, minor=2, patch=3, timestamp="2025-01-01T00:00:00Z")
         expect(
             version.semver == "1.2.3",
             f"Expected semver '1.2.3', got '{version.semver}'",
@@ -35,9 +32,7 @@ class TestDatasetVersion:
 
     def test_bump_major(self) -> None:
         """Test major version bump resets minor and patch."""
-        version = DatasetVersion(
-            major=1, minor=2, patch=3, timestamp="2025-01-01T00:00:00Z"
-        )
+        version = DatasetVersion(major=1, minor=2, patch=3, timestamp="2025-01-01T00:00:00Z")
         new_version = version.bump("major")
 
         expect(new_version.major == 2, f"Expected major=2, got {new_version.major}")
@@ -46,9 +41,7 @@ class TestDatasetVersion:
 
     def test_bump_minor(self) -> None:
         """Test minor version bump resets patch."""
-        version = DatasetVersion(
-            major=1, minor=2, patch=3, timestamp="2025-01-01T00:00:00Z"
-        )
+        version = DatasetVersion(major=1, minor=2, patch=3, timestamp="2025-01-01T00:00:00Z")
         new_version = version.bump("minor")
 
         expect(new_version.major == 1, f"Expected major=1, got {new_version.major}")
@@ -57,9 +50,7 @@ class TestDatasetVersion:
 
     def test_bump_patch(self) -> None:
         """Test patch version bump."""
-        version = DatasetVersion(
-            major=1, minor=2, patch=3, timestamp="2025-01-01T00:00:00Z"
-        )
+        version = DatasetVersion(major=1, minor=2, patch=3, timestamp="2025-01-01T00:00:00Z")
         new_version = version.bump("patch")
 
         expect(new_version.major == 1, f"Expected major=1, got {new_version.major}")
@@ -126,9 +117,7 @@ class TestDVCManager:
         )
 
     @patch("hotpass.versioning.subprocess.run")
-    def test_initialize_creates_dvc_structure(
-        self, mock_run: MagicMock, tmp_path: Path
-    ) -> None:
+    def test_initialize_creates_dvc_structure(self, mock_run: MagicMock, tmp_path: Path) -> None:
         """Test DVC initialization."""
         mock_run.return_value = MagicMock(returncode=0, stderr="", stdout="")
 
@@ -217,9 +206,7 @@ class TestDVCManager:
         """Test that set_version creates .dvc directory if needed."""
         manager = DVCManager(tmp_path)
 
-        version = DatasetVersion(
-            major=1, minor=0, patch=0, timestamp="2025-01-01T00:00:00Z"
-        )
+        version = DatasetVersion(major=1, minor=0, patch=0, timestamp="2025-01-01T00:00:00Z")
 
         result = manager.set_version(version)
         expect(result, "Expected set_version to return True")
@@ -234,24 +221,16 @@ class TestDVCManager:
             f.write("invalid json {")
 
         version = manager.get_version()
-        expect(
-            version.major == 0, f"Expected major=0 on corrupt file, got {version.major}"
-        )
-        expect(
-            version.minor == 1, f"Expected minor=1 on corrupt file, got {version.minor}"
-        )
+        expect(version.major == 0, f"Expected major=0 on corrupt file, got {version.major}")
+        expect(version.minor == 1, f"Expected minor=1 on corrupt file, got {version.minor}")
 
     @patch("hotpass.versioning.subprocess.run")
-    def test_tag_version_creates_git_tag(
-        self, mock_run: MagicMock, tmp_path: Path
-    ) -> None:
+    def test_tag_version_creates_git_tag(self, mock_run: MagicMock, tmp_path: Path) -> None:
         """Test creating a git tag for a version."""
         mock_run.return_value = MagicMock(returncode=0, stderr="", stdout="")
 
         manager = DVCManager(tmp_path)
-        version = DatasetVersion(
-            major=1, minor=2, patch=3, timestamp="2025-01-01T00:00:00Z"
-        )
+        version = DatasetVersion(major=1, minor=2, patch=3, timestamp="2025-01-01T00:00:00Z")
 
         result = manager.tag_version(version, "test_dataset")
         expect(result, "Expected tag_version to return True")
@@ -275,15 +254,11 @@ class TestDVCManager:
         manager = DVCManager(tmp_path)
         result = manager.push_metadata()
 
-        expect(
-            not result, "Expected push_metadata to return False when not initialized"
-        )
+        expect(not result, "Expected push_metadata to return False when not initialized")
         mock_run.assert_not_called()
 
     @patch("hotpass.versioning.subprocess.run")
-    def test_push_metadata_calls_dvc_push(
-        self, mock_run: MagicMock, tmp_path: Path
-    ) -> None:
+    def test_push_metadata_calls_dvc_push(self, mock_run: MagicMock, tmp_path: Path) -> None:
         """Test pushing DVC metadata."""
         dvc_dir = tmp_path / ".dvc"
         dvc_dir.mkdir()
@@ -311,9 +286,7 @@ class TestDVCManager:
         expect("tracked_files" in status, "Expected tracked_files in status")
 
     @patch("hotpass.versioning.subprocess.run")
-    def test_status_returns_initialized(
-        self, mock_run: MagicMock, tmp_path: Path
-    ) -> None:
+    def test_status_returns_initialized(self, mock_run: MagicMock, tmp_path: Path) -> None:
         """Test status when DVC is initialized."""
         dvc_dir = tmp_path / ".dvc"
         dvc_dir.mkdir()
@@ -368,9 +341,7 @@ class TestRecordVersionMetadata:
         output_path = tmp_path / "data.xlsx"
         output_path.touch()
 
-        version = DatasetVersion(
-            major=1, minor=0, patch=0, timestamp="2025-01-01T00:00:00Z"
-        )
+        version = DatasetVersion(major=1, minor=0, patch=0, timestamp="2025-01-01T00:00:00Z")
 
         additional = {"pipeline": "enhanced", "records": 1000}
         metadata_path = record_version_metadata(output_path, version, additional)

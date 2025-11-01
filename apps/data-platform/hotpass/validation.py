@@ -17,23 +17,22 @@ if TYPE_CHECKING:  # pragma: no cover - typing only
 try:  # pragma: no cover - Great Expectations is an optional dependency
     from great_expectations.core.batch import Batch
     from great_expectations.core.expectation_suite import ExpectationSuite
-    from great_expectations.core.expectation_validation_result import \
-        ExpectationSuiteValidationResult
-    from great_expectations.data_context.data_context import \
-        context_factory as ge_context_factory
-    from great_expectations.data_context.data_context.ephemeral_data_context import \
-        EphemeralDataContext
+    from great_expectations.core.expectation_validation_result import (
+        ExpectationSuiteValidationResult,
+    )
+    from great_expectations.data_context.data_context import context_factory as ge_context_factory
+    from great_expectations.data_context.data_context.ephemeral_data_context import (
+        EphemeralDataContext,
+    )
     from great_expectations.data_context.types.base import (
-        DataContextConfig, InMemoryStoreBackendDefaults)
-    from great_expectations.execution_engine.pandas_execution_engine import \
-        PandasExecutionEngine
-    from great_expectations.expectations.expectation_configuration import \
-        ExpectationConfiguration
+        DataContextConfig,
+        InMemoryStoreBackendDefaults,
+    )
+    from great_expectations.execution_engine.pandas_execution_engine import PandasExecutionEngine
+    from great_expectations.expectations.expectation_configuration import ExpectationConfiguration
     from great_expectations.validator.validator import Validator
 except ImportError as exc:  # pragma: no cover - handled via tests when GE absent
-    raise RuntimeError(
-        "Great Expectations must be installed for contract validation"
-    ) from exc
+    raise RuntimeError("Great Expectations must be installed for contract validation") from exc
 
 
 def _project_root() -> Path:

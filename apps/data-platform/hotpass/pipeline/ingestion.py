@@ -7,8 +7,12 @@ from typing import Any
 import pandas as pd
 
 from ..compliance import redact_dataframe
-from ..data_sources import (ExcelReadOptions, load_contact_database,
-                            load_reachout_database, load_sacaa_cleaned)
+from ..data_sources import (
+    ExcelReadOptions,
+    load_contact_database,
+    load_reachout_database,
+    load_sacaa_cleaned,
+)
 from ..data_sources.agents import run_plan as run_acquisition_plan
 from ..normalization import normalize_province, slugify
 from .config import PipelineConfig

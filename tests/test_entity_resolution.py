@@ -6,11 +6,15 @@ import json
 from pathlib import Path
 
 import pandas as pd
-from hotpass.entity_resolution import (_derive_slug_keys, _load_entity_history,
-                                       _slugify, add_ml_priority_scores,
-                                       build_entity_registry,
-                                       calculate_completeness_score,
-                                       resolve_entities_fallback)
+from hotpass.entity_resolution import (
+    _derive_slug_keys,
+    _load_entity_history,
+    _slugify,
+    add_ml_priority_scores,
+    build_entity_registry,
+    calculate_completeness_score,
+    resolve_entities_fallback,
+)
 
 from tests.helpers.assertions import expect
 
@@ -54,9 +58,7 @@ def test_load_entity_history_parses_supported_format(tmp_path: Path) -> None:
                     "entity_id": 1,
                     "organization_name": "Alpha Labs",
                     "name_variants": ["Alpha"],
-                    "status_history": [
-                        {"status": "active", "date": "2024-01-01T00:00:00"}
-                    ],
+                    "status_history": [{"status": "active", "date": "2024-01-01T00:00:00"}],
                 }
             ]
         )
@@ -97,9 +99,7 @@ def test_build_entity_registry_merges_history(tmp_path: Path) -> None:
                     "entity_id": 10,
                     "organization_name": "Alpha Labs",
                     "name_variants": ["Alpha Holdings"],
-                    "status_history": [
-                        {"status": "pending", "date": "2024-01-01T00:00:00"}
-                    ],
+                    "status_history": [{"status": "pending", "date": "2024-01-01T00:00:00"}],
                 }
             ]
         )
@@ -142,9 +142,5 @@ def test_add_ml_priority_scores_extends_dataframe() -> None:
         }
     )
     enriched = add_ml_priority_scores(df)
-    expect(
-        "priority_score" in enriched.columns, "Priority score column should be added"
-    )
-    expect(
-        "completeness_score" in enriched.columns, "Completeness score should be added"
-    )
+    expect("priority_score" in enriched.columns, "Priority score column should be added")
+    expect("completeness_score" in enriched.columns, "Completeness score should be added")
