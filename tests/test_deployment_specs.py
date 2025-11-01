@@ -84,9 +84,7 @@ def _load_deployments_module() -> Iterator[types.ModuleType]:
             def refinement_pipeline_flow(**kwargs: object) -> dict[str, object]:
                 return dict(kwargs)
 
-            @prefect_flow(  # type: ignore[misc]
-                name="hotpass-backfill", validate_parameters=False
-            )
+            @prefect_flow(name="hotpass-backfill", validate_parameters=False)  # type: ignore[misc]
             def backfill_pipeline_flow(**kwargs: object) -> dict[str, object]:
                 return dict(kwargs)
 
@@ -195,8 +193,7 @@ def test_build_runner_deployment_renders_prefect_model(
     )
     if spec.schedule is not None:
         expect(
-            runner_deployment.schedules is not None
-            and len(runner_deployment.schedules) == 1,
+            runner_deployment.schedules is not None and len(runner_deployment.schedules) == 1,
             "Scheduled deployments should yield exactly one schedule entry.",
         )
 
@@ -229,9 +226,7 @@ def test_deploy_pipeline_filters_and_registers(
     )
     expect(len(recorder.calls) == 1, "Runner deploy should have been invoked once.")
     args, kwargs = recorder.calls[0]
-    expect(
-        len(args) == 1, "Only the selected refinement deployment should be registered."
-    )
+    expect(len(args) == 1, "Only the selected refinement deployment should be registered.")
     expect(
         kwargs.get("build") is False,
         "Deploy should skip image builds for in-repo flows.",
@@ -270,9 +265,7 @@ def test_deploy_pipeline_applies_overrides(
         captured.append(spec)
         return original_build(spec)
 
-    monkeypatch.setattr(
-        deployments_module, "build_runner_deployment", _capture, raising=False
-    )
+    monkeypatch.setattr(deployments_module, "build_runner_deployment", _capture, raising=False)
 
     deployments_module.deploy_pipeline(
         flows=("refinement",),

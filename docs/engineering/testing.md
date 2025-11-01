@@ -2,7 +2,7 @@
 
 _Last updated: 2025-11-01_
 
-**Audience:** release managers, QA contributors, Copilot/Codex agents, and engineers who need to validate Hotpass before shipping changes.  
+**Audience:** release managers, QA contributors, Copilot/Codex agents, and engineers who need to validate Hotpass before shipping changes.
 **Purpose:** explain how to run, extend, and troubleshoot the Hotpass automated test suites so that fast smoke checks and deeper gates stay reliable.
 
 ## Overview
@@ -120,8 +120,8 @@ If any command fails, the script exits immediately with a non-zero code so CI ca
 
 ### Bandwidth markers
 
-- Use `@pytest.mark.bandwidth("smoke")` (or `pytestmark = pytest.mark.bandwidth("smoke")`) for deterministic tests.  
-- Heavy directories such as `tests/pipeline`, `tests/research`, and `tests/quality` are auto-classified as `bandwidth("quality_gate")` or `bandwidth("slow")` in `tests/conftest.py`.  
+- Use `@pytest.mark.bandwidth("smoke")` (or `pytestmark = pytest.mark.bandwidth("smoke")`) for deterministic tests.
+- Heavy directories such as `tests/pipeline`, `tests/research`, and `tests/quality` are auto-classified as `bandwidth("quality_gate")` or `bandwidth("slow")` in `tests/conftest.py`.
 - Unmarked tests default to `bandwidth("full")`, ensuring smoke runs remain predictable.
 
 ### Coverage reporting

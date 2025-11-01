@@ -6,16 +6,24 @@ import pandas as pd
 import pytest
 
 pytest.importorskip("frictionless")
+pytestmark = pytest.mark.bandwidth("smoke")
 
-from hotpass.pipeline import (PIIRedactionConfig, PipelineConfig,
-                              PipelineResult, QualityReport,
-                              default_feature_bundle)
-from hotpass.pipeline.features import (ComplianceFeature,
-                                       EnhancedPipelineConfig,
-                                       EnrichmentFeature,
-                                       EntityResolutionFeature, FeatureContext,
-                                       GeospatialFeature,
-                                       default_trace_factory)
+from hotpass.pipeline import (
+    PIIRedactionConfig,
+    PipelineConfig,
+    PipelineResult,
+    QualityReport,
+    default_feature_bundle,
+)
+from hotpass.pipeline.features import (
+    ComplianceFeature,
+    EnhancedPipelineConfig,
+    EnrichmentFeature,
+    EntityResolutionFeature,
+    FeatureContext,
+    GeospatialFeature,
+    default_trace_factory,
+)
 
 
 def _base_context(tmp_path, enhanced_config) -> FeatureContext:
@@ -76,9 +84,7 @@ def test_entity_resolution_feature_applies_linkage(tmp_path, monkeypatch):
 
 def test_entity_resolution_feature_falls_back(tmp_path, monkeypatch):
     df = pd.DataFrame({"organization_name": ["Alpha"], "organization_slug": ["alpha"]})
-    enhanced_config = EnhancedPipelineConfig(
-        enable_entity_resolution=True, use_splink=True
-    )
+    enhanced_config = EnhancedPipelineConfig(enable_entity_resolution=True, use_splink=True)
     context = _base_context(tmp_path, enhanced_config)
 
     def fake_link_entities(frame, _config):  # pragma: no cover - triggered in test
@@ -110,9 +116,7 @@ def test_entity_resolution_feature_falls_back(tmp_path, monkeypatch):
 
 def test_geospatial_feature_normalizes_addresses(tmp_path, monkeypatch):
     df = pd.DataFrame({"address_primary": ["123 Main"], "country": ["ZA"]})
-    enhanced_config = EnhancedPipelineConfig(
-        enable_geospatial=True, geocode_addresses=True
-    )
+    enhanced_config = EnhancedPipelineConfig(enable_geospatial=True, geocode_addresses=True)
     context = _base_context(tmp_path, enhanced_config)
 
     def fake_normalize(value):
@@ -123,12 +127,8 @@ def test_geospatial_feature_normalizes_addresses(tmp_path, monkeypatch):
         assert country_column == "country"
         return frame.assign(latitude=1.0)
 
-    monkeypatch.setattr(
-        "hotpass.pipeline.features.geospatial.normalize_address", fake_normalize
-    )
-    monkeypatch.setattr(
-        "hotpass.pipeline.features.geospatial.geocode_dataframe", fake_geocode
-    )
+    monkeypatch.setattr("hotpass.pipeline.features.geospatial.normalize_address", fake_normalize)
+    monkeypatch.setattr("hotpass.pipeline.features.geospatial.geocode_dataframe", fake_geocode)
 
     result = GeospatialFeature().apply(_result(df), context)
     assert (result.refined["address_primary"].iloc[0]).startswith("normalized-")
@@ -200,9 +200,7 @@ def test_compliance_feature_generates_report(tmp_path, monkeypatch):
         "hotpass.pipeline.features.compliance.add_provenance_columns",
         fake_add_provenance,
     )
-    monkeypatch.setattr(
-        "hotpass.pipeline.features.compliance.detect_pii_in_dataframe", fake_detect
-    )
+    monkeypatch.setattr("hotpass.pipeline.features.compliance.detect_pii_in_dataframe", fake_detect)
     monkeypatch.setattr("hotpass.pipeline.features.compliance.POPIAPolicy", FakePolicy)
 
     result = ComplianceFeature().apply(_result(df), context)
