@@ -168,7 +168,7 @@ def load_deployment_specs(base_dir: Path | None = None) -> list[DeploymentSpec]:
     if not root.exists():
         return []
 
-    manifests: list[DeploymentSpec] = []
+    manifests: dict[str, tuple[Path, DeploymentSpec]] = {}
     for manifest_path in sorted(
         (path for path in root.glob("**/*") if path.is_file()), key=lambda p: str(p)
     ):
@@ -176,8 +176,17 @@ def load_deployment_specs(base_dir: Path | None = None) -> list[DeploymentSpec]:
             continue
         payload = _read_manifest(manifest_path)
         identifier = str(payload.get("id") or manifest_path.stem)
-        manifests.append(DeploymentSpec.from_mapping(identifier, payload))
-    return manifests
+        spec = DeploymentSpec.from_mapping(identifier, payload)
+        existing = manifests.get(identifier)
+        if existing is not None:
+            previous_path, _ = existing
+            current_depth = len(manifest_path.relative_to(root).parts)
+            previous_depth = len(previous_path.relative_to(root).parts)
+            # Prefer manifests located deeper in the hierarchy (e.g., prefect/deployments/*)
+            if current_depth <= previous_depth:
+                continue
+        manifests[identifier] = (manifest_path, spec)
+    return [entry[1] for entry in manifests.values()]
 
 
 def build_runner_deployment(spec: DeploymentSpec) -> Any:

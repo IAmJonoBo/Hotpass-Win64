@@ -298,3 +298,48 @@ def test_deploy_pipeline_applies_overrides(
     expect(len(captured) == 1, "Second invocation should build another spec.")
     disabled_spec = captured.pop()
     expect(disabled_spec.schedule is None, "Disabling schedule should clear metadata.")
+
+
+def test_load_deployment_specs_prefers_nested_manifests(tmp_path: Path) -> None:
+    """Nested manifests should override root-level definitions for the same identifier."""
+
+    from hotpass.prefect.deployments import load_deployment_specs
+
+    root_manifest = tmp_path / "refinement.yaml"
+    nested_dir = tmp_path / "deployments"
+    nested_dir.mkdir()
+    nested_manifest = nested_dir / "hotpass-refinement.yaml"
+
+    root_manifest.write_text(
+        """\
+id: refinement
+name: root-deployment
+flow: hotpass.orchestration:refinement_pipeline_flow
+description: root definition
+parameters: {}
+""",
+        encoding="utf-8",
+    )
+
+    nested_manifest.write_text(
+        """\
+id: refinement
+name: nested-deployment
+flow: hotpass.orchestration:refinement_pipeline_flow
+description: nested definition
+parameters: {}
+""",
+        encoding="utf-8",
+    )
+
+    specs = load_deployment_specs(tmp_path)
+    expect(len(specs) == 1, "Duplicate identifiers should be de-duplicated.")
+    spec = specs[0]
+    expect(
+        spec.name == "nested-deployment",
+        "Nested manifest should override root-level definition.",
+    )
+    expect(
+        spec.description == "nested definition",
+        "Nested manifest metadata should be preserved.",
+    )
