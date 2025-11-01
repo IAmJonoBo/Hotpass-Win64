@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 2
 requires-python = "==3.13.*"
 
 [[package]]
@@ -1754,6 +1754,7 @@ name = "hotpass"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "cyclonedx-bom" },
     { name = "detect-secrets" },
     { name = "duckdb" },
     { name = "frictionless" },
@@ -1860,6 +1861,7 @@ requires-dist = [
     { name = "bandit", marker = "extra == 'dev'", specifier = ">=1.8.6" },
     { name = "black", marker = "extra == 'dev'", specifier = ">=25.9.0" },
     { name = "boto3", marker = "extra == 'platform'", specifier = ">=1.35.0" },
+    { name = "cyclonedx-bom", specifier = ">=7.2.1" },
     { name = "cyclonedx-bom", marker = "extra == 'dev'", specifier = ">=7.2.1" },
     { name = "detect-secrets", specifier = ">=1.5.0" },
     { name = "detect-secrets", marker = "extra == 'dev'", specifier = ">=1.5.0" },
