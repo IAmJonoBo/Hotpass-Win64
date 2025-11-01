@@ -162,6 +162,7 @@ def _exercise_research_tools() -> StepResult:
         from tempfile import TemporaryDirectory
 
         import pandas as pd  # pylint: disable=import-outside-toplevel
+
         from hotpass.mcp.server import HotpassMCPServer  # pylint: disable=import-outside-toplevel
     except Exception as exc:  # pragma: no cover - defensive guard
         return StepResult(

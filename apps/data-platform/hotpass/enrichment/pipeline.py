@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
+
 from hotpass.config import IndustryProfile
 
 from .fetchers import FetcherResult, get_fetcher_registry

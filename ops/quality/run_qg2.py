@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
+
 from hotpass.error_handling import DataContractError
 
 try:  # Great Expectations is an optional dependency

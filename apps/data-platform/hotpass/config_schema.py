@@ -7,13 +7,14 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Any, Literal
 
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
 from hotpass.automation.http import (
     AutomationCircuitBreakerPolicy,
     AutomationHTTPConfig,
     AutomationRetryPolicy,
 )
 from hotpass.compliance import DataClassification, LawfulBasis, PIIRedactionConfig
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class ProfileConfig(BaseModel):

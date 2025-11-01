@@ -7,8 +7,9 @@ import os
 import sys
 from pathlib import Path
 
-from hotpass.config import load_industry_profile
 from rich.console import Console
+
+from hotpass.config import load_industry_profile
 
 from ..builder import CLICommand, SharedParsers
 from ..configuration import CLIProfile

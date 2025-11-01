@@ -5,10 +5,9 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
+from ops.net.tunnels import latest_session
 from rich.console import Console
 from rich.panel import Panel
-
-from ops.net.tunnels import latest_session
 
 from ..builder import CLICommand, SharedParsers
 from ..configuration import CLIProfile

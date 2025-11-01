@@ -9,8 +9,9 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-from hotpass.config import load_industry_profile
 from rich.console import Console
+
+from hotpass.config import load_industry_profile
 
 from ..builder import CLICommand, SharedParsers
 from ..configuration import CLIProfile

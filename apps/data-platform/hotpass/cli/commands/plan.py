@@ -8,10 +8,11 @@ from collections.abc import Callable
 from pathlib import Path
 
 import pandas as pd
-from hotpass.config import IndustryProfile, get_default_profile, load_industry_profile
-from hotpass.research import ResearchContext, ResearchOrchestrator, ResearchOutcome
 from rich.console import Console
 from rich.table import Table
+
+from hotpass.config import IndustryProfile, get_default_profile, load_industry_profile
+from hotpass.research import ResearchContext, ResearchOrchestrator, ResearchOutcome
 
 from ..builder import CLICommand, SharedParsers
 from ..configuration import CLIProfile

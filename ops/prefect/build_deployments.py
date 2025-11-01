@@ -5,12 +5,11 @@ from __future__ import annotations
 from pathlib import Path
 
 import yaml
-from prefect.deployments import runner
-
 from apps.data_platform.hotpass.orchestration import (  # type: ignore[import-not-found]
     backfill_pipeline_flow,
     refinement_pipeline_flow,
 )
+from prefect.deployments import runner
 
 OUTPUT_DIR = Path("prefect/deployments")
 

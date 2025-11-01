@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
+
 from hotpass.config import IndustryProfile, get_default_profile, load_industry_profile
 from hotpass.research import ResearchContext, ResearchOrchestrator
 

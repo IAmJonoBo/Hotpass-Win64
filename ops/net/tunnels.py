@@ -5,8 +5,9 @@ from __future__ import annotations
 import os
 import signal
 import socket
+from collections.abc import Iterable
 from dataclasses import dataclass, field
-from typing import Any, Iterable
+from typing import Any
 
 from hotpass.cli.state import load_state, remove_state, write_state
 
@@ -37,7 +38,7 @@ class TunnelSession:
         }
 
     @classmethod
-    def from_dict(cls, payload: dict[str, Any]) -> "TunnelSession":
+    def from_dict(cls, payload: dict[str, Any]) -> TunnelSession:
         """Hydrate a session from JSON payloads stored on disk."""
 
         return cls(

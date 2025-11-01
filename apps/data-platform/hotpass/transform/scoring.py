@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
+
 from hotpass.enrichment.validators import logistic_scale
 
 DEFAULT_WEIGHTS: Mapping[str, float] = {

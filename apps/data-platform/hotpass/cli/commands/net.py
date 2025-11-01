@@ -6,10 +6,7 @@ import argparse
 import os
 import subprocess
 from datetime import UTC, datetime
-from typing import Any, cast
-
-from rich.console import Console
-from rich.table import Table
+from typing import cast
 
 from ops.net.tunnels import (
     TunnelSession,
@@ -22,10 +19,13 @@ from ops.net.tunnels import (
     save_sessions,
     terminate_pid,
 )
+from rich.console import Console
+from rich.table import Table
 
 from ..builder import CLICommand, CommandHandler, SharedParsers
 from ..configuration import CLIProfile
 from ..utils import CommandExecutionError, format_command, run_command
+
 DEFAULT_PREFECT_REMOTE_HOST = "prefect.staging.internal"
 DEFAULT_MARQUEZ_REMOTE_HOST = "marquez.staging.internal"
 DEFAULT_PREFECT_REMOTE_PORT = 4200

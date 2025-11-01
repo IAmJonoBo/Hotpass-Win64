@@ -6,10 +6,9 @@ import argparse
 from datetime import UTC, datetime
 from typing import Any, cast
 
+from ops.net.tunnels import latest_session
 from rich.console import Console
 from rich.table import Table
-
-from ops.net.tunnels import latest_session
 
 from ..builder import CLICommand, CommandHandler, SharedParsers
 from ..configuration import CLIProfile

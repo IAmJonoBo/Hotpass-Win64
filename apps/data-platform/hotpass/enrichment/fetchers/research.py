@@ -14,6 +14,7 @@ from functools import wraps
 from typing import Any
 
 import pandas as pd
+
 from hotpass.config import IndustryProfile
 
 from . import FetcherResult

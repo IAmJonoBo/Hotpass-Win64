@@ -16,6 +16,7 @@ from typing import Any, cast
 
 import pandas as pd
 import streamlit as st
+
 from hotpass.config import get_default_profile
 from hotpass.data_sources import ExcelReadOptions
 from hotpass.pipeline import PipelineConfig, run_pipeline

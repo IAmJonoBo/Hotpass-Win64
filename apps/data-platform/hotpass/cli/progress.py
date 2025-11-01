@@ -10,6 +10,17 @@ from pathlib import Path
 from types import TracebackType
 from typing import Any, cast
 
+from rich.console import Console
+from rich.progress import (
+    BarColumn,
+    Progress,
+    SpinnerColumn,
+    TaskID,
+    TaskProgressColumn,
+    TextColumn,
+    TimeElapsedColumn,
+)
+
 from hotpass.pipeline import (
     PIPELINE_EVENT_AGGREGATE_COMPLETED,
     PIPELINE_EVENT_AGGREGATE_PROGRESS,
@@ -25,16 +36,6 @@ from hotpass.pipeline import (
     PIPELINE_EVENT_WRITE_COMPLETED,
     PIPELINE_EVENT_WRITE_STARTED,
     QualityReport,
-)
-from rich.console import Console
-from rich.progress import (
-    BarColumn,
-    Progress,
-    SpinnerColumn,
-    TaskID,
-    TaskProgressColumn,
-    TextColumn,
-    TimeElapsedColumn,
 )
 
 DEFAULT_SENSITIVE_FIELD_TOKENS: tuple[str, ...] = (

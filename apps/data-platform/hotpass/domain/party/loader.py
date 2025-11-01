@@ -8,6 +8,7 @@ from collections.abc import Iterable, Iterator
 from datetime import UTC, datetime
 
 import pandas as pd
+
 from hotpass.normalization import clean_string, slugify
 
 from .models import (

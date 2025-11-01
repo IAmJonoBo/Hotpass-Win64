@@ -6,10 +6,11 @@ import argparse
 import json
 from pathlib import Path
 
-from hotpass.config import IndustryProfile, get_default_profile, load_industry_profile
-from hotpass.research import ResearchOrchestrator, ResearchOutcome
 from rich.console import Console
 from rich.table import Table
+
+from hotpass.config import IndustryProfile, get_default_profile, load_industry_profile
+from hotpass.research import ResearchOrchestrator, ResearchOutcome
 
 from ..builder import CLICommand, SharedParsers
 from ..configuration import CLIProfile

@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, cast
 
 import pandas as pd
+
 from hotpass.config import IndustryProfile
 from hotpass.enrichment.pipeline import enrich_row
 from hotpass.normalization import slugify

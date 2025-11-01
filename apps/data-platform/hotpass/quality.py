@@ -9,8 +9,9 @@ from typing import Any, cast
 
 import pandas as pd
 import pandera.pandas as pa
-from hotpass.enrichment.validators import ValidationStatus
 from pandera.pandas import Column, DataFrameSchema
+
+from hotpass.enrichment.validators import ValidationStatus
 
 try:  # pragma: no cover - import guard exercised via unit tests
     from great_expectations.core.batch import Batch

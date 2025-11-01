@@ -7,8 +7,9 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
-from hotpass.config_schema import HotpassConfig
 from pydantic import BaseModel, Field, ValidationError, field_validator, model_validator
+
+from hotpass.config_schema import HotpassConfig
 
 yaml: Any | None
 try:  # pragma: no cover - optional dependency for YAML profiles

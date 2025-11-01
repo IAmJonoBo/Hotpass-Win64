@@ -11,7 +11,6 @@ from importlib import metadata
 from pathlib import Path
 from typing import Any, cast
 from uuid import uuid4
-from importlib import metadata
 
 OpenLineageClient: Any | None
 set_lineage_producer: Callable[[str], None] | None

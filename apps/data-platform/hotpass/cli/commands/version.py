@@ -6,9 +6,10 @@ import argparse
 from datetime import UTC, datetime
 from pathlib import Path
 
-from hotpass.versioning import DatasetVersion, DVCManager
 from rich.console import Console
 from rich.table import Table
+
+from hotpass.versioning import DatasetVersion, DVCManager
 
 from ..builder import CLICommand, SharedParsers
 from ..configuration import CLIProfile

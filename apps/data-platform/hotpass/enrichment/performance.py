@@ -14,6 +14,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any
 
 import pandas as pd
+
 from hotpass.enrichment import CacheManager
 from hotpass.enrichment.fetchers import Fetcher
 

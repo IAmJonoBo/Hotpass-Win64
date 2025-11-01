@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import pandas as pd
+
 from hotpass.linkage import LabelStudioConfig, LinkageConfig, LinkageThresholds, link_entities
 
 from ..builder import CLICommand, SharedParsers
