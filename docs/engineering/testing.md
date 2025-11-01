@@ -94,7 +94,7 @@ If any command fails, the script exits immediately with a non-zero code so CI ca
 **Use when:** you need comprehensive linting, formatting validation, or secret scanning before pushing a branch.
 
 1. Install the Trunk CLI once: `curl https://get.trunk.io -fsSL | bash` (or `brew install trunk`).
-2. From the repo root run `make qa-trunk` for lint-only coverage, or rely on `make qa` / `make qa-full` which now invoke Trunk automatically.
+2. From the repo root run `make qa-trunk` for lint-only coverage, or rely on `make qa` / `make qa-full` which now invoke Trunk automatically. Pull requests also run `.github/workflows/trunk-format.yml`, which applies `trunk fmt` in fix mode and attaches a patch when formatting is missing.
 3. For CI-style execution call `scripts/testing/trunk_check.sh` directly. Set `TRUNK_FMT_MODE=fix` to apply autofixes locally or keep the default `check` mode to fail on unformatted files.
 
 **Result:** consistent enforcement of `ruff`, `black`, `bandit`, `mypy`, `detect-secrets`, YAML/Markdown linters, container linting, and additional security scanners through one orchestrated command.

@@ -1,0 +1,50 @@
+name: trunk-format
+
+on:
+  pull_request:
+    branches:
+      - "**"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+
+      - name: Install Trunk CLI
+        run: |
+          curl https://get.trunk.io -fsSL | bash -s -- -y
+          echo "$HOME/.trunk/bin" >> "$GITHUB_PATH"
+
+      - name: Apply formatting with Trunk
+        run: trunk fmt --all --ci
+
+      - name: Detect formatting changes
+        id: diff
+        run: |
+          set -euo pipefail
+          if git diff --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            git diff > trunk-format.patch
+            git status --short
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Upload formatting patch
+        if: steps.diff.outputs.changed == 'true'
+        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 # v4
+        with:
+          name: trunk-format
+          path: trunk-format.patch
+
+      - name: Fail if formatting changes were required
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          echo "Formatting updates required. Apply patch from workflow artifact or run 'trunk fmt --all' locally." >&2
+          exit 1
