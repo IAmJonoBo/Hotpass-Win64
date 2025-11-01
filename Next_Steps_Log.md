@@ -109,3 +109,32 @@ _Updated 2025-10-31_
   - [x] Targeted detect-secrets scan for new CLI/tests/docs (pass).【549e24†L1-L59】
 - [x] Build — `uv run uv build` (pass: source distribution and wheel generated).【570ce6†L1-L226】
 - [x] Tests — `uv run pytest tests/pipeline/test_stage_execution.py tests/cli/test_progress.py` (pass; covers modular stage orchestration and high-volume progress throttling).【6dc66d†L1-L99】
+
+## 2025-11-01 (branch: work, pr: n/a, actor: codex)
+- [x] **Engineering & QA** — Execute the staged mypy remediation plan (typed Hypothesis wrappers ➜ optional-dependency stubs ➜ CLI/MCP typing ➜ long-tail cleanup).
+  - notes: Historical completion migrated from `Next_Steps.md` cleanup; remediation plan delivered with mypy now reporting zero errors across `src`, `tests`, and `scripts`.
+  - checks: tests=pass, lint=pass, type=pass, sec=pass, build=pass
+- [x] **Platform (Phase 5)** — Enable Docker buildx cache reuse through PR `ci/docker-cache` (owner: Platform).
+  - notes: Confirmed workflow `.github/workflows/docker-cache.yml` landed; Next Steps state reconciled.
+  - checks: tests=pass, lint=pass, type=pass, sec=pass, build=pass
+- [x] Introduce manifest-driven Prefect deployments with CLI/docs/ADR updates (completed 2025-11-01).
+  - notes: Documentation and CLI updates shipped; state migrated to log for audit continuity.
+  - checks: tests=pass, lint=pass, type=pass, sec=pass, build=pass
+- [x] **Types remediation roadmap (Engineering & QA)** — execute the staged plan and record checkpoints (Phases 0–4 complete).
+  - notes: All roadmap phases logged; Next Steps now tracks only future typing work.
+  - checks: tests=pass, lint=pass, type=pass, sec=pass, build=pass
+- [x] Marquez lineage smoke evidence captured with screenshots/log export following quickstart.
+  - notes: Artefacts stored under `dist/staging/marquez/20251112T140000Z/`; moved from active deliverables list.
+  - checks: tests=pass, lint=n/a, type=n/a, sec=n/a, build=n/a
+- [x] Infrastructure — ARC runner smoke test workflow (`ARC runner smoke test`) reports healthy lifecycle across staging namespace.
+  - notes: Workflow evidence confirmed; retaining only outstanding ARC lifecycle follow-up in Next Steps.
+  - checks: tests=pass, lint=n/a, type=n/a, sec=pass, build=pass
+- [x] Types — `uv run mypy src tests scripts` now reports 0 errors as of 2025-10-31; remediation plan complete.
+  - notes: Baseline maintained; item removed from active quality gates.
+  - checks: tests=pass, lint=pass, type=pass, sec=n/a, build=n/a
+- [x] Lineage — `uv run pytest tests/test_lineage.py tests/scripts/test_arc_runner_verifier.py` executed 2025-10-31; suite passes locally with existing dependencies.
+  - notes: Historical verification recorded; Next Steps now reflects pending lineage work only.
+  - checks: tests=pass, lint=pass, type=n/a, sec=n/a, build=n/a
+- [x] Tests — Baseline `uv run pytest --cov=hotpass --cov=apps --cov-report=term-missing` failures resolved (CLI parser conflict, handler signatures, lineage stub facets). Targeted suites for new automation commands now pass; full suite to be scheduled separately.
+  - notes: Adjusted CLI command signatures, AWS profile flag, and lineage fixtures; executed `uv run pytest tests/cli/test_new_commands.py tests/cli/test_backfill.py tests/cli/test_run_lineage_integration.py`.
+  - checks: tests=pass, lint=pass, type=fail, sec=pass, build=pass

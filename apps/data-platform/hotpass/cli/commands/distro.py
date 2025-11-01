@@ -75,10 +75,11 @@ def _dispatch(namespace: argparse.Namespace, profile: CLIProfile | None) -> int:
             "[red]No distro subcommand specified (use 'hotpass distro --help').[/red]"
         )
         return 1
-    return handler(namespace)
+    return handler(namespace, profile)
 
 
-def _handle_docs(args: argparse.Namespace) -> int:
+def _handle_docs(args: argparse.Namespace, profile: CLIProfile | None) -> int:
+    _ = profile
     console = Console()
     sources = [path for path in DOC_SOURCES if path.exists()]
     if not sources:
@@ -97,10 +98,8 @@ def _handle_docs(args: argparse.Namespace) -> int:
     if output_dir.exists():
         if not args.force:
             console.print(
-                (
-                    f"[red]Output directory {output_dir} already exists. Use --force "
-                    "to overwrite.[/red]"
-                )
+                f"[red]Output directory {output_dir} already exists. Use --force "
+                "to overwrite.[/red]"
             )
             return 1
         shutil.rmtree(output_dir)

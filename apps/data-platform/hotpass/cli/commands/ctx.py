@@ -119,10 +119,11 @@ def _dispatch(namespace: argparse.Namespace, profile: CLIProfile | None) -> int:
             "[red]No ctx subcommand specified (use 'hotpass ctx --help').[/red]"
         )
         return 1
-    return handler(namespace)
+    return handler(namespace, profile)
 
 
-def _handle_init(args: argparse.Namespace) -> int:
+def _handle_init(args: argparse.Namespace, profile: CLIProfile | None) -> int:
+    _ = profile
     console = Console()
     dry_run = args.dry_run
     result: dict[str, Any] = {
@@ -134,8 +135,8 @@ def _handle_init(args: argparse.Namespace) -> int:
         prefect_profile = args.prefect_profile
         prefect_url = _resolve_prefect_url(args)
         console.print(
-            "[cyan]Configuring Prefect profile '%s' with API URL %s[/cyan]"
-            % (prefect_profile, prefect_url)
+            f"[cyan]Configuring Prefect profile '{prefect_profile}' with API URL "
+            f"{prefect_url}[/cyan]"
         )
         if not dry_run:
             commands = [
@@ -214,7 +215,8 @@ def _handle_init(args: argparse.Namespace) -> int:
     return 0
 
 
-def _handle_list(args: argparse.Namespace) -> int:  # noqa: ARG001
+def _handle_list(args: argparse.Namespace, profile: CLIProfile | None) -> int:
+    _ = profile
     console = Console()
     state = load_state(CTX_STATE_FILE, default={"entries": []}) or {"entries": []}
     entries = state.get("entries", [])
