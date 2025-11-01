@@ -5,11 +5,12 @@ from __future__ import annotations
 import argparse
 import shutil
 from pathlib import Path
+from typing import cast
 
 from rich.console import Console
 from rich.table import Table
 
-from ..builder import CLICommand, SharedParsers
+from ..builder import CLICommand, CommandHandler, SharedParsers
 from ..configuration import CLIProfile
 
 DOC_SOURCES = [
@@ -69,13 +70,15 @@ def register() -> CLICommand:
 
 def _dispatch(namespace: argparse.Namespace, profile: CLIProfile | None) -> int:
     _ = profile
-    handler = getattr(namespace, "handler", None)
-    if handler is None:
+    raw_handler = getattr(namespace, "handler", None)
+    if not callable(raw_handler):
         Console().print(
             "[red]No distro subcommand specified (use 'hotpass distro --help').[/red]"
         )
         return 1
-    return handler(namespace, profile)
+    handler = cast(CommandHandler, raw_handler)
+    result = handler(namespace, profile)
+    return int(result)
 
 
 def _handle_docs(args: argparse.Namespace, profile: CLIProfile | None) -> int:

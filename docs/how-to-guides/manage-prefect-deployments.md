@@ -106,3 +106,47 @@ The release preflight requires a staged backfill rehearsal. Once staging access 
 4. Link the artefacts in `docs/operations/staging-rehearsal-plan.md` and `Next_Steps.md` to unblock programme sign-off.
 
 Document any access blockers in `Next_Steps_Log.md` so the programme manager can reschedule the rehearsal window.
+
+## Offline fallback when staging is unavailable
+
+Use this workflow to keep delivery moving when the shared staging infrastructure is offline or access has not yet been provisioned. It mirrors the staging rehearsals, produces auditable artefacts under `dist/offline/`, and exercises the same CLI surface the staging tasks rely on.
+
+1. **Bootstrap the environment**
+   ```bash
+   export HOTPASS_UV_EXTRAS="dev orchestration"
+   bash ops/uv_sync_extras.sh
+   hotpass env --target local --prefect-url http://127.0.0.1:4200/api --allow-network=false --dry-run
+   ```
+   Run the `hotpass env` command without `--dry-run` once you are happy with the contents. The generated `.env.local` captures the canonical configuration used in later steps.
+
+2. **Run the canonical pipeline locally**
+   ```bash
+   uv run hotpass refine \
+     --input-dir ./data \
+     --output-path ./dist/offline/refined.xlsx \
+     --profile generic \
+     --archive
+   uv run hotpass qa all \
+     --profile generic \
+     --output ./dist/offline/qa-report.json
+   ```
+   These commands mirror the staged `hotpass-e2e-staging` deployment and produce a refinements bundle alongside the QA evidence.
+
+3. **Exercise Prefect manifests without registering**  
+   Use the same manifests that staging would consume, but pass `--no-upload` to keep operations local:
+   ```bash
+   uv run hotpass deploy --flow refinement --no-upload --dry-run
+   uv run hotpass deploy --flow backfill --no-upload --dry-run
+   ```
+   Dry-run mode confirms the manifests stay healthy; re-run without `--dry-run` to build RunnerDeployment payloads for inspection under `dist/offline/prefect/`.
+
+4. **Capture logs and metadata for review**  
+   Save CLI output and configuration snapshots so stakeholders can review progress asynchronously:
+   - Write command transcripts to `dist/offline/cli.log` (for example by wrapping the commands with `script` or redirecting stdout/stderr).
+   - Store Prefect manifest JSON under `dist/offline/prefect/`.
+   - Include the generated `.env.local` and QA report in the same folder.
+
+5. **Attach artefacts to programme tracking**  
+   Reference the offline evidence in `Next_Steps.md` and `Next_Steps_Log.md`, and link the folder in the relevant roadmap entry so programme stakeholders know the fallback execution path has been exercised.
+
+When staging access returns, rerun the official rehearsal steps so guardrail telemetry and ARC lifecycle checks include the managed environment. The offline artefacts remain valuable as a regression baseline and for release readiness reviews.

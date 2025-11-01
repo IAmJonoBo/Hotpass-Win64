@@ -9,12 +9,12 @@ import socket
 import subprocess
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, cast
 
 from rich.console import Console
 from rich.table import Table
 
-from ..builder import CLICommand, SharedParsers
+from ..builder import CLICommand, CommandHandler, SharedParsers
 from ..configuration import CLIProfile
 from ..state import load_state, remove_state, write_state
 from ..utils import CommandExecutionError, format_command, run_command
@@ -205,13 +205,15 @@ def register() -> CLICommand:
 
 def _dispatch(namespace: argparse.Namespace, profile: CLIProfile | None) -> int:
     _ = profile  # network commands are environment specific
-    handler = getattr(namespace, "handler", None)
-    if handler is None:
+    raw_handler = getattr(namespace, "handler", None)
+    if not callable(raw_handler):
         Console().print(
             "[red]No net subcommand specified (use 'hotpass net --help').[/red]"
         )
         return 1
-    return handler(namespace, profile)
+    handler = cast(CommandHandler, raw_handler)
+    result = handler(namespace, profile)
+    return int(result)
 
 
 # ---------------------------------------------------------------------------
@@ -307,7 +309,8 @@ def _handle_up(args: argparse.Namespace, profile: CLIProfile | None) -> int:
         return 1
 
     # Resolve host/target
-    host = args.host or os.environ.get("HOTPASS_BASTION_HOST")
+    raw_host = args.host or os.environ.get("HOTPASS_BASTION_HOST")
+    host: str | None = str(raw_host) if raw_host is not None else None
     if via == "ssh-bastion" and not host:
         console.print(
             "[red]Bastion host is required (pass --host or set HOTPASS_BASTION_HOST).[/red]"
@@ -319,6 +322,7 @@ def _handle_up(args: argparse.Namespace, profile: CLIProfile | None) -> int:
             "(pass --host or set HOTPASS_BASTION_HOST).[/red]"
         )
         return 1
+    assert host is not None  # narrow for type-checkers
 
     # Resolve ports
     prefect_port = args.prefect_port

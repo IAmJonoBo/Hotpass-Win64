@@ -1,15 +1,18 @@
-import types
+from __future__ import annotations
+
 from pathlib import Path
+from typing import Any, cast
 
 import pandas as pd
 import pytest
 
+from hotpass.data_sources.agents.runner import AgentTiming
+from hotpass.pipeline.base import BasePipelineExecutor
 from hotpass.pipeline.config import PipelineConfig, PipelineResult, QualityReport
+from hotpass.pipeline.features import FeatureContext
 from hotpass.pipeline.ingestion import _normalise_source_frame, ingest_sources
-from hotpass.pipeline.orchestrator import (
-    PipelineExecutionConfig,
-    PipelineOrchestrator,
-)
+from hotpass.pipeline.orchestrator import PipelineExecutionConfig, PipelineOrchestrator
+from hotpass.telemetry.metrics import PipelineMetrics
 
 
 pytestmark = pytest.mark.bandwidth("smoke")
@@ -25,6 +28,18 @@ def _quality_report() -> QualityReport:
         source_breakdown={"agent": 1},
         data_quality_distribution={"mean": 0.9, "min": 0.9, "max": 0.9},
     )
+
+
+class RecordingMetrics:
+    def __init__(self) -> None:
+        self.records_calls: list[tuple[int, str]] = []
+        self.latest_quality: float | None = None
+
+    def record_records_processed(self, count: int, source: str = "unknown") -> None:
+        self.records_calls.append((count, source))
+
+    def update_quality_score(self, score: float) -> None:
+        self.latest_quality = score
 
 
 def test_pipeline_orchestrator_runs_features_and_records_metrics(tmp_path: Path) -> None:
@@ -45,29 +60,20 @@ def test_pipeline_orchestrator_runs_features_and_records_metrics(tmp_path: Path)
             self.calls.append(config)
             return base_result
 
-    class StubMetrics:
-        def __init__(self) -> None:
-            self.records_calls: list[tuple[int, str]] = []
-            self.latest_quality: float | None = None
-
-        def record_records_processed(self, count: int, *, source: str = "unknown") -> None:
-            self.records_calls.append((count, source))
-
-        def update_quality_score(self, score: float) -> None:
-            self.latest_quality = score
-
     class RecordingFeature:
         name = "recording"
 
         def __init__(self) -> None:
             self.applied = False
-            self.context = None
+            self.context: FeatureContext | None = None
 
-        def is_enabled(self, context) -> bool:  # type: ignore[override]
+        def is_enabled(self, context: FeatureContext) -> bool:
             self.context = context
             return True
 
-        def apply(self, result: PipelineResult, context) -> PipelineResult:  # type: ignore[override]
+        def apply(
+            self, result: PipelineResult, context: FeatureContext
+        ) -> PipelineResult:
             self.applied = True
             enhanced = result.refined.copy()
             enhanced["enhanced"] = True
@@ -85,7 +91,7 @@ def test_pipeline_orchestrator_runs_features_and_records_metrics(tmp_path: Path)
             )
 
     executor = StubExecutor()
-    metrics = StubMetrics()
+    metrics = RecordingMetrics()
     feature = RecordingFeature()
 
     execution = PipelineExecutionConfig(
@@ -94,17 +100,20 @@ def test_pipeline_orchestrator_runs_features_and_records_metrics(tmp_path: Path)
             output_path=(tmp_path / "dist" / "refined.xlsx").resolve(),
         ),
         features=(feature,),
-        metrics=metrics,
+        metrics=cast(PipelineMetrics, metrics),
     )
     execution.base_config.input_dir.mkdir(parents=True, exist_ok=True)
     execution.base_config.output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    orchestrator = PipelineOrchestrator(base_executor=executor)
+    orchestrator = PipelineOrchestrator(
+        base_executor=cast(BasePipelineExecutor, executor)
+    )
     result = orchestrator.run(execution)
 
     assert executor.calls, "Base executor should be invoked."
     assert feature.applied, "Feature should be applied when enabled."
-    assert feature.context is not None and feature.context.metrics is metrics
+    assert feature.context is not None
+    assert feature.context.metrics is execution.metrics
     assert list(result.refined.columns) == ["organization_name", "enhanced"]
     assert metrics.records_calls == [(1, "base_pipeline"), (1, "enhanced_pipeline")]
     assert metrics.latest_quality == pytest.approx(0.9)
@@ -125,7 +134,7 @@ def test_ingest_sources_merges_agent_and_source_frames(
             }
         ]
     )
-    agent_timings = [types.SimpleNamespace(agent_name="agents", seconds=1.25)]
+    agent_timings = [AgentTiming(agent_name="agents", seconds=1.25, record_count=1)]
 
     source_frame = pd.DataFrame(
         [
@@ -138,7 +147,9 @@ def test_ingest_sources_merges_agent_and_source_frames(
     )
     source_frame.attrs["load_seconds"] = 2.0
 
-    def _fake_load_sources(input_dir, country_code, excel_options):  # type: ignore[unused-arg]
+    def _fake_load_sources(
+        input_dir: Path, country_code: str, excel_options: Any
+    ) -> dict[str, pd.DataFrame]:
         return {"Contact Database": source_frame}
 
     monkeypatch.setattr("hotpass.pipeline.ingestion.load_sources", _fake_load_sources)

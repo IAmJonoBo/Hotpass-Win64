@@ -129,7 +129,7 @@ def _command_handler(namespace: argparse.Namespace, profile: CLIProfile | None) 
 
     if proc.returncode != 0:
         console.print("[red]ARC verification failed.[/red]")
-        return proc.returncode
+        return int(proc.returncode)
 
     if namespace.store_summary:
         output_dir = _resolve_store_dir(namespace.store_dir)
@@ -197,7 +197,7 @@ def _build_runner_command(args: argparse.Namespace) -> list[str]:
 def _resolve_store_dir(user_dir: Path | None) -> Path:
     if user_dir is not None:
         return user_dir
-    state_dir = ensure_state_dir()
+    state_dir: Path = ensure_state_dir()
     arc_dir = state_dir / "arc"
     timestamp = datetime.now(tz=UTC).strftime("%Y%m%dT%H%M%SZ")
     return arc_dir / timestamp

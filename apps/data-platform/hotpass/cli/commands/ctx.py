@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import argparse
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, cast
 
 from rich.console import Console
 from rich.table import Table
 
-from ..builder import CLICommand, SharedParsers
+from ..builder import CLICommand, CommandHandler, SharedParsers
 from ..configuration import CLIProfile
 from ..state import load_state, write_state
 from ..utils import CommandExecutionError, format_command, run_command
@@ -113,13 +113,15 @@ def register() -> CLICommand:
 
 def _dispatch(namespace: argparse.Namespace, profile: CLIProfile | None) -> int:
     _ = profile  # context bootstrap is profile independent
-    handler = getattr(namespace, "handler", None)
-    if handler is None:
+    raw_handler = getattr(namespace, "handler", None)
+    if not callable(raw_handler):
         Console().print(
             "[red]No ctx subcommand specified (use 'hotpass ctx --help').[/red]"
         )
         return 1
-    return handler(namespace, profile)
+    handler = cast(CommandHandler, raw_handler)
+    result = handler(namespace, profile)
+    return int(result)
 
 
 def _handle_init(args: argparse.Namespace, profile: CLIProfile | None) -> int:
@@ -249,7 +251,7 @@ def _handle_list(args: argparse.Namespace, profile: CLIProfile | None) -> int:
 
 def _resolve_prefect_url(args: argparse.Namespace) -> str:
     if args.prefect_url:
-        return args.prefect_url
+        return str(args.prefect_url)
     if args.use_net:
         net_state = load_state(NET_STATE_FILE, default={"sessions": []}) or {
             "sessions": []

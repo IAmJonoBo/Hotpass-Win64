@@ -7,14 +7,14 @@ import os
 import shutil
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from typing import Sequence
+from typing import Sequence, cast
 
 from rich.console import Console
 from rich.panel import Panel
 from rich.prompt import Confirm, Prompt
 from rich.table import Table
 
-from ..builder import CLICommand, SharedParsers
+from ..builder import CLICommand, CommandHandler, SharedParsers
 from ..configuration import CLIProfile
 from ..state import write_state
 from ..utils import CommandExecutionError, format_command, run_command
@@ -45,7 +45,7 @@ class WizardStep:
         if self.cli_args:
             return "hotpass " + " ".join(self.cli_args)
         if self.shell_command:
-            return format_command(self.shell_command)
+            return str(format_command(self.shell_command))
         return self.summary
 
 
@@ -272,7 +272,7 @@ def _is_interactive(namespace: argparse.Namespace, console: Console) -> bool:
     interactive = getattr(namespace, "interactive", None)
     if interactive is not None:
         return bool(interactive)
-    return console.is_terminal
+    return bool(console.is_terminal)
 
 
 def _check_prerequisites(console: Console) -> set[str]:
@@ -516,10 +516,12 @@ def _invoke_cli(cli_args: list[str], profile: CLIProfile | None) -> int:
 
     parser = build_root_parser()
     parsed = parser.parse_args(cli_args)
-    handler = getattr(parsed, "handler", None)
-    if handler is None:
+    raw_handler = getattr(parsed, "handler", None)
+    if not callable(raw_handler):
         raise RuntimeError(f"No handler found for CLI args: {' '.join(cli_args)}")
-    return handler(parsed, profile)
+    handler = cast(CommandHandler, raw_handler)
+    result = handler(parsed, profile)
+    return int(result)
 
 
 __all__ = ["register", "build"]

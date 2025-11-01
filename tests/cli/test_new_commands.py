@@ -1,15 +1,17 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import cast
 
 import pytest
 from hotpass import cli
+from hotpass.cli.builder import CommandHandler
 
 
 def _invoke(argv: list[str]) -> int:
     parser = cli.build_parser()
     args = parser.parse_args(argv)
-    handler = getattr(args, "handler", None)
+    handler = cast(CommandHandler | None, getattr(args, "handler", None))
     assert handler is not None, "Handler must be bound on parsed namespace"
     # None profile since these commands do not rely on CLI profiles
     return handler(args, None)

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
-from typing import Any
+from typing import TYPE_CHECKING, Any, Optional, Type
 
 from rich.console import Console
 from rich.table import Table
@@ -14,10 +14,18 @@ from ..configuration import CLIProfile
 from ..state import write_state
 from ..utils import CommandExecutionError, format_command, run_command
 
+if TYPE_CHECKING:
+    from ops.arc.verify_runner_lifecycle import AwsIdentityVerifier as AwsIdentityVerifierType
+else:
+    AwsIdentityVerifierType = object  # pragma: no cover - type placeholder
+
 try:
-    from ops.arc.verify_runner_lifecycle import AwsIdentityVerifier
+    from ops.arc.verify_runner_lifecycle import AwsIdentityVerifier as _AwsIdentityVerifier
 except ModuleNotFoundError:  # pragma: no cover - defensive guard
-    AwsIdentityVerifier = None  # type: ignore[assignment]
+    AwsIdentityVerifierImpl: Optional[Type[AwsIdentityVerifierType]] = None
+else:
+    AwsIdentityVerifierImpl = _AwsIdentityVerifier
+VerifierCls: Optional[Type[AwsIdentityVerifierType]] = AwsIdentityVerifierImpl
 
 
 def build(
@@ -85,7 +93,7 @@ def register() -> CLICommand:
 def _command_handler(namespace: argparse.Namespace, profile: CLIProfile | None) -> int:
     _ = profile  # AWS checks are profile-agnostic within the CLI
     console = Console()
-    if AwsIdentityVerifier is None:
+    if VerifierCls is None:
         console.print(
             "[red]AwsIdentityVerifier module unavailable. Check ops/arc installation.[/red]"
         )
@@ -102,7 +110,7 @@ def _command_handler(namespace: argparse.Namespace, profile: CLIProfile | None) 
 
     # Resolve identity
     try:
-        identity_verifier = AwsIdentityVerifier(region=aws_region, profile=aws_profile)
+        identity_verifier = VerifierCls(region=aws_region, profile=aws_profile)
         identity = identity_verifier.verify() if not dry_run else None
     except Exception as exc:  # noqa: BLE001
         console.print(f"[red]Failed to resolve AWS identity: {exc}[/red]")
