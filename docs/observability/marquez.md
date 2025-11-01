@@ -1,41 +1,44 @@
 ---
 title: Marquez lineage UI quickstart
 summary: Run Marquez locally to inspect the OpenLineage events emitted by Hotpass.
-last_updated: 2025-12-02
+last_updated: 2025-12-03
 ---
 
 The Hotpass pipeline now emits OpenLineage events from the CLI and Prefect
 execution paths. Marquez provides a lightweight UI for browsing those events and
 verifying dataset relationships end-to-end. This guide walks through running the
-stack locally with Docker Compose.
+stack locally with Docker Compose and highlights what you should see once
+lineage starts flowing.
 
-## Prerequisites
+## Bring up the observability stack
 
-- Docker and Docker Compose installed locally.
-- Ports `3000` (UI) and `5000` (OpenLineage API) available on your machine.
+Hotpass ships a consolidated Docker Compose bundle under
+[`deploy/docker/docker-compose.yml`](../../deploy/docker/docker-compose.yml)
+that includes Prefect, Marquez, the backing PostgreSQL database, and the web UI
+used in staging rehearsals.
 
-## Start Marquez
+1. Launch the stack from the repository root:
 
-1. Start the bundled Marquez stack:
+   ```bash
+   cd deploy/docker
+   docker compose up --build
+   # Optional LLM sidecar used by MCP tooling:
+   docker compose --profile llm up -d llm
+   ```
 
-```bash
-make marquez-up
-```
+   The compose file declares health checks for each service so `docker compose
+   ps` reports `healthy` once Postgres, Marquez, and Prefect are ready. To stop
+   the stack, run `docker compose down` (add `-v` to clear volumes during
+   troubleshooting).
 
-The compose file provisions a PostgreSQL backing database and the Marquez
-application container. Behind the scenes the target executes `docker compose
-  -f infra/marquez/docker-compose.yaml up -d`. If you prefer the manual
-approach, run those commands directly from the `infra/marquez/` directory.
-Follow up with `make marquez-down` (or `docker compose down`) when you are
-done. Override the default ports if `5000` or `3000` are already bound on
-your machine—for example:
+2. Open the Marquez UI at [http://localhost:3000](http://localhost:3000) once
+   the `marquez` container reports `healthy`. Prefect is available at
+   [http://localhost:4200](http://localhost:4200) from the same stack.
 
-```bash
-MARQUEZ_API_PORT=5500 MARQUEZ_UI_PORT=3500 make marquez-up
-```
-
-1. Open the UI at [http://localhost:3000](http://localhost:3000) once the
-   containers report `healthy`.
+`make marquez-up` remains available for lightweight lineage checks. It wraps the
+original `infra/marquez/docker-compose.yaml` stack, but the new compose bundle
+keeps Prefect and the UI aligned with the evidence captured in
+`dist/staging/marquez/` rehearsals.
 
 ## Configure Hotpass to emit to Marquez
 
@@ -50,20 +53,46 @@ export HOTPASS_LINEAGE_NAMESPACE="hotpass.local"
 
 The namespace defaults to `hotpass.local` if unset. Set
 `HOTPASS_LINEAGE_PRODUCER` to override the producer URI advertised in events.
-When you change `MARQUEZ_API_PORT`, update `OPENLINEAGE_URL` to match the new
-port (for example `http://localhost:5500`).
+When you change the Marquez API port (for example via `MARQUEZ_API_PORT=5500`),
+update `OPENLINEAGE_URL` accordingly.
 
-Run a pipeline execution (for example `uv run hotpass run --log-format json ...`)
-and refresh the Marquez UI to explore the captured datasets, jobs, and runs. The
-UI surfaces the same events validated by the automated lineage integration
-tests.
+Run a pipeline execution—either directly through the CLI
+(`uv run hotpass refine ...`) or by triggering the Prefect deployments started
+by the compose stack. Refresh the Marquez UI to explore the captured datasets,
+jobs, and runs. The UI surfaces the same events validated by the automated
+lineage integration tests.
+
+### Expected datasets and jobs
+
+After a successful refinement run, Marquez should list the following artefacts:
+
+| Component                            | Expected label / pattern                            | Notes |
+| ------------------------------------ | --------------------------------------------------- | ----- |
+| Job                                  | `hotpass.pipeline.<profile_or_output>`              | Created via `build_pipeline_job_name` in `hotpass.orchestration`. Profile names collapse to lower case (for example `hotpass.pipeline.generic`). |
+| Input datasets                       | Absolute paths to the input directory or source files (for example `/workspace/Hotpass-v2/data/aviation/input.xlsx`). | Derived by `discover_input_datasets`, so every `.xlsx`, `.csv`, `.xls`, or `.parquet` file under the input directory appears.
+| Output datasets                      | Refined workbook (`dist/refined.xlsx`) and optional archive/snapshots written to `dist/`. | Emitted during `emit_complete`; archives surface when `--archive` is enabled.
+| Prefect backfill deployments         | `prefect.flow.hotpass-backfill` and `prefect.flow.hotpass-refinement` | Visible once you trigger deployments from the compose stack; they reuse the same namespace configured via `HOTPASS_LINEAGE_NAMESPACE`.
+
+If you replay archived inputs or run enrichment flows, additional datasets with
+matching path prefixes appear in the graph. Use the timeline filter in Marquez
+to confirm events land within your rehearsal window.
 
 ## Troubleshooting
 
-- **No events appear:** confirm `OPENLINEAGE_URL` points to the running Marquez
-  instance and that `HOTPASS_DISABLE_LINEAGE` is not set to `1`.
-- **Port conflict:** update the exposed ports in
-  [`infra/marquez/docker-compose.yaml`](../../infra/marquez/docker-compose.yaml)
-  and restart the stack.
-- **Resetting state:** run `docker compose down -v` from `infra/marquez/` to
+- **No events appear**: confirm `OPENLINEAGE_URL` points to the running Marquez
+  instance, the compose services are healthy, and that `HOTPASS_DISABLE_LINEAGE`
+  is not set to `1`.
+- **Port conflict**: override the published ports in
+  [`deploy/docker/docker-compose.yml`](../../deploy/docker/docker-compose.yml)
+  (for example `MARQUEZ_API_PORT=5500`) and restart the stack with
+  `docker compose up`.
+- **Resetting state**: run `docker compose down -v` from `deploy/docker/` to
   remove the PostgreSQL volume before starting fresh.
+- **Debug service start-up**: inspect logs with `docker compose logs -f marquez`
+  (or `prefect`, `marquez-db`) to spot authentication or migration errors. When
+  using the `make marquez-up` target, the equivalent command is `docker compose
+  -f infra/marquez/docker-compose.yaml logs -f`.
+
+Capture screenshots of the datasets/jobs view and store them under
+`dist/staging/marquez/<timestamp>/` when rehearsing for staging sign-off. The
+compose stack matches the configuration referenced by those evidence bundles.

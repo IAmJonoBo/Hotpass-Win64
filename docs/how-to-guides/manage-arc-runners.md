@@ -10,9 +10,10 @@ configuring OpenID Connect (OIDC) trust with AWS, and validating that ephemeral 
 ## Prerequisites
 
 - A Kubernetes cluster with the ARC controller installed (v0.9.0 or later).
-- Access to apply manifests in the `arc-runners` namespace.
+- Cluster-scoped RBAC that lets you create/update `RunnerScaleSet`, `HorizontalRunnerAutoscaler`, `Secret`, and `ServiceAccount` objects in the `arc-runners` namespace. Bind the operator group to the `arc-runners-admin` `ClusterRole` before rehearsal.
 - `kubectl`, `terraform`, and the GitHub CLI installed locally.
 - A GitHub App registered for the organisation or repository that hosts Hotpass workflows.
+- Write access to the evidence bucket or Git repository path where `dist/staging/arc/` artefacts are stored.
 
 ## 1. Configure GitHub OIDC trust in AWS
 
@@ -116,14 +117,18 @@ Snapshots let QA and Platform teams verify workflow wiring during dry runs
 without requiring Kubernetes or GitHub API access. Update the JSON to match the
 expected lifecycle for more advanced rehearsal scenarios.
 
-### Capture staging evidence
+### Lifecycle rehearsal playbook
 
-When rehearsing against `hotpass-staging`, capture artefacts for programme sign-off:
+Run the following sequence before declaring runners production-ready. Each step mirrors the evidence captured in `dist/staging/arc/<timestamp>/` for audits.
 
-1. Run `hotpass arc --output json --store-summary` and gather the artefacts stored under `.hotpass/arc/<timestamp>/`.
-2. Export AWS STS identity details (or copy the CLI output) to `dist/staging/arc/<timestamp>/sts.txt` to confirm OIDC assumptions.
-3. Link both artefacts in `docs/operations/staging-rehearsal-plan.md` and reference them from `Next_Steps.md` before marking the task complete.
-4. If access is blocked, note the reason and planned follow-up in `Next_Steps_Log.md`.
+1. **Pre-flight RBAC check** – confirm the operator account is bound to the `arc-runners-admin` `ClusterRole` and can list pods in the namespace: `kubectl auth can-i list pods --namespace arc-runners`. Record the output in `dist/staging/arc/<timestamp>/rbac.txt` for sign-off.
+2. **Dry-run lifecycle probe** – execute `uv run hotpass arc --output json --store-summary --snapshot ops/arc/examples/hotpass_arc_idle.json` to validate parsing without touching the API. Commit the generated `.hotpass/arc/<timestamp>/lifecycle.json` into the evidence bundle when rehearsing offline.
+3. **Live lifecycle rehearsal** – rerun `uv run hotpass arc --output json --store-summary --verify-oidc --aws-region eu-west-1` against the live cluster. This writes `summary.json`, `lifecycle.json`, and `events.ndjson` under `.hotpass/arc/<timestamp>/`. Copy them into `dist/staging/arc/<timestamp>/` and push to the shared evidence location.
+4. **Capture AWS identity** – append the output of `aws sts get-caller-identity` (or the CLI summary emitted by `hotpass arc`) to `dist/staging/arc/<timestamp>/sts.txt`. Include any ticket or change window references in the same directory via `notes.md`.
+5. **Upload proof** – publish the updated evidence directory to the programme evidence bucket or to the repository (under `dist/staging/arc/`) and link it from `docs/operations/staging-rehearsal-plan.md`.
+6. **Log completion** – annotate `Next_Steps_Log.md` with the rehearsal timestamp, operators involved, and the command outputs used.
+
+If access is blocked, document the reason and planned follow-up in `Next_Steps_Log.md` and leave the partially populated evidence directory for traceability.
 
 **Latest rehearsal evidence**
 

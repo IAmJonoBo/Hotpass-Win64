@@ -1,7 +1,7 @@
 ---
 title: Pull request playbook
 summary: Expectations, quality gates, and waiver process for Hotpass pull requests.
-last_updated: 2025-12-01
+last_updated: 2025-12-03
 ---
 
 ## Checklist
@@ -11,8 +11,9 @@ last_updated: 2025-12-01
 3. Run QA suite locally (tests, lint, type, security, secrets, build, accessibility, mutation, fitness functions).
 4. Ensure commits follow Conventional Commits; the `commitlint` workflow blocks merges on violations.
 5. Confirm Prefect configuration changes respect concurrency guardrails (e.g. `orchestrator.backfill.concurrency_limit`, deployment work pools) and document overrides or sequential fallbacks.
-6. Attach artefacts (SBOM, provenance, accessibility report) as PR uploads if relevant.
-7. Tag code owners (`@platform-eng`, `@security`, `@docs`) per affected areas and confirm label automation applied the correct taxonomy (`type:*`, `scope:*`, `prefect`, `uv`).
+6. Validate post-deploy observability checks by referencing the lineage and Prefect runbooks (`docs/operations/lineage-smoke-tests.md`, `docs/operations/prefect-backfill-guardrails.md`) and note OTEL exporter status in the PR description.
+7. Attach artefacts (SBOM, provenance, accessibility report) as PR uploads if relevant.
+8. Tag code owners (`@platform-eng`, `@security`, `@docs`) per affected areas and confirm label automation applied the correct taxonomy (`type:*`, `scope:*`, `prefect`, `uv`).
 
 ## Quality gate waivers
 
