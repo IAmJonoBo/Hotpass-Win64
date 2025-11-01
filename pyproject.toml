@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "Hotpass data refinement pipeline"
 readme = "README.md"
 requires-python = ">=3.13,<3.14"
-license = "BSL-1.1 OR Commercial"
+license = "LicenseRef-BSL-1.1 OR LicenseRef-Commercial"
 dependencies = [
   "pandas>=2.3.3",
   "openpyxl>=3.1.5",
