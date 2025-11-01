@@ -38,6 +38,7 @@ dependencies = [
   "pytest-cov>=7.0.0",
   "pytest-asyncio>=1.2.0",
   "streamlit>=1.51.0",
+  "logfire>=4.14.2",
 ]
 
 [project.optional-dependencies]

@@ -128,6 +128,7 @@ apps/data-platform/hotpass/pipeline/events.py
 apps/data-platform/hotpass/pipeline/export.py
 apps/data-platform/hotpass/pipeline/ingestion.py
 apps/data-platform/hotpass/pipeline/orchestrator.py
+apps/data-platform/hotpass/pipeline/quality_summary.py
 apps/data-platform/hotpass/pipeline/validation.py
 apps/data-platform/hotpass/pipeline/features/__init__.py
 apps/data-platform/hotpass/pipeline/features/base.py
