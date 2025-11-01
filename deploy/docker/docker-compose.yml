@@ -64,7 +64,7 @@ services:
 
   # Marquez PostgreSQL Database
   marquez-db:
-    image: postgres:14
+    image: postgres:18
     ports:
       - "5432:5432"
     environment:
