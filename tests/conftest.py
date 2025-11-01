@@ -12,6 +12,27 @@ from tests.helpers.fixtures import fixture
 
 pytest_plugins = ["tests.fixtures.lineage"]
 
+QUALITY_GATE_FILES = {
+    Path("tests/cli/test_quality_gates.py"),
+}
+
+QUALITY_GATE_DIRS = {
+    Path("tests/automation"),
+    Path("tests/contracts"),
+    Path("tests/enrichment"),
+    Path("tests/geospatial"),
+    Path("tests/mcp"),
+    Path("tests/pipeline"),
+    Path("tests/research"),
+    Path("tests/quality"),
+}
+
+SLOW_DIRS = {
+    Path("tests/data_sources"),
+    Path("tests/observability"),
+    Path("tests/ml"),
+}
+
 
 def _install_warning_filters() -> None:
     warnings.filterwarnings(
@@ -58,13 +79,27 @@ def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
         if bandwidth_marks:
             bucket = bandwidth_marks[-1].args[0]
         else:
-            bucket = "full"
+            abs_path = Path(item.fspath).resolve()
+            try:
+                rel_path = abs_path.relative_to(Path.cwd())
+            except ValueError:
+                rel_path = abs_path
+            if rel_path in QUALITY_GATE_FILES or any(rel_path.is_relative_to(dir_path) for dir_path in QUALITY_GATE_DIRS):
+                bucket = "quality_gate"
+            elif any(rel_path.is_relative_to(dir_path) for dir_path in SLOW_DIRS):
+                bucket = "slow"
+            else:
+                bucket = "full"
             item.add_marker(pytest.mark.bandwidth(bucket))
 
         if bucket == "smoke":
             item.add_marker("smoke")
         elif bucket == "full":
             item.add_marker("full")
+        elif bucket == "quality_gate":
+            item.add_marker("quality_gate")
+        elif bucket == "slow":
+            item.add_marker("slow")
 
 
 @fixture()

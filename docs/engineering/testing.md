@@ -8,7 +8,7 @@ smoke or full regression suites.
 
 | Tier   | Invocation                               | What Runs                                                                 | Target Runtime |
 |--------|-------------------------------------------|---------------------------------------------------------------------------|----------------|
-| Smoke  | `scripts/testing/smoke.sh` or `make qa`   | Ruff formatting + lint, `pytest -m "smoke"`, coverage HTML/XML            | < 5 minutes    |
+| Smoke  | `scripts/testing/smoke.sh` or `make qa`   | Ruff lint, `pytest -m "smoke"`, coverage HTML/XML, Vitest unit coverage   | < 5 minutes    |
 | Full   | `scripts/testing/full.sh` or `make qa-full` | Ruff, full `pytest`, coverage HTML/XML, mypy, bandit, detect-secrets, pre-commit | < 45 minutes   |
 | Gates  | `workflow: quality-gates` nightly         | Quality Gate checks (QG-1…5) plus Playwright e2e matrix                   | < 60 minutes   |
 | Nightly E2E | `workflow: playwright-nightly`       | Playwright chromium journey tests with traces & HTML report               | < 40 minutes   |
@@ -17,7 +17,9 @@ smoke or full regression suites.
 
 - Add `@pytest.mark.bandwidth("smoke")` (or module-level `pytestmark = pytest.mark.bandwidth("smoke")`) to
   designate deterministic, lightweight tests.
-- All remaining tests fall back to `bandwidth("full")` automatically via `pytest_collection_modifyitems`.
+- Directories that are known to be heavyweight (e.g., `tests/pipeline`, `tests/research`, `tests/quality`) are
+  automatically classified as `bandwidth("quality_gate")` or `bandwidth("slow")` by `pytest_collection_modifyitems`.
+- All other tests fall back to `bandwidth("full")` automatically.
 - The smoke tier is what runs on every PR in `.github/workflows/ci-smoke.yml`.
 
 ## Coverage Expectations
@@ -61,10 +63,12 @@ cd apps/web-ui && npm run test:e2e
   network-dependent tests should be left unmarked (default `full`).
 - **Web UI**: For component logic, add Vitest suites in `apps/web-ui/src/**/*.{test,spec}.ts[x]`. For UX-level
   flows, extend Playwright specs under `apps/web-ui/tests/`.
-- **Coverage Gaps**: If `coverage report` flags `< 70%` lines for a file, add targeted unit tests before merging.
+- **Coverage Gaps**: The full suite runs `tools/coverage/report_low_coverage.py` to surface modules with
+  effectively zero coverage (default threshold 5% lines). Use the report to prioritise new unit tests in
+  low-visibility areas and ratchet the threshold upward over time.
 
 ## Ephemeral Runner Tips
 
-- Both smoke and full scripts pin `PYTEST_ADDOPTS=--max-worker=2` implicitly via CI to reduce memory pressure.
+- CI jobs cap pytest xdist workers at 2 via environment settings to stay within GitHub-hosted runner limits.
 - `uv sync` caches are keyed off `uv.lock`; avoid touching the lock file unless dependencies change.
 - Playwright workers are capped to 2 in CI (`playwright.config.ts`) to stay within GitHub-hosted runner limits.

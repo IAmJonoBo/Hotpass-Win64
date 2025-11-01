@@ -9,6 +9,7 @@ cd "$ROOT_DIR"
 ruff check apps/web-ui
 uv run pytest "$@"
 uv run coverage html
+uv run python tools/coverage/report_low_coverage.py coverage.xml --min-lines 5 --min-branches 0
 
 mypy apps/data-platform/hotpass/pipeline/config.py \
      apps/data-platform/hotpass/pipeline/orchestrator.py \
