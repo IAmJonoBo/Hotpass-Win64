@@ -1,16 +1,16 @@
 # Default owners
-* @platform-eng
+* @platform-eng @n00tropic
 
 # Docs
-/docs/ @docs-team
+/docs/ @docs-team @n00tropic
 
 # Security + supply-chain
-SECURITY.md @security-team
-policy/ @security-team
-ops/supply_chain/ @security-team
+SECURITY.md @security-team @n00tropic
+policy/ @security-team @n00tropic
+ops/supply_chain/ @security-team @n00tropic
 
 # Workflows
-.github/workflows/ @platform-eng
-.github/labeler.yml @platform-eng
-.github/release-drafter.yml @platform-eng
-renovate.json @platform-eng
+.github/workflows/ @platform-eng @n00tropic
+.github/labeler.yml @platform-eng @n00tropic
+.github/release-drafter.yml @platform-eng @n00tropic
+renovate.json @platform-eng @n00tropic

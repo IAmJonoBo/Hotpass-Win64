@@ -31,8 +31,10 @@
 
   - [ ] Infrastructure — `uv run python ops/arc/verify_runner_lifecycle.py --owner ...` to capture lifecycle report for ARC runners (blocked awaiting staging access).【73fd99†L41-L55】
   - [x] Tests — Baseline `uv run pytest --cov=hotpass --cov=apps --cov-report=term-missing` failures resolved (CLI parser conflict, handler signatures, and lineage stub facets). Targeted suites `tests/cli/test_new_commands.py tests/cli/test_backfill.py tests/cli/test_run_lineage_integration.py` now green; schedule full-suite run when time budget allows; owner: Engineering.
+  - [ ] Lint — `uv run ruff check` fails under ruff 0.12.11 because import ordering rules (`I001`) and upgrade helpers (`UP038`) now flag legacy modules; owner: Engineering.
   - [ ] Types — `uv run mypy apps/data-platform tests ops` reports missing stub packages (`yaml`, `requests`, `hypothesis`) and signature issues in automation/linkage modules; owner: Engineering.
   - [ ] Supply chain — `uv run python ops/supply_chain/generate_sbom.py --output dist/sbom/hotpass-sbom.json` fails (missing `cyclonedx_py` module inside repo venv); owner: Platform.
+  - [ ] Security — `uv run detect-secrets scan --all-files` interrupted locally (KeyboardInterrupt) after multi-process heuristics stalled on large files; confirm baseline runtime or scope reduction with Security owners.
 
 ## Links
 
@@ -55,7 +57,7 @@
 - Keep this file actionable: move completed checklist items to `Next_Steps_Log.md` whenever tasks close so future updates remain focused on open work.
 - Prefect pipeline task payload fix merged; continue monitoring downstream Prefect deployments for regressions when toggling `backfill`/`incremental` flags.
 - Ingestion now normalises column headers and restores missing optional fields before slug/province transforms; monitor downstream consumers for assumptions about duplicate column names.
-- Format gate now green after restoring repo baseline; continue coordinating with maintainers before applying broad formatting updates.
+- Ruff baseline drift: format gate was green after the prior repo restore, but ruff 0.12.11 now reports import ordering and upgrade helper findings—coordinate with maintainers before applying repo-wide fixes.
 - Bandit reports tolerated `try/except/pass`; confirm acceptable risk or remediate while touching orchestration.
 - Watch list: monitor uv core build availability and Semgrep CA bundle rollout for future updates (owners retained from prior plan).
 - Marquez compose stack introduced for lineage verification; automated tests now guard compose configuration and lineage environment variables while we schedule live smoke tests for CLI + Prefect flows.

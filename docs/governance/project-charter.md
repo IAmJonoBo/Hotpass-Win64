@@ -1,6 +1,7 @@
 ---
 title: Governance — project charter
 summary: Mission, personas, guardrails, and governance rhythms for the Hotpass modernisation programme.
+owner: n00tropic
 last_updated: 2025-10-30
 ---
 
@@ -17,6 +18,11 @@ Hotpass ingests spreadsheet workbooks (primarily XLSX) alongside orchestrated re
 - **Problem statement**: Organisations rely on ad-hoc spreadsheets and scattered research crawlers that duplicate entities, leave gaps, and lack observability. Manual cleanup, backfilling, and relationship tracking are error-prone and slow.
 - **Opportunity**: Hotpass coordinates spreadsheet ingestion with orchestrated crawlers, configurable validation, enrichment, and relationship mapping so refinements, backfills, and deeper analysis remain repeatable and traceable.
 - **Value hypothesis**: Teams that standardise on Hotpass will reduce refinement cycle time by 60%, surface compliance and coverage gaps before downstream systems ingest data, and unlock connected insights for investigations and operations.
+
+## Stewardship and licensing
+
+- **Steward**: n00tropic curates the canonical Hotpass distribution, documentation, and automation guardrails. Governance, roadmap, and security escalations are channelled through `security@n00tropic.example`.
+- **Dual licensing**: Source code ships under the Business Source License 1.1 with a commercial license option (`LICENSES/COMMERCIAL-LICENSE.md`) for production workloads that exceed the Additional Use Grant. On the Change Date the code reverts to Apache 2.0, ensuring long-term openness while allowing n00tropic to offer supported tiers.
 
 ## Personas and needs
 

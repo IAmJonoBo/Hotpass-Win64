@@ -7,12 +7,13 @@ metadata:
     - data-pipeline
     - prefect
     - streamlit
+    - n00tropic
   annotations:
-    github.com/project-slug: IAmJonoBo/Hotpass
+    github.com/project-slug: n00tropic/Hotpass
     backstage.io/techdocs-ref: dir:./docs
 spec:
   type: service
-  owner: platform-eng
+  owner: group:n00tropic
   lifecycle: production
   system: hotpass-platform
   dependsOn:
@@ -24,12 +25,14 @@ kind: Component
 metadata:
   name: hotpass-dashboard
   description: Streamlit dashboard for monitoring Hotpass crawler runs, quality signals, and orchestrations.
+  tags:
+    - n00tropic
   annotations:
-    github.com/project-slug: IAmJonoBo/Hotpass
+    github.com/project-slug: n00tropic/Hotpass
     backstage.io/techdocs-ref: dir:./docs
 spec:
   type: website
-  owner: platform-eng
+  owner: group:n00tropic
   lifecycle: production
 ---
 apiVersion: backstage.io/v1alpha1
@@ -41,4 +44,4 @@ metadata:
     backstage.io/techdocs-ref: dir:./docs/devex
 spec:
   type: governance
-  owner: developer-productivity-guild
+  owner: group:n00tropic
