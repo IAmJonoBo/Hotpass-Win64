@@ -138,3 +138,9 @@ _Updated 2025-10-31_
 - [x] Tests — Baseline `uv run pytest --cov=hotpass --cov=apps --cov-report=term-missing` failures resolved (CLI parser conflict, handler signatures, lineage stub facets). Targeted suites for new automation commands now pass; full suite to be scheduled separately.
   - notes: Adjusted CLI command signatures, AWS profile flag, and lineage fixtures; executed `uv run pytest tests/cli/test_new_commands.py tests/cli/test_backfill.py tests/cli/test_run_lineage_integration.py`.
   - checks: tests=pass, lint=pass, type=fail, sec=pass, build=pass
+- [x] 2025-11-01 · Baseline quality gates snapshot — Refresh local status for `make qa`, `uv run pytest --cov=hotpass --cov=apps --cov-report=term-missing`, `uv run mypy apps/data-platform tests ops`, and `uv run python ops/supply_chain/generate_sbom.py --output dist/sbom/hotpass-sbom.json`.
+  - notes: `make qa` halted at `ruff format --check` with 137 files pending; pytest failed `tests/test_deployment_specs.py::test_deploy_pipeline_filters_and_registers` when Prefect deployments registered more flows than requested; mypy reported 90 errors (missing stubs plus CLI/MLflow typing); SBOM generation failed to import `cyclonedx_py`, so `cyclonedx-bom` was added to core dependencies for follow-up verification.
+  - checks: tests=fail, lint=fail, type=fail, sec=blocked, build=n/a
+- [x] 2025-11-01 · SBOM generation verified — `uv run python ops/supply_chain/generate_sbom.py --output dist/sbom/hotpass-sbom.json` after adding `cyclonedx-bom` to core dependencies.
+  - notes: Dependency install pulled in CycloneDX tooling and produced `dist/sbom/hotpass-sbom.json` for audit evidence.
+  - checks: tests=n/a, lint=n/a, type=n/a, sec=pass, build=pass
