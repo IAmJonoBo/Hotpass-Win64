@@ -39,9 +39,19 @@ The unified CLI exposes five primary verbs that map to the workflows described i
 - `uv run hotpass enrich` — enrich refined data with deterministic and optional research sources.
 - `uv run hotpass qa` — run quality gates (`fitness`, `data-quality`, `docs`, `contracts`, `cli`, `ta`).
 - `uv run hotpass contracts` — emit contract bundles (YAML/JSON) for downstream systems.
+- `uv run hotpass setup` — run the guided staging wizard (dependencies, tunnels, contexts, env files).
+- `uv run hotpass net` — manage SSH/SSM tunnels to Prefect and Marquez.
+- `uv run hotpass aws` — resolve the current AWS identity and verify EKS connectivity.
+- `uv run hotpass ctx` — bootstrap Prefect profiles and Kubernetes contexts.
+- `uv run hotpass env` — generate `.env.<target>` files using recorded tunnel/context metadata.
 - `uv run hotpass explain-provenance --dataset ./dist/enriched.xlsx --row-id 0 --json` — surface provenance metadata for a specific row (prints a table by default or JSON with `--json`).
 - `uv run hotpass plan research --dataset ./dist/refined.xlsx --row-id 0 --allow-network` — generate an adaptive research plan that combines local snapshots, deterministic enrichment, optional network fetchers, and crawl/backfill recommendations.
 - `uv run hotpass crawl "https://example.test" --allow-network` — trigger the crawler-only pathway (uses the same orchestrator engine but skips deterministic enrichment).
+
+> 🔐 **QG-1 — CLI Integrity:** Automated checks expect `hotpass overview` and
+> `hotpass --help` to advertise the automation verbs (`setup`, `net`, `aws`,
+> `ctx`, `env`) alongside the core pipeline commands above. If a new verb is
+> added, update the quality gate lists and this reference page together.
 
 The sections below retain backward-compatible documentation for legacy verbs until the
 Sprint 5 docs refresh is published.

@@ -100,6 +100,65 @@ async def test_aws_tool_formats_arguments(
     expect("--dry-run" in cmd, "dry-run flag missing")
 
 
+async def test_ctx_tool_builds_expected_command(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    record_commands = _patch_run_command(monkeypatch)
+    server = HotpassMCPServer()
+    result = await server._execute_tool(  # pylint: disable=protected-access
+        "hotpass.ctx",
+        {
+            "action": "init",
+            "prefect_profile": "hotpass-staging",
+            "prefect_url": "http://127.0.0.1:4200/api",
+            "eks_cluster": "hotpass-staging",
+            "kube_context": "hotpass-staging",
+            "namespace": "hotpass",
+            "dry_run": True,
+        },
+    )
+
+    expect(result["success"], "ctx init should succeed in dry-run mode")
+    cmd = record_commands[0]
+    expect(cmd[:3] == ["uv", "run", "hotpass"], "hotpass prefix missing")
+    expect(cmd[3:5] == ["ctx", "init"], "ctx init invocation missing")
+    expect("--prefect-profile" in cmd, "prefect profile flag missing")
+    expect("--prefect-url" in cmd, "prefect url flag missing")
+    expect("--eks-cluster" in cmd, "eks cluster flag missing")
+    expect("--kube-context" in cmd, "kube context flag missing")
+    expect("--namespace" in cmd, "namespace flag missing")
+    expect("--dry-run" in cmd, "dry-run flag missing")
+
+
+async def test_env_tool_generates_expected_flags(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    record_commands = _patch_run_command(monkeypatch)
+    server = HotpassMCPServer()
+    result = await server._execute_tool(  # pylint: disable=protected-access
+        "hotpass.env",
+        {
+            "target": "staging",
+            "prefect_url": "http://127.0.0.1:4200/api",
+            "openlineage_url": "http://127.0.0.1:5000/api/v1",
+            "allow_network": True,
+            "force": True,
+            "dry_run": True,
+        },
+    )
+
+    expect(result["success"], "env tool should succeed")
+    cmd = record_commands[0]
+    expect(cmd[:3] == ["uv", "run", "hotpass"], "hotpass prefix missing")
+    expect(cmd[3] == "env", "env command missing")
+    expect("--target" in cmd and "staging" in cmd, "target flag missing")
+    expect("--prefect-url" in cmd, "prefect url flag missing")
+    expect("--openlineage-url" in cmd, "openlineage url flag missing")
+    expect("--allow-network" in cmd, "allow-network flag missing")
+    expect("--force" in cmd, "force flag missing")
+    expect("--dry-run" in cmd, "dry-run flag missing")
+
+
 async def test_arc_tool_captures_required_flags(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

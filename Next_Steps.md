@@ -12,13 +12,14 @@
 - [ ] Finish Diátaxis navigation uplift in PR `docs/data-governance-nav` follow-on, ensuring governance artefacts are surfaced. (owner: Docs & UX, due: Phase 6)
 - [ ] Restore `make qa` baseline; address `ruff format --check` reporting 137 files to avoid mass reformatting before rerunning the gate. Command: `make qa`. (owner: Engineering, due: 2025-11-05)
 - [ ] Investigate Prefect deployment registration regression surfaced by `uv run pytest --cov=hotpass --cov=apps --cov-report=term-missing` (`tests/test_deployment_specs.py::test_deploy_pipeline_filters_and_registers`). (owner: Engineering, due: 2025-11-04)
-- [ ] Resolve mypy baseline regressions uncovered by `uv run mypy apps/data-platform tests ops` (90 errors across requests/yaml stubs and CLI/MLflow typing). (owner: Engineering & QA, due: backlog)
-- [x] Restore `ops/quality/fitness_functions.py` fitness baseline by refactoring `pipeline/aggregation.py` below the 750 line guardrail. Command: `python ops/quality/fitness_functions.py`. (owner: Engineering, due: 2025-11-01)
+- [ ] Resolve mypy baseline regressions uncovered by `uv run mypy apps/data-platform tests ops` (44 errors across requests/yaml stubs, scrapy dependencies, and CLI typing). (owner: Engineering & QA, due: backlog)
+- [ ] Reduce `uv run ruff check` baseline failures (52 violations as of 2025-11-04) without mass reformatting. (owner: Engineering, due: backlog)
 
 ## Steps
 - [ ] Reproduce `tests/test_deployment_specs.py::test_deploy_pipeline_filters_and_registers` with Prefect runner mocks to isolate extra registrations and draft remediation.
 - [ ] Outline a targeted formatting plan (e.g., staged module batches) before running `ruff format` so the `make qa` gate can complete without destabilising history.
 - [ ] Catalogue missing stub packages and annotate ownership for the 90 mypy diagnostics before planning fixes.
+- [ ] Document a staged fix strategy for the 52 `ruff check` violations and schedule remediation runs.
 
 ## Deliverables
 - Baseline QA run notes (2025-11-01) covering `make qa`, pytest, mypy, and SBOM status.
@@ -28,7 +29,7 @@
 - Simulated staging artefacts at `dist/staging/backfill/20251101T171853Z/` and `dist/staging/marquez/20251101T171901Z/` pending live access.
 
 ## Quality Gates
-- tests: **pass** — `uv run pytest tests` (532 passed, 1 skipped) and targeted GQ suite confirmed; `pipeline/aggregation.py` trimmed to 740 lines keeps the fitness guardrail green. (owner: Engineering)
+- tests: **pass** — `uv run pytest tests` (533 passed, 6 skipped) and `uv run pytest tests/cli/test_quality_gates.py -v` verified the expanded automation verbs. (owner: Engineering)
 - linters/formatters: **blocked** — `scripts/testing/trunk_check.sh` still flags 200+ pre-existing diffs (e.g. `tests/conftest.py`, `tests/test_pipeline_enhancements_exports.py`) when comparing against `origin/main`; no changes were applied to avoid clobbering user work. (owner: Engineering)
 - type-checks: **pass** — `uv run mypy apps/data-platform tests ops` now reports zero errors after tightening `tests/cli/test_refine_enrich_lineage_flow.py` assertions. (owner: Engineering & QA)
 - security scan: **pass** — `uv run bandit -r apps/data-platform ops --severity-level medium --confidence-level high` and `uv run python -m detect_secrets scan apps/data-platform tests ops` completed with no actionable findings. (owner: Engineering & Security)

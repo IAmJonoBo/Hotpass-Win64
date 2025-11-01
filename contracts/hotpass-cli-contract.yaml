@@ -83,3 +83,76 @@ subcommands:
       - name: --name
       - name: --schedule
       - name: --work-pool
+  - name: setup
+    options:
+      - name: --preset
+      - name: --host
+      - name: --via
+      - name: --label
+      - name: --skip-prereqs
+      - name: --skip-aws
+      - name: --skip-ctx
+      - name: --skip-env
+      - name: --skip-arc
+      - name: --dry-run
+      - name: --execute
+      - name: --assume-yes
+  - name: net
+    subcommands:
+      - name: up
+        options:
+          - name: --via
+          - name: --host
+          - name: --ssh-user
+          - name: --prefect-host
+          - name: --prefect-port
+          - name: --prefect-remote-port
+          - name: --marquez-host
+          - name: --marquez-port
+          - name: --marquez-remote-port
+          - name: --no-marquez
+          - name: --label
+          - name: --detach
+          - name: --auto-port
+          - name: --ssh-option
+          - name: --dry-run
+      - name: down
+        options:
+          - name: --label
+          - name: --all
+      - name: status
+  - name: aws
+    options:
+      - name: --aws-profile
+      - name: --region
+      - name: --eks-cluster
+      - name: --kube-context
+      - name: --kubeconfig
+      - name: --verify-kubeconfig
+      - name: --output
+      - name: --dry-run
+  - name: ctx
+    subcommands:
+      - name: init
+        options:
+          - name: --prefect-profile
+          - name: --prefect-url
+          - name: --use-net
+          - name: --overwrite-prefect
+          - name: --eks-cluster
+          - name: --kube-context
+          - name: --kubeconfig
+          - name: --namespace
+          - name: --no-prefect
+          - name: --no-kube
+          - name: --dry-run
+      - name: list
+  - name: env
+    options:
+      - name: --target
+      - name: --output
+      - name: --prefect-url
+      - name: --openlineage-url
+      - name: --allow-network
+      - name: --force
+      - name: --dry-run

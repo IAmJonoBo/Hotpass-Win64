@@ -51,7 +51,18 @@ def _run_command(
 
 def _check_overview() -> CheckResult:
     """Ensure `hotpass overview` enumerates required commands."""
-    required_verbs = {"overview", "refine", "enrich", "qa", "contracts"}
+    required_verbs = {
+        "overview",
+        "refine",
+        "enrich",
+        "qa",
+        "contracts",
+        "setup",
+        "net",
+        "aws",
+        "ctx",
+        "env",
+    }
 
     def validator(result: subprocess.CompletedProcess[str]) -> tuple[bool, str]:
         if result.returncode != 0:
@@ -103,7 +114,18 @@ def _check_command_help(command: str) -> CheckResult:
 
 def _check_cli_help() -> CheckResult:
     """Ensure top-level help lists required commands."""
-    required_commands = {"overview", "refine", "enrich", "qa", "contracts"}
+    required_commands = {
+        "overview",
+        "refine",
+        "enrich",
+        "qa",
+        "contracts",
+        "setup",
+        "net",
+        "aws",
+        "ctx",
+        "env",
+    }
 
     def validator(result: subprocess.CompletedProcess[str]) -> tuple[bool, str]:
         if result.returncode != 0:
@@ -207,7 +229,18 @@ def main(argv: list[str] | None = None) -> int:
         _check_cli_help(),
         *(
             _check_command_help(command)
-            for command in ("overview", "refine", "enrich", "qa", "contracts")
+            for command in (
+                "overview",
+                "refine",
+                "enrich",
+                "qa",
+                "contracts",
+                "setup",
+                "net",
+                "aws",
+                "ctx",
+                "env",
+            )
         ),
         _check_profile_lint(),
     ]

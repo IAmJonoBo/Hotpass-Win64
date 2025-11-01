@@ -84,27 +84,93 @@ class TestQG1CLIIntegrity:
             "contracts help should mention contracts",
         )
 
+    def test_net_command_exists(self):
+        """QG-1f: Net command should be accessible."""
+        result = subprocess.run(
+            ["uv", "run", "hotpass", "net", "--help"], capture_output=True, text=True
+        )
+        expect(result.returncode == 0, "net command should have --help")
+        expect(
+            "tunnel" in result.stdout.lower(),
+            "net help should mention tunnel management",
+        )
+
+    def test_aws_command_exists(self):
+        """QG-1g: AWS command should be accessible."""
+        result = subprocess.run(
+            ["uv", "run", "hotpass", "aws", "--help"], capture_output=True, text=True
+        )
+        expect(result.returncode == 0, "aws command should have --help")
+        expect(
+            "aws" in result.stdout.lower(),
+            "aws help should mention aws checks",
+        )
+
+    def test_ctx_command_exists(self):
+        """QG-1h: Ctx command should be accessible."""
+        result = subprocess.run(
+            ["uv", "run", "hotpass", "ctx", "--help"], capture_output=True, text=True
+        )
+        expect(result.returncode == 0, "ctx command should have --help")
+        expect(
+            "context" in result.stdout.lower(),
+            "ctx help should mention contexts",
+        )
+
+    def test_env_command_exists(self):
+        """QG-1i: Env command should be accessible."""
+        result = subprocess.run(
+            ["uv", "run", "hotpass", "env", "--help"], capture_output=True, text=True
+        )
+        expect(result.returncode == 0, "env command should have --help")
+        expect(
+            "environment" in result.stdout.lower() or "env" in result.stdout.lower(),
+            "env help should mention environment files",
+        )
+
     def test_overview_lists_all_required_verbs(self):
-        """QG-1f: Overview command should list all required verbs."""
+        """QG-1j: Overview command should list all required verbs."""
         result = subprocess.run(
             ["uv", "run", "hotpass", "overview"], capture_output=True, text=True
         )
 
         expect(result.returncode == 0, "overview command should exit successfully")
 
-        required_verbs = ["refine", "enrich", "qa", "contracts", "overview"]
+        required_verbs = [
+            "overview",
+            "refine",
+            "enrich",
+            "qa",
+            "contracts",
+            "setup",
+            "net",
+            "aws",
+            "ctx",
+            "env",
+        ]
         output_lower = result.stdout.lower()
 
         for verb in required_verbs:
             expect(verb in output_lower, f"overview must list {verb}")
 
     def test_cli_main_help_shows_all_commands(self):
-        """QG-1g: Main CLI help should show all commands."""
+        """QG-1k: Main CLI help should show all commands."""
         result = subprocess.run(["uv", "run", "hotpass", "--help"], capture_output=True, text=True)
 
         expect(result.returncode == 0, "hotpass --help should exit successfully")
 
-        required_commands = ["overview", "refine", "enrich", "qa", "contracts"]
+        required_commands = [
+            "overview",
+            "refine",
+            "enrich",
+            "qa",
+            "contracts",
+            "setup",
+            "net",
+            "aws",
+            "ctx",
+            "env",
+        ]
         output_lower = result.stdout.lower()
 
         for cmd in required_commands:

@@ -8,11 +8,12 @@ from pathlib import Path
 from rich.console import Console
 from rich.panel import Panel
 
+from ops.net.tunnels import latest_session
+
 from ..builder import CLICommand, SharedParsers
 from ..configuration import CLIProfile
 from ..state import load_state
 
-NET_STATE_FILE = "net.json"
 CTX_STATE_FILE = "contexts.json"
 
 
@@ -139,11 +140,9 @@ def _build_env_lines(
 
 
 def _derive_prefect_url() -> str:
-    net_state = load_state(NET_STATE_FILE, default={"sessions": []}) or {"sessions": []}
-    sessions = net_state.get("sessions", [])
-    if sessions:
-        session = sessions[-1]
-        prefect_meta = session.get("metadata", {}).get("prefect", {})
+    session = latest_session()
+    if session:
+        prefect_meta = session.metadata.get("prefect", {})
         port = prefect_meta.get("local_port")
         if port:
             return f"http://127.0.0.1:{port}/api"
@@ -151,11 +150,9 @@ def _derive_prefect_url() -> str:
 
 
 def _derive_openlineage_url() -> str:
-    net_state = load_state(NET_STATE_FILE, default={"sessions": []}) or {"sessions": []}
-    sessions = net_state.get("sessions", [])
-    if sessions:
-        session = sessions[-1]
-        marquez_meta = session.get("metadata", {}).get("marquez", {})
+    session = latest_session()
+    if session:
+        marquez_meta = session.metadata.get("marquez", {})
         port = marquez_meta.get("local_port")
         if port:
             return f"http://127.0.0.1:{port}/api/v1"

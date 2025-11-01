@@ -9,6 +9,8 @@ from typing import Any, cast
 from rich.console import Console
 from rich.table import Table
 
+from ops.net.tunnels import latest_session
+
 from ..builder import CLICommand, CommandHandler, SharedParsers
 from ..configuration import CLIProfile
 from ..state import load_state, write_state
@@ -16,7 +18,6 @@ from ..utils import CommandExecutionError, format_command, run_command
 
 DEFAULT_PREFECT_URL = "http://127.0.0.1:4200/api"
 CTX_STATE_FILE = "contexts.json"
-NET_STATE_FILE = "net.json"
 
 
 def build(
@@ -243,12 +244,9 @@ def _resolve_prefect_url(args: argparse.Namespace) -> str:
     if args.prefect_url:
         return str(args.prefect_url)
     if args.use_net:
-        net_state = load_state(NET_STATE_FILE, default={"sessions": []}) or {"sessions": []}
-        sessions = net_state.get("sessions", [])
-        if sessions:
-            # use the most recent session (last element)
-            session = sessions[-1]
-            prefect_meta = session.get("metadata", {}).get("prefect", {})
+        session = latest_session()
+        if session:
+            prefect_meta = session.metadata.get("prefect", {})
             port = prefect_meta.get("local_port")
             if port:
                 return f"http://127.0.0.1:{port}/api"

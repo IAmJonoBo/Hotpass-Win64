@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
-from typing import TYPE_CHECKING, Any, Optional, Type
+from typing import TYPE_CHECKING, Any, Protocol
 
 from rich.console import Console
 from rich.table import Table
@@ -17,15 +17,21 @@ from ..utils import CommandExecutionError, format_command, run_command
 if TYPE_CHECKING:
     from ops.arc.verify_runner_lifecycle import AwsIdentityVerifier as AwsIdentityVerifierType
 else:
-    AwsIdentityVerifierType = object  # pragma: no cover - type placeholder
+
+    class AwsIdentityVerifierType(Protocol):  # pragma: no cover - runtime placeholder
+        """Runtime fallback protocol for AwsIdentityVerifier imports."""
+
+        def __init__(self, *, region: str | None, profile: str | None) -> None: ...
+
+        def verify(self) -> Any: ...
 
 try:
     from ops.arc.verify_runner_lifecycle import AwsIdentityVerifier as _AwsIdentityVerifier
 except ModuleNotFoundError:  # pragma: no cover - defensive guard
-    AwsIdentityVerifierImpl: Optional[Type[AwsIdentityVerifierType]] = None
+    AwsIdentityVerifierImpl: type[AwsIdentityVerifierType] | None = None
 else:
     AwsIdentityVerifierImpl = _AwsIdentityVerifier
-VerifierCls: Optional[Type[AwsIdentityVerifierType]] = AwsIdentityVerifierImpl
+VerifierCls: type[AwsIdentityVerifierType] | None = AwsIdentityVerifierImpl
 
 
 def build(
