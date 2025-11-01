@@ -43,6 +43,7 @@ import type {
   MarquezRun,
 } from '@/types'
 import { cn } from '@/lib/utils'
+import { sanitizeSearchTerm } from '@/lib/security'
 
 type NodeType = 'JOB' | 'DATASET'
 
@@ -201,6 +202,7 @@ export function Lineage() {
   const defaultNamespace = mockMarquezData.namespaces[0]?.name ?? 'hotpass'
 
   const [searchTerm, setSearchTerm] = useState('')
+  const handleSearchInput = (value: string) => setSearchTerm(sanitizeSearchTerm(value, 80))
   const [selectedNamespace, setSelectedNamespace] = useState(defaultNamespace)
   const [nodeType, setNodeType] = useState<NodeType>('JOB')
   const [selectedName, setSelectedName] = useState<string | null>(null)
@@ -490,7 +492,7 @@ export function Lineage() {
                 <Input
                   placeholder={`Search ${nodeType === 'JOB' ? 'jobs' : 'datasets'}...`}
                   value={searchTerm}
-                  onChange={(event) => setSearchTerm(event.target.value)}
+                  onChange={(event) => handleSearchInput(event.target.value)}
                   className="pl-8"
                 />
               </div>

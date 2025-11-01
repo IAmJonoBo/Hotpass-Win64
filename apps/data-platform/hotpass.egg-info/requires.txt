@@ -31,6 +31,12 @@ logfire>=4.14.2
 [caching]
 redis>=5.0.0
 
+[ci]
+build>=1.2.2.post1
+cyclonedx-bom>=7.2.1
+cyclonedx-python-lib[validation]<10,>=8
+pip-audit>=2.7.3
+
 [compliance]
 presidio-analyzer>=2.2.0
 presidio-anonymizer>=2.2.0

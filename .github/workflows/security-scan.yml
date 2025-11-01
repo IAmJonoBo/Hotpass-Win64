@@ -28,7 +28,7 @@ jobs:
 
       - name: Synchronise dependencies
         env:
-          HOTPASS_UV_EXTRAS: 'dev orchestration'
+          HOTPASS_UV_EXTRAS: 'ci dev orchestration'
         run: bash ops/uv_sync_extras.sh
 
       - name: pip-audit
@@ -36,6 +36,15 @@ jobs:
 
       - name: Pytest
         run: uv run pytest
+
+      - name: Build distribution artifacts
+        run: uv run python -m build
+
+      - name: Generate CycloneDX SBOM
+        run: uv run python ops/supply_chain/generate_sbom.py --output-dir dist/sbom
+
+      - name: Generate provenance statement
+        run: uv run python ops/supply_chain/generate_provenance.py --output-dir dist/provenance
 
       - name: Setup Node.js
         uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6
@@ -57,3 +66,15 @@ jobs:
         env:
           CI: 'true'
         run: npm run test:e2e
+
+      - name: Upload SBOM artifact
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        with:
+          name: hotpass-sbom
+          path: dist/sbom
+
+      - name: Upload provenance artifact
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        with:
+          name: hotpass-provenance
+          path: dist/provenance

@@ -5,6 +5,7 @@ on:
 
 permissions:
   contents: read
+  security-events: write
 
 jobs:
   zap:
@@ -33,6 +34,14 @@ jobs:
           nohup uv run streamlit run apps/data-platform/hotpass/dashboard.py --server.headless true --server.port 8501 &
           sleep 15
 
+      - name: Trivy filesystem scan
+        uses: aquasecurity/trivy-action@a6459e3457f3643fddb19f18ae2f702e3fb381d5 # v0.24.0
+        with:
+          scan-type: fs
+          format: sarif
+          output: trivy-vulnerabilities.sarif
+          severity: CRITICAL,HIGH,MEDIUM
+
       - name: OWASP ZAP baseline scan
         uses: zaproxy/action-baseline@de8ad967d3548d44ef623df22cf95c3b0baf8b25 # v0.15.0
         with:
@@ -44,3 +53,8 @@ jobs:
         with:
           name: zap-report
           path: zap_report.html
+
+      - name: Upload Trivy SARIF
+        uses: github/codeql-action/upload-sarif@0499de31b99561a6d14a36a5f662c2a54f91beee # v4
+        with:
+          sarif_file: trivy-vulnerabilities.sarif

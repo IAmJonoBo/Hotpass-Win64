@@ -18,6 +18,7 @@ import type {
   MarquezLineageGraphEdge,
   MarquezLineageFilters,
 } from '@/types'
+import { createRateLimiter } from '@/lib/security'
 
 type LineageUpdateHandler = (graph: MarquezLineageGraph) => void
 type LineageErrorHandler = (error: unknown) => void
@@ -164,11 +165,16 @@ const getBaseUrl = (): string => {
   )
 }
 
+const marquezLimiter = createRateLimiter(20, 60_000)
+
+const fetchWithLimiter = (url: string, init: RequestInit = {}) =>
+  marquezLimiter(() => fetch(url, { credentials: 'include', ...init }))
+
 export const marquezApi = {
   // List all namespaces
   async getNamespaces(): Promise<MarquezNamespace[]> {
     const url = `${getBaseUrl()}/api/v1/namespaces`
-    const response = await fetch(url, { credentials: 'include' })
+    const response = await fetchWithLimiter(url)
     if (!response.ok) {
       throw new Error(`Failed to fetch namespaces: ${response.statusText}`)
     }
@@ -179,7 +185,7 @@ export const marquezApi = {
   // Get jobs in a namespace
   async getJobs(namespace: string, limit = 100, offset = 0): Promise<MarquezJob[]> {
     const url = `${getBaseUrl()}/api/v1/namespaces/${encodeURIComponent(namespace)}/jobs?limit=${limit}&offset=${offset}`
-    const response = await fetch(url, { credentials: 'include' })
+    const response = await fetchWithLimiter(url)
     if (!response.ok) {
       throw new Error(`Failed to fetch jobs: ${response.statusText}`)
     }
@@ -190,7 +196,7 @@ export const marquezApi = {
   // Get a specific job
   async getJob(namespace: string, jobName: string): Promise<MarquezJob> {
     const url = `${getBaseUrl()}/api/v1/namespaces/${encodeURIComponent(namespace)}/jobs/${encodeURIComponent(jobName)}`
-    const response = await fetch(url, { credentials: 'include' })
+    const response = await fetchWithLimiter(url)
     if (!response.ok) {
       throw new Error(`Failed to fetch job: ${response.statusText}`)
     }
@@ -200,7 +206,7 @@ export const marquezApi = {
   // Get runs for a job
   async getJobRuns(namespace: string, jobName: string, limit = 100, offset = 0): Promise<MarquezRun[]> {
     const url = `${getBaseUrl()}/api/v1/namespaces/${encodeURIComponent(namespace)}/jobs/${encodeURIComponent(jobName)}/runs?limit=${limit}&offset=${offset}`
-    const response = await fetch(url, { credentials: 'include' })
+    const response = await fetchWithLimiter(url)
     if (!response.ok) {
       throw new Error(`Failed to fetch job runs: ${response.statusText}`)
     }
@@ -211,7 +217,7 @@ export const marquezApi = {
   // Get a specific run
   async getRun(runId: string): Promise<MarquezRun> {
     const url = `${getBaseUrl()}/api/v1/runs/${encodeURIComponent(runId)}`
-    const response = await fetch(url, { credentials: 'include' })
+    const response = await fetchWithLimiter(url)
     if (!response.ok) {
       throw new Error(`Failed to fetch run: ${response.statusText}`)
     }
@@ -221,7 +227,7 @@ export const marquezApi = {
   // Get datasets in a namespace
   async getDatasets(namespace: string, limit = 100, offset = 0): Promise<MarquezDataset[]> {
     const url = `${getBaseUrl()}/api/v1/namespaces/${encodeURIComponent(namespace)}/datasets?limit=${limit}&offset=${offset}`
-    const response = await fetch(url, { credentials: 'include' })
+    const response = await fetchWithLimiter(url)
     if (!response.ok) {
       throw new Error(`Failed to fetch datasets: ${response.statusText}`)
     }
@@ -232,7 +238,7 @@ export const marquezApi = {
   // Get lineage graph with full filter set
   async getLineageGraph(filters: MarquezLineageFilters): Promise<MarquezLineageGraph> {
     const url = buildLineageQuery(filters)
-    const response = await fetch(url.toString(), { credentials: 'include' })
+    const response = await fetchWithLimiter(url.toString())
     if (!response.ok) {
       throw new Error(`Failed to fetch lineage: ${response.statusText}`)
     }
@@ -390,9 +396,8 @@ export const marquezApi = {
   async checkHealth(): Promise<boolean> {
     const base = getBaseUrl()
     try {
-      const response = await fetch(`${base}/api/v1/namespaces?limit=1`, {
+      const response = await fetchWithLimiter(`${base}/api/v1/namespaces?limit=1`, {
         headers: { Accept: 'application/json' },
-        credentials: 'include',
       })
       return response.ok
     } catch (error) {

@@ -1,5 +1,7 @@
 name: codeql
 
+name: codeql-and-sast
+
 on:
   push:
     branches: [main]
@@ -20,12 +22,31 @@ jobs:
       - name: Initialize CodeQL
         uses: github/codeql-action/init@0499de31b99561a6d14a36a5f662c2a54f91beee # v4
         with:
-          languages: python
+          languages: python, javascript
 
       - name: Autobuild
         uses: github/codeql-action/autobuild@0499de31b99561a6d14a36a5f662c2a54f91beee # v4
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@0499de31b99561a6d14a36a5f662c2a54f91beee # v4
+
+  semgrep:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+
+      - name: Semgrep scan
+        uses: returntocorp/semgrep-action@d2a5ec5ae049813bb31122f29034e49b0b063102 # v1
         with:
-          category: "/language:python"
+          config: p/ci
+          generateSarif: "1"
+          sarif: semgrep.sarif
+
+      - name: Upload Semgrep results
+        uses: github/codeql-action/upload-sarif@0499de31b99561a6d14a36a5f662c2a54f91beee # v4
+        with:
+          sarif_file: semgrep.sarif

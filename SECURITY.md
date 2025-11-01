@@ -40,3 +40,21 @@
 - Responsible disclosure preferred; coordinate release date with reporter.
 - Credits provided in advisory unless reporter opts out.
 - Non-sensitive fixes batched into monthly security release notes.
+
+## Front-end protections & residual risk
+
+- The Hotpass web UI now performs client-side validation and sanitisation for operator inputs
+  (admin endpoint configuration, lineage search) and clamps telemetry feedback to 500 characters
+  while stripping control characters. These checks run in addition to server-side validation and
+  reject protocols outside HTTP/HTTPS.
+- Browser interactions with Prefect and Marquez APIs are throttled via an application-level rate
+  limiter that mirrors the platform defaults (30/min Prefect, 20/min Marquez) to reduce the risk of
+  client burst traffic exhausting upstream quotas.
+- CSRF protection for operator feedback is enforced by requiring a per-session token retrieved from
+  `/telemetry/operator-feedback/csrf`; feedback submission is disabled when the token or validation
+  context is unavailable.
+- **Residual risk:** front-end validation cannot guarantee integrity if an attacker tampers with the
+  browser runtime. Server-side enforcement remains authoritative and must stay enabled. Rate limiting
+  is best-effort and assumes a cooperative browser; automated clients can still exceed thresholds if
+  they bypass the UI. Continue to review telemetry endpoints for abuse-resistant authentication when
+  wiring into production data paths.
