@@ -111,6 +111,15 @@ _Updated 2025-10-31_
 - [x] Tests — `uv run pytest tests/pipeline/test_stage_execution.py tests/cli/test_progress.py` (pass; covers modular stage orchestration and high-volume progress throttling).【6dc66d†L1-L99】
 
 ## 2025-11-01 (branch: work, pr: n/a, actor: codex)
+- [x] Install Playwright browsers and rerun auth guard smoke tests to confirm gating behaviour locally.
+  - notes: Installed Playwright Chromium/Firefox/WebKit bundles and required system dependencies before rerunning the auth guard suite; verified route gating with mocked roles via Playwright smoke coverage.
+  - checks: tests=pass, lint=n/a, type=n/a, sec=n/a, build=n/a
+- [x] Mark HIL store React Query `queryFn`s async where awaiting secure storage helpers to satisfy build tooling.
+  - notes: Updated `useGetRunApproval`/`useGetRunHistory` to use async query functions and hardened `AuthProvider` fallback initialisation so secure storage works without Web Crypto, ensuring mock-role gating functions during tests.
+  - checks: tests=pass, lint=pass, type=n/a, sec=n/a, build=n/a
+- [x] Re-run `npm run lint`, `npm run test:unit`, and Playwright auth/lineage smoke tests after fixes; capture outcomes for QC log.
+  - notes: Executed `npm run lint`, `npm run test:unit`, and `npx playwright test --reporter=line --workers=1` to confirm gating/UI flows; all commands completed successfully with passing results.
+  - checks: tests=pass, lint=pass, type=n/a, sec=n/a, build=n/a
 - [x] **Engineering & QA** — Execute the staged mypy remediation plan (typed Hypothesis wrappers ➜ optional-dependency stubs ➜ CLI/MCP typing ➜ long-tail cleanup).
   - notes: Historical completion migrated from `Next_Steps.md` cleanup; remediation plan delivered with mypy now reporting zero errors across `src`, `tests`, and `scripts`.
   - checks: tests=pass, lint=pass, type=pass, sec=pass, build=pass
@@ -144,3 +153,14 @@ _Updated 2025-10-31_
 - [x] 2025-11-01 · SBOM generation verified — `uv run python ops/supply_chain/generate_sbom.py --output dist/sbom/hotpass-sbom.json` after adding `cyclonedx-bom` to core dependencies.
   - notes: Dependency install pulled in CycloneDX tooling and produced `dist/sbom/hotpass-sbom.json` for audit evidence.
   - checks: tests=n/a, lint=n/a, type=n/a, sec=pass, build=pass
+
+## 2025-11-02 (branch: work, pr: n/a, actor: codex)
+- [x] Land Okta/OIDC auth provider with route gating and secure HIL storage encryption.
+  - notes: Wrapped the router in `AuthProvider`, introduced reusable `RequireRole` guards, and updated pages/components to respect approver/admin permissions while initialising encrypted HIL storage via IndexedDB. 【F:apps/web-ui/src/App.tsx†L1-L58】【F:apps/web-ui/src/auth/guards.tsx†L1-L99】【F:apps/web-ui/src/pages/RunDetails.tsx†L32-L108】【F:apps/web-ui/src/components/hil/ApprovalPanel.tsx†L20-L170】【F:apps/web-ui/src/lib/secureStorage.ts†L1-L174】【F:apps/web-ui/src/lib/hilRetention.ts†L1-L56】
+  - checks: tests=pass, lint=pass, type=n/a, sec=n/a, build=n/a
+- [x] Harden Prefect/Marquez access with rate-limited proxy and CSRF-protected telemetry endpoint.
+  - notes: Added credentials-including fetchers, Express proxy with per-service rate limiting, CSRF token issuance/verification, and admin retention controls alongside operational documentation. 【F:apps/web-ui/src/api/prefect.ts†L17-L111】【F:apps/web-ui/src/api/marquez.ts†L1-L200】【F:apps/web-ui/server/index.mjs†L1-L103】【F:apps/web-ui/src/components/refinement/LiveRefinementPanel.tsx†L45-L240】【F:apps/web-ui/src/pages/Admin.tsx†L12-L200】【F:docs/how-to-guides/secure-web-auth.md†L1-L62】
+  - checks: tests=pass, lint=pass, type=n/a, sec=n/a, build=n/a
+- [x] Expand accessibility and Playwright smoke coverage for auth guardrails.
+  - notes: Surfaced auth status controls in the sidebar, ensured guard UIs expose status roles, and added Playwright coverage validating admin gating and approval button disablement. 【F:apps/web-ui/src/components/Sidebar.tsx†L1-L176】【F:apps/web-ui/src/auth/guards.tsx†L7-L99】【F:apps/web-ui/tests/auth.spec.ts†L1-L21】
+  - checks: tests=pass, lint=pass, type=n/a, sec=n/a, build=n/a

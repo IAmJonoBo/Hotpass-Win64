@@ -23,6 +23,7 @@ import { useLineageTelemetry } from '@/hooks/useLineageTelemetry'
 import { cn, formatDuration, getStatusColor } from '@/lib/utils'
 import { ApprovalPanel } from '@/components/hil/ApprovalPanel'
 import type { QAResult } from '@/types'
+import { useAuth } from '@/auth'
 
 interface OutletContext {
   openAssistant: (message?: string) => void
@@ -32,6 +33,7 @@ export function RunDetails() {
   const { runId } = useParams<{ runId: string }>()
   const { openAssistant } = useOutletContext<OutletContext>()
   const [approvalPanelOpen, setApprovalPanelOpen] = useState(false)
+  const { hasRole } = useAuth()
 
   const mockRun = mockPrefectData.flowRuns.find(r => r.id === runId)
 
@@ -47,6 +49,7 @@ export function RunDetails() {
   const isLoading = runQuery.isLoading
   const showSkeleton = isLoading && !run
   const isFallback = Boolean(runError && mockRun)
+  const canApprove = hasRole(['approver', 'admin'])
 
   const {
     data: lineageTelemetry,
@@ -421,14 +424,19 @@ export function RunDetails() {
 
       {/* Actions */}
       <div className="flex justify-between gap-2">
-        <Button
-          variant="default"
-          disabled={showSkeleton || !run}
-          onClick={() => setApprovalPanelOpen(true)}
-        >
-          <UserCheck className="mr-2 h-4 w-4" />
-          Review & Approve
-        </Button>
+        <div className="flex flex-col gap-1">
+          <Button
+            variant="default"
+            disabled={showSkeleton || !run || !canApprove}
+            onClick={() => setApprovalPanelOpen(true)}
+          >
+            <UserCheck className="mr-2 h-4 w-4" />
+            Review & Approve
+          </Button>
+          {!canApprove && !showSkeleton && (
+            <p className="text-xs text-muted-foreground">Approver role required.</p>
+          )}
+        </div>
         <div className="flex gap-2">
           <Link to="/lineage">
             <Button variant="outline" disabled={showSkeleton}>View Lineage</Button>
@@ -445,6 +453,7 @@ export function RunDetails() {
           run={run}
           qaResults={mockQAResults}
           onOpenAssistant={openAssistant}
+          canApprove={canApprove}
         />
       )}
     </div>

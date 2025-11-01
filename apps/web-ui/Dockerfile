@@ -13,29 +13,25 @@ ENV VITE_MARQUEZ_API_URL=${OPENLINEAGE_URL}
 
 WORKDIR /app
 
-# Copy package files
 COPY package*.json ./
-
-# Install dependencies
 RUN npm ci
 
-# Copy source code
 COPY . .
-
-# Build the application
 RUN npm run build
 
-# Production stage
-FROM nginx:alpine
+FROM node:20-alpine AS runner
 
-# Copy built assets from builder
-COPY --from=builder /app/dist /usr/share/nginx/html
+ENV NODE_ENV=production
+ENV PORT=3000
 
-COPY ../../deploy/docker/bin/health-banner.sh /docker-entrypoint.d/10-health-banner.sh
+WORKDIR /app
 
-# Copy nginx configuration
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY package*.json ./
+RUN npm ci --omit=dev
 
-EXPOSE 80
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/server ./server
 
-CMD ["nginx", "-g", "daemon off;"]
+EXPOSE 3000
+
+CMD ["node", "server/index.mjs"]

@@ -9,13 +9,15 @@
  * Settings are persisted to localStorage
  */
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, type ChangeEvent } from 'react'
 import { Save, Check, AlertCircle, Loader2, XCircle } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { LLMProviderSelector } from '@/components/settings/LLMProviderSelector'
+import { getRetentionPolicy, applyRetentionImmediately } from '@/lib/secureStorage'
+import { setHilRetentionPolicy, type HilRetentionPolicy } from '@/lib/hilRetention'
 
 interface ConfigSettings {
   prefectApiUrl: string
@@ -51,6 +53,7 @@ export function Admin() {
     prefect: 'unknown' | 'success' | 'error'
     marquez: 'unknown' | 'success' | 'error'
   }>({ prefect: 'unknown', marquez: 'unknown' })
+  const [retentionPolicy, setRetentionPolicy] = useState<HilRetentionPolicy>(() => getRetentionPolicy())
 
   // Load settings from localStorage on mount
   useEffect(() => {
@@ -63,6 +66,10 @@ export function Admin() {
         console.error('Failed to parse stored config:', error)
       }
     }
+  }, [])
+
+  useEffect(() => {
+    setRetentionPolicy(getRetentionPolicy())
   }, [])
 
   const handleSave = () => {
@@ -103,11 +110,31 @@ export function Admin() {
     }
   }
 
+  const handleRetentionToggle = async (event: ChangeEvent<HTMLInputElement>) => {
+    await handleRetentionChange({ ...retentionPolicy, enabled: event.target.checked })
+  }
+
+  const handleRetentionDays = async (event: ChangeEvent<HTMLInputElement>) => {
+    const nextDays = Number.parseInt(event.target.value, 10)
+    if (Number.isNaN(nextDays) || nextDays < 1) {
+      return
+    }
+    await handleRetentionChange({ ...retentionPolicy, days: nextDays })
+  }
+
   const handleReset = () => {
     setSettings(DEFAULT_SETTINGS)
     localStorage.removeItem('hotpass_config')
     localStorage.removeItem('hotpass_environment')
     setConnectionStatus({ prefect: 'unknown', marquez: 'unknown' })
+    const policy = getRetentionPolicy()
+    setRetentionPolicy(policy)
+  }
+
+  const handleRetentionChange = async (policy: HilRetentionPolicy) => {
+    setRetentionPolicy(policy)
+    setHilRetentionPolicy(policy)
+    await applyRetentionImmediately()
   }
 
   useEffect(() => {
@@ -190,6 +217,46 @@ export function Admin() {
 
       {/* LLM Provider Selector */}
       <LLMProviderSelector />
+
+      {/* HIL Retention Policy */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Human-in-the-loop retention</CardTitle>
+          <CardDescription>
+            Secure approvals are stored in encrypted IndexedDB. Control how long audit entries are retained per operator.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-medium" htmlFor="hil-retention-enabled">
+              Enable retention policy
+            </label>
+            <input
+              id="hil-retention-enabled"
+              type="checkbox"
+              className="h-4 w-4"
+              checked={retentionPolicy.enabled}
+              onChange={handleRetentionToggle}
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium" htmlFor="hil-retention-days">
+              Retention window (days)
+            </label>
+            <Input
+              id="hil-retention-days"
+              type="number"
+              min={1}
+              value={retentionPolicy.days}
+              onChange={handleRetentionDays}
+              disabled={!retentionPolicy.enabled}
+            />
+            <p className="text-xs text-muted-foreground">
+              Older approvals are securely purged once this window expires. Adjust to align with your compliance posture.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Environment Settings */}
       <Card>

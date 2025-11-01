@@ -241,9 +241,23 @@ export function Lineage() {
     enabled: Boolean(selectedNamespace),
   })
 
+  const availableJobs = useMemo(() => {
+    if (jobs.length > 0) {
+      return jobs
+    }
+    return jobsError ? mockMarquezData.jobs : []
+  }, [jobs, jobsError])
+
+  const availableDatasets = useMemo(() => {
+    if (datasets.length > 0) {
+      return datasets
+    }
+    return datasetsError ? mockMarquezData.datasets : []
+  }, [datasets, datasetsError])
+
   const candidates = useMemo(() => {
-    return nodeType === 'JOB' ? jobs : datasets
-  }, [nodeType, jobs, datasets])
+    return nodeType === 'JOB' ? availableJobs : availableDatasets
+  }, [nodeType, availableJobs, availableDatasets])
 
   const filteredCandidates = useMemo(() => {
     const term = searchTerm.trim().toLowerCase()
@@ -285,12 +299,12 @@ export function Lineage() {
     [stateFilters],
   )
 
-  const now = useMemo(() => new Date(), [timeWindowHours, selectedName, selectedNamespace])
+  const now = Date.now()
   const startTime = useMemo(() => {
     const ms = timeWindowHours * 60 * 60 * 1000
-    return new Date(now.getTime() - ms).toISOString()
+    return new Date(now - ms).toISOString()
   }, [now, timeWindowHours])
-  const endTime = useMemo(() => now.toISOString(), [now])
+  const endTime = useMemo(() => new Date(now).toISOString(), [now])
 
   const lineageFilters = useMemo(() => {
     if (!selectedName) return null

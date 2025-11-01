@@ -6,46 +6,37 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { HILApproval, HILAuditEntry } from '@/types'
+import { readApprovals, readAudit, writeApprovals, writeAudit } from '@/lib/secureStorage'
 
-// Mock storage using localStorage
-const HIL_STORAGE_KEY = 'hotpass_hil_approvals'
-const HIL_AUDIT_KEY = 'hotpass_hil_audit'
-
-function getStoredApprovals(): Record<string, HILApproval> {
-  if (typeof window === 'undefined') return {}
-  const stored = localStorage.getItem(HIL_STORAGE_KEY)
-  return stored ? JSON.parse(stored) : {}
-}
-
-function setStoredApprovals(approvals: Record<string, HILApproval>) {
-  if (typeof window !== 'undefined') {
-    localStorage.setItem(HIL_STORAGE_KEY, JSON.stringify(approvals))
+async function ensureApprovals(): Promise<Record<string, HILApproval>> {
+  try {
+    return await readApprovals()
+  } catch (error) {
+    console.error('Failed to load approvals from secure storage', error)
+    throw error
   }
 }
 
-function getStoredAudit(): HILAuditEntry[] {
-  if (typeof window === 'undefined') return []
-  const stored = localStorage.getItem(HIL_AUDIT_KEY)
-  return stored ? JSON.parse(stored) : []
-}
-
-function setStoredAudit(audit: HILAuditEntry[]) {
-  if (typeof window !== 'undefined') {
-    localStorage.setItem(HIL_AUDIT_KEY, JSON.stringify(audit))
+async function ensureAudit(): Promise<HILAuditEntry[]> {
+  try {
+    return await readAudit()
+  } catch (error) {
+    console.error('Failed to load audit history from secure storage', error)
+    throw error
   }
 }
 
 export function useHILApprovals() {
   return useQuery({
     queryKey: ['hil-approvals'],
-    queryFn: () => getStoredApprovals(),
+    queryFn: ensureApprovals,
   })
 }
 
 export function useHILAudit() {
   return useQuery({
     queryKey: ['hil-audit'],
-    queryFn: () => getStoredAudit(),
+    queryFn: ensureAudit,
   })
 }
 
@@ -62,8 +53,8 @@ export function useApproveRun() {
       operator: string
       comment?: string
     }) => {
-      const approvals = getStoredApprovals()
-      const audit = getStoredAudit()
+      const approvals = await ensureApprovals()
+      const audit = await ensureAudit()
 
       const approval: HILApproval = {
         id: `approval-${Date.now()}`,
@@ -86,8 +77,8 @@ export function useApproveRun() {
       }
 
       approvals[runId] = approval
-      setStoredApprovals(approvals)
-      setStoredAudit([auditEntry, ...audit])
+      await writeApprovals(approvals)
+      await writeAudit([auditEntry, ...audit])
 
       return approval
     },
@@ -113,8 +104,8 @@ export function useRejectRun() {
       reason?: string
       comment?: string
     }) => {
-      const approvals = getStoredApprovals()
-      const audit = getStoredAudit()
+      const approvals = await ensureApprovals()
+      const audit = await ensureAudit()
 
       const approval: HILApproval = {
         id: `approval-${Date.now()}`,
@@ -138,8 +129,8 @@ export function useRejectRun() {
       }
 
       approvals[runId] = approval
-      setStoredApprovals(approvals)
-      setStoredAudit([auditEntry, ...audit])
+      await writeApprovals(approvals)
+      await writeAudit([auditEntry, ...audit])
 
       return approval
     },
@@ -153,8 +144,8 @@ export function useRejectRun() {
 export function useGetRunApproval(runId: string) {
   return useQuery({
     queryKey: ['hil-approval', runId],
-    queryFn: () => {
-      const approvals = getStoredApprovals()
+    queryFn: async () => {
+      const approvals = await ensureApprovals()
       return approvals[runId] || null
     },
   })
@@ -163,8 +154,8 @@ export function useGetRunApproval(runId: string) {
 export function useGetRunHistory(runId: string) {
   return useQuery({
     queryKey: ['hil-history', runId],
-    queryFn: () => {
-      const audit = getStoredAudit()
+    queryFn: async () => {
+      const audit = await ensureAudit()
       return audit.filter(entry => entry.runId === runId)
     },
   })
