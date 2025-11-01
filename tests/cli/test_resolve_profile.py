@@ -2,15 +2,15 @@ from __future__ import annotations
 
 from argparse import Namespace
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import pandas as pd
 import pytest
 from hotpass.cli.commands.resolve import _resolve_options
 from hotpass.cli.configuration import CLIProfile, FeatureFlags
 from hotpass.cli.main import main as cli_main
+from hotpass.linkage import LabelStudioConfig
 
-from tests.helpers.pytest_marks import usefixtures
 
 
 def expect(condition: bool, message: str) -> None:
@@ -31,8 +31,9 @@ class DummyLogger:
         self.events.append((name, payload))
 
 
-@usefixtures("monkeypatch")
-def test_resolve_profile_defaults(tmp_path: Path, monkeypatch) -> None:
+def test_resolve_profile_defaults(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     input_path = tmp_path / "duplicates.csv"
     output_path = tmp_path / "deduped.csv"
     dataset = pd.DataFrame(
@@ -223,8 +224,9 @@ def test_resolve_profile_supports_label_studio_configuration(
     )
 
     expect(exit_code == 0, "Resolve command should succeed with Label Studio options")
-    label_config = captured.get("label_studio")
-    expect(label_config is not None, "Label Studio config should be constructed")
+    label_config_any = captured.get("label_studio")
+    expect(label_config_any is not None, "Label Studio config should be constructed")
+    label_config = cast(LabelStudioConfig, label_config_any)
     expect(
         label_config.api_url == "https://label.example",
         "Label Studio URL should propagate",

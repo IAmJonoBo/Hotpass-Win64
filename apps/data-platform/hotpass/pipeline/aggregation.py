@@ -17,7 +17,9 @@ from ..pipeline_reporting import collect_unique
 from ..storage import PolarsDataset
 from ..telemetry import pipeline_stage
 from ..transform.scoring import LeadScorer
-from .config import DEFAULT_LEAD_SCORER, SSOT_COLUMNS, PipelineConfig
+from .config import DEFAULT_LEAD_SCORER, SSOT_COLUMNS as CONFIG_SSOT_COLUMNS, PipelineConfig
+
+SSOT_COLUMNS = CONFIG_SSOT_COLUMNS
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +69,13 @@ def _flatten_series_of_lists(series: pd.Series) -> list[str]:
             cleaned = clean_string(value)
             if cleaned:
                 items.append(cleaned)
-    return collect_unique(items)
+    unique: list[str] = []
+    seen: set[str] = set()
+    for item in items:
+        if item not in seen:
+            seen.add(item)
+            unique.append(item)
+    return unique
 
 
 def _latest_iso_date(values: Iterable[object | None]) -> str | None:
@@ -88,23 +96,30 @@ def _latest_iso_date(values: Iterable[object | None]) -> str | None:
 
     parsed: list[pd.Timestamp] = []
     for candidate in candidates:
+        timestamp: pd.Timestamp | None
         if isinstance(candidate, pd.Timestamp):
-            timestamp = pd.to_datetime(candidate, utc=True)
+            timestamp = cast(pd.Timestamp, pd.to_datetime(candidate, utc=True))
         else:
             text = str(candidate)
             prefer_dayfirst = not YEAR_FIRST_PATTERN.match(text)
-            timestamp = pd.to_datetime(
-                text,
-                errors="coerce",
-                dayfirst=prefer_dayfirst,
-                utc=True,
-            )
-            if pd.isna(timestamp):
-                timestamp = pd.to_datetime(
+            timestamp = cast(
+                pd.Timestamp,
+                pd.to_datetime(
                     text,
                     errors="coerce",
-                    dayfirst=not prefer_dayfirst,
+                    dayfirst=prefer_dayfirst,
                     utc=True,
+                ),
+            )
+            if pd.isna(timestamp):
+                timestamp = cast(
+                    pd.Timestamp,
+                    pd.to_datetime(
+                        text,
+                        errors="coerce",
+                        dayfirst=not prefer_dayfirst,
+                        utc=True,
+                    ),
                 )
         if pd.notna(timestamp):
             parsed.append(timestamp)
@@ -115,7 +130,7 @@ def _latest_iso_date(values: Iterable[object | None]) -> str | None:
     latest = max(parsed)
     if pd.isna(latest):
         return None
-    return cast(str, latest.date().isoformat())
+    return str(latest.date().isoformat())
 
 
 def _summarise_quality(row: dict[str, str | None]) -> dict[str, object]:
@@ -229,12 +244,14 @@ def _aggregate_group(
 
     def _normalise_scalar(value: object | None) -> str | None:
         if isinstance(value, str):
-            return clean_string(value)
+            cleaned = clean_string(value)
+            return cleaned if cleaned is not None else None
         if value is None:
             return None
         if isinstance(value, float) and pd.isna(value):
             return None
-        return clean_string(str(value))
+        cleaned = clean_string(str(value))
+        return cleaned if cleaned is not None else None
 
     def _iter_values(column: str, treat_list: bool = False) -> list[ValueSelection]:
         selections: list[ValueSelection] = []
@@ -729,3 +746,6 @@ def aggregate_records(
         metrics=metrics,
         source_breakdown=source_breakdown,
     )
+
+
+__all__ = ["AggregationResult", "SSOT_COLUMNS", "aggregate_records"]
