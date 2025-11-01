@@ -8,6 +8,12 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Protocol, cast
 
+# Ensure repository-local automation packages (ops/*) are importable when the CLI is
+# executed via the installed entry point (uv run hotpass ...).
+PROJECT_ROOT = Path(__file__).resolve().parents[4]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.append(str(PROJECT_ROOT))
+
 from .builder import CLIBuilder
 from .commands import (
     arc,

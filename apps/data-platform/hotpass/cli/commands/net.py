@@ -4,59 +4,32 @@ from __future__ import annotations
 
 import argparse
 import os
-import signal
-import socket
 import subprocess
-from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any, cast
 
 from rich.console import Console
 from rich.table import Table
 
+from ops.net.tunnels import (
+    TunnelSession,
+    clear_sessions,
+    find_available_port,
+    format_ports,
+    is_port_available,
+    is_process_alive,
+    load_sessions,
+    save_sessions,
+    terminate_pid,
+)
+
 from ..builder import CLICommand, CommandHandler, SharedParsers
 from ..configuration import CLIProfile
-from ..state import load_state, remove_state, write_state
 from ..utils import CommandExecutionError, format_command, run_command
-
-STATE_FILE = "net.json"
 DEFAULT_PREFECT_REMOTE_HOST = "prefect.staging.internal"
 DEFAULT_MARQUEZ_REMOTE_HOST = "marquez.staging.internal"
 DEFAULT_PREFECT_REMOTE_PORT = 4200
 DEFAULT_MARQUEZ_REMOTE_PORT = 5000
-
-
-@dataclass
-class TunnelSession:
-    """Representation of a stored tunnel session."""
-
-    label: str
-    via: str
-    command: list[str]
-    pid: int | None
-    created_at: str
-    metadata: dict[str, Any] = field(default_factory=dict)
-
-    def to_dict(self) -> dict[str, Any]:
-        return {
-            "label": self.label,
-            "via": self.via,
-            "command": self.command,
-            "pid": self.pid,
-            "created_at": self.created_at,
-            "metadata": self.metadata,
-        }
-
-    @classmethod
-    def from_dict(cls, payload: dict[str, Any]) -> TunnelSession:
-        return cls(
-            label=str(payload.get("label", "")),
-            via=str(payload.get("via", "")),
-            command=list(payload.get("command", [])),
-            pid=payload.get("pid"),
-            created_at=str(payload.get("created_at", "")),
-            metadata=dict(payload.get("metadata", {})),
-        )
 
 
 def build(
@@ -209,79 +182,6 @@ def _dispatch(namespace: argparse.Namespace, profile: CLIProfile | None) -> int:
 
 
 # ---------------------------------------------------------------------------
-# Helpers
-
-
-def _load_sessions() -> list[TunnelSession]:
-    data = load_state(STATE_FILE, default={"sessions": []}) or {"sessions": []}
-    sessions_payload = data.get("sessions", [])
-    sessions: list[TunnelSession] = []
-    for entry in sessions_payload:
-        try:
-            sessions.append(TunnelSession.from_dict(entry))
-        except Exception:
-            continue
-    return sessions
-
-
-def _store_sessions(sessions: list[TunnelSession]) -> None:
-    payload = {"sessions": [session.to_dict() for session in sessions]}
-    write_state(STATE_FILE, payload)
-
-
-def _is_port_available(port: int) -> bool:
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        try:
-            sock.bind(("127.0.0.1", port))
-        except OSError:
-            return False
-    return True
-
-
-def _find_available_port(start: int, limit: int = 20) -> int | None:
-    port = start
-    attempts = limit
-    while attempts > 0:
-        if _is_port_available(port):
-            return port
-        port += 1
-        attempts -= 1
-    return None
-
-
-def _format_ports(metadata: dict[str, Any]) -> str:
-    details = []
-    prefect_port = metadata.get("prefect", {}).get("local_port")
-    if prefect_port:
-        details.append(f"Prefect:{prefect_port}")
-    marquez_port = metadata.get("marquez", {}).get("local_port")
-    if marquez_port:
-        details.append(f"Marquez:{marquez_port}")
-    return ", ".join(details) if details else "-"
-
-
-def _is_process_alive(pid: int) -> bool:
-    try:
-        os.kill(pid, 0)
-    except ProcessLookupError:
-        return False
-    except PermissionError:
-        return True
-    return True
-
-
-def _terminate_pid(pid: int) -> None:
-    try:
-        os.killpg(os.getpgid(pid), signal.SIGTERM)
-    except Exception:
-        try:
-            os.kill(pid, signal.SIGTERM)
-        except Exception:
-            return
-
-
-# ---------------------------------------------------------------------------
 # Command handlers
 
 
@@ -291,7 +191,7 @@ def _handle_up(args: argparse.Namespace, profile: CLIProfile | None) -> int:
     via = args.via
     label = args.label or datetime.now(tz=UTC).strftime("%Y%m%dT%H%M%SZ")
 
-    sessions = _load_sessions()
+    sessions = load_sessions()
     if any(session.label == label for session in sessions):
         console.print(
             f"[red]A tunnel session named '{label}' already exists. "
@@ -318,9 +218,9 @@ def _handle_up(args: argparse.Namespace, profile: CLIProfile | None) -> int:
 
     # Resolve ports
     prefect_port = args.prefect_port
-    if not _is_port_available(prefect_port):
+    if not is_port_available(prefect_port):
         if args.auto_port:
-            new_port = _find_available_port(prefect_port + 1)
+            new_port = find_available_port(prefect_port + 1)
             if new_port is None:
                 console.print(
                     "[red]Unable to locate a free port for Prefect tunnel; "
@@ -341,9 +241,9 @@ def _handle_up(args: argparse.Namespace, profile: CLIProfile | None) -> int:
 
     enable_marquez = not args.no_marquez
     marquez_port = args.marquez_port
-    if enable_marquez and not _is_port_available(marquez_port):
+    if enable_marquez and not is_port_available(marquez_port):
         if args.auto_port:
-            new_port = _find_available_port(marquez_port + 1)
+            new_port = find_available_port(marquez_port + 1)
             if new_port is None:
                 console.print(
                     "[red]Unable to locate a free port for Marquez tunnel; "
@@ -440,7 +340,7 @@ def _handle_up(args: argparse.Namespace, profile: CLIProfile | None) -> int:
             metadata=metadata,
         )
         sessions.append(session)
-        _store_sessions(sessions)
+        save_sessions(sessions)
         console.print(
             f"[green]Tunnel '{label}' started in background (PID {proc.pid}). "
             "Use 'hotpass net status' to inspect or 'hotpass net down --label {label}' to stop."
@@ -461,7 +361,7 @@ def _handle_up(args: argparse.Namespace, profile: CLIProfile | None) -> int:
 def _handle_down(args: argparse.Namespace, profile: CLIProfile | None) -> int:
     _ = profile
     console = Console()
-    sessions = _load_sessions()
+    sessions = load_sessions()
     if not sessions:
         console.print("[yellow]No recorded tunnel sessions.[/yellow]")
         return 0
@@ -489,8 +389,8 @@ def _handle_down(args: argparse.Namespace, profile: CLIProfile | None) -> int:
                 "nothing to terminate.[/yellow]"
             )
             continue
-        if _is_process_alive(pid):
-            _terminate_pid(pid)
+        if is_process_alive(pid):
+            terminate_pid(pid)
             console.print(f"[green]Terminated tunnel '{session.label}' (PID {pid}).[/green]")
         else:
             console.print(
@@ -499,9 +399,9 @@ def _handle_down(args: argparse.Namespace, profile: CLIProfile | None) -> int:
             )
 
     if remaining:
-        _store_sessions(remaining)
+        save_sessions(remaining)
     else:
-        remove_state(STATE_FILE)
+        clear_sessions()
     return 0
 
 
@@ -511,7 +411,7 @@ def _handle_status(
 ) -> int:
     _ = profile
     console = Console()
-    sessions = _load_sessions()
+    sessions = load_sessions()
     if not sessions:
         console.print("[yellow]No recorded tunnel sessions.[/yellow]")
         return 0
@@ -522,11 +422,11 @@ def _handle_status(
         alive = "-"
         if session.pid is not None:
             pid_display = str(session.pid)
-            alive = "yes" if _is_process_alive(session.pid) else "no"
+            alive = "yes" if is_process_alive(session.pid) else "no"
         table.add_row(
             session.label or "-",
             session.via,
-            _format_ports(session.metadata),
+            format_ports(session.metadata),
             pid_display,
             alive,
             session.created_at,

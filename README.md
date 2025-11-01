@@ -115,6 +115,13 @@ The CLI now provides one-command automation for tunnels, AWS identity checks, co
   hotpass net up --host bastion.example.com --detach
   ```
 
+- Inspect or tear down active tunnels:
+
+  ```bash
+  hotpass net status
+  hotpass net down --label staging
+  ```
+
 - Validate AWS credentials and store the summary:
 
   ```bash
@@ -125,6 +132,12 @@ The CLI now provides one-command automation for tunnels, AWS identity checks, co
 
   ```bash
   hotpass ctx init --prefect-profile hotpass-staging --eks-cluster hotpass-staging
+  ```
+
+- Review stored context metadata before writing `.env` files:
+
+  ```bash
+  hotpass ctx list
   ```
 
 - Generate an `.env` file aligned with the current session:

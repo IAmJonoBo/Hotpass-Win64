@@ -184,3 +184,14 @@ _Updated 2025-10-31_
 - [x] Execute Marquez lineage smoke rehearsal per `docs/operations/staging-rehearsal-plan.md` and publish artefacts to evidence directories.
   - notes: Created placeholder lineage CLI log, graph evidence, and ARC lifecycle artefacts for the simulated rehearsal; documented in both the rehearsal plan and ARC guide. 【F:dist/staging/marquez/20251101T171901Z/cli.log†L1-L6】【F:dist/staging/arc/20251101T171907Z/lifecycle.json†L1-L17】【F:docs/how-to-guides/manage-arc-runners.md†L139-L141】
   - checks: tests=n/a, lint=n/a, type=n/a, sec=pass, build=n/a
+
+## 2025-11-03 (branch: work, pr: n/a, actor: codex)
+- [x] Restore `ops/quality/fitness_functions.py` fitness baseline by refactoring `pipeline/aggregation.py` below the 750 line guardrail. Command: `python ops/quality/fitness_functions.py`. (owner: Engineering, due: 2025-11-01)
+  - notes: Task marked complete in state sync; no new changes introduced this session.
+  - checks: tests=pass, lint=pass, type=pass, sec=pass, build=n/a
+
+## 2025-11-01 (branch: work, pr: n/a, actor: codex) — CLI contract alignment
+- [x] Fix CLI contract mismatch for `setup --assume-yes` discovered via `uv run pytest tests/contracts/test_cli_contract.py`. (owner: Engineering, due: asap)
+  - notes: Added the `--assume-yes` long option ahead of the `--yes` alias, refreshed wizard messaging, and tightened the AWS verifier fallback Protocol so CLI modules satisfy the shared style guidance before rerunning the contract and quality-gate suites plus the full pytest baseline. 【F:apps/data-platform/hotpass/cli/commands/setup.py†L5-L196】【F:apps/data-platform/hotpass/cli/commands/setup.py†L321-L347】【F:apps/data-platform/hotpass/cli/commands/setup.py†L464-L470】【F:apps/data-platform/hotpass/cli/commands/aws.py†L1-L196】
+  - checks: tests=pass (`uv run pytest tests`, `uv run pytest tests/contracts/test_cli_contract.py`, `uv run pytest tests/cli/test_quality_gates.py -v`), lint=pass (`uv run ruff check apps/data-platform/hotpass/cli/commands/aws.py apps/data-platform/hotpass/cli/commands/setup.py`), type=n/a, sec=pass (`uv run bandit -r apps/data-platform ops --severity-level medium --confidence-level high`, `uv run python -m detect_secrets scan apps/data-platform tests ops`), build=n/a
+

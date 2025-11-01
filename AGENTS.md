@@ -503,7 +503,9 @@ Model routing is configured in `apps/web-ui/public/config/llm-providers.yaml`. K
 
 The UPGRADE.md implementation includes 5 quality gates (QG) that verify system integrity:
 
-- **QG-1**: CLI Integrity - All CLI verbs discoverable and functional
+- **QG-1**: CLI Integrity - `hotpass overview`/`hotpass --help` advertise the automation
+  verbs (`setup`, `net`, `aws`, `ctx`, `env`) alongside core pipeline commands; command
+  help for each verb must succeed.
 - **QG-2**: Data Quality - Great Expectations validation passes
 - **QG-3**: Enrichment Chain - Offline enrichment works with provenance
 - **QG-4**: MCP Discoverability - All MCP tools discoverable and callable
@@ -515,7 +517,7 @@ Run all quality gate tests:
 uv run pytest tests/cli/test_quality_gates.py -v
 ```
 
-Expected: 20/20 tests passing.
+Expected: 30/30 tests passing.
 
 For longitudinal tracking run:
 

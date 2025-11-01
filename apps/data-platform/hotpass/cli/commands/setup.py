@@ -5,9 +5,10 @@ from __future__ import annotations
 import argparse
 import os
 import shutil
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from typing import Sequence, cast
+from typing import cast
 
 from rich.console import Console
 from rich.panel import Panel
@@ -187,6 +188,7 @@ def build(
         help="Run the plan without prompting for confirmation.",
     )
     parser.add_argument(
+        "--assume-yes",
         "--yes",
         dest="assume_yes",
         action="store_true",
@@ -327,7 +329,8 @@ def _build_plan(
         label = namespace.label or f"{preset}-wizard"
         if not host:
             console.print(
-                "[red]Tunnel step skipped: provide --host or HOTPASS_BASTION_HOST when using --skip-tunnels=False.[/red]"
+                "[red]Tunnel step skipped: provide --host or HOTPASS_BASTION_HOST "
+                "when using --skip-tunnels=False.[/red]"
             )
         else:
             args = [
@@ -460,7 +463,10 @@ def _build_plan(
     plan.append(
         WizardStep(
             title="Review next steps",
-            summary="Review AGENTS.md and docs/how-to-guides/manage-arc-runners.md for deeper workflows.",
+            summary=(
+                "Review AGENTS.md and docs/how-to-guides/manage-arc-runners.md for deeper "
+                "workflows."
+            ),
         )
     )
 
