@@ -184,6 +184,14 @@ On orchestrated environments, register multiple Prefect workers against a shared
 `uv run hotpass qa all` and pipeline runs can execute in parallel. Monitor worker heartbeats
 in Prefect and align worker images with the same `uv` environment you use locally.
 
+## Post-deploy observability validation
+
+After each deploy, confirm the runtime surfaces are healthy before handing over to operations:
+
+- **Lineage UI** – follow the [lineage smoke test runbook](docs/operations/lineage-smoke-tests.md) to verify Marquez ingests new runs, capture the datasets/jobs graph, and archive API payloads under `dist/staging/marquez/`.
+- **Prefect guardrails** – run the [Prefect backfill guardrail rehearsal](docs/operations/prefect-backfill-guardrails.md) to ensure concurrency limits remain intact and Prefect logs are stored in `dist/staging/backfill/`.
+- **OpenTelemetry exporters** – review the [observability registry overview](docs/observability/index.md) and confirm OTLP endpoints receive spans/metrics (or console exporters flush) using the compose stack shipped in `deploy/docker/docker-compose.yml`. Document any overrides in `Next_Steps.md` before declaring the release healthy.
+
 ## Documentation
 
 The full documentation lives under [`docs/`](docs/index.md) and follows the Diátaxis framework:

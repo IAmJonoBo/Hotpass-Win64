@@ -85,6 +85,8 @@ Welcome to the Hotpass knowledge base. These pages follow the [Diátaxis](https:
 /platform/tech-radar
 /operations/foundation-retro
 /operations/staging-rehearsal-plan
+/operations/prefect-backfill-guardrails
+/operations/lineage-smoke-tests
 ```
 
 ```{toctree}
