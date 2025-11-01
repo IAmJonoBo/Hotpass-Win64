@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import importlib
 import sys
+import argparse
 from pathlib import Path
 from types import ModuleType
+from typing import cast
 
 from pytest import CaptureFixture
 
@@ -28,13 +30,13 @@ def _bootstrap_cli_namespace() -> None:
         sys.modules["hotpass.cli.commands"] = commands_pkg
 
 
-def _load_setup_parser():
+def _load_setup_parser() -> argparse.ArgumentParser:
     _bootstrap_cli_namespace()
     builder_module = importlib.import_module("hotpass.cli.builder")
     setup_module = importlib.import_module("hotpass.cli.commands.setup")
     builder = builder_module.CLIBuilder(description="Hotpass CLI", epilog=None)
     builder.register(setup_module.register())
-    return builder.build()
+    return cast(argparse.ArgumentParser, builder.build())
 
 
 _SETUP_PARSER = _load_setup_parser()
@@ -43,9 +45,13 @@ _SETUP_PARSER = _load_setup_parser()
 def _run_setup(args: list[str]) -> int:
     parser = _SETUP_PARSER
     parsed = parser.parse_args(args)
-    handler = getattr(parsed, "handler", None)
-    expect(handler is not None, "Parsed setup command should include a handler")
-    return handler(parsed, None)
+    from hotpass.cli.builder import CommandHandler  # imported lazily after bootstrap
+
+    handler_obj = getattr(parsed, "handler", None)
+    if not callable(handler_obj):
+        raise AssertionError("Parsed setup command should include a handler")
+    handler = cast(CommandHandler, handler_obj)
+    return int(handler(parsed, None))
 
 
 def test_setup_wizard_dry_run_minimal(capsys: CaptureFixture[str]) -> None:

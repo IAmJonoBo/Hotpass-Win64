@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+from typing import Any
+
 import pytest
 
 from hotpass.mcp.server import HotpassMCPServer
+
+pytestmark = pytest.mark.asyncio
 
 
 def expect(condition: bool, message: str) -> None:
@@ -10,11 +14,14 @@ def expect(condition: bool, message: str) -> None:
         raise AssertionError(message)
 
 
-@pytest.fixture()
-def record_commands(monkeypatch):
+def _patch_run_command(monkeypatch: pytest.MonkeyPatch) -> list[list[str]]:
     recorded: list[list[str]] = []
 
-    async def fake_run_command(self, cmd, env=None):  # type: ignore[override]
+    async def fake_run_command(
+        self: HotpassMCPServer,
+        cmd: list[str],
+        env: dict[str, str] | None = None,
+    ) -> dict[str, Any]:
         recorded.append(cmd)
         return {"returncode": 0, "stdout": "ok", "stderr": ""}
 
@@ -22,8 +29,10 @@ def record_commands(monkeypatch):
     return recorded
 
 
-@pytest.mark.asyncio
-async def test_setup_tool_builds_expected_command(record_commands):
+async def test_setup_tool_builds_expected_command(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    record_commands = _patch_run_command(monkeypatch)
     server = HotpassMCPServer()
     result = await server._execute_tool(  # pylint: disable=protected-access
         "hotpass.setup",
@@ -40,7 +49,7 @@ async def test_setup_tool_builds_expected_command(record_commands):
     )
 
     expect(result["success"], "Setup command should report success")
-    expect(record_commands, "Run command should be invoked")
+    expect(bool(record_commands), "Run command should be invoked")
     cmd = record_commands[0]
     expect(cmd[:3] == ["uv", "run", "hotpass"], "hotpass command prefix missing")
     expect("--preset" in cmd and "staging" in cmd, "Preset flag missing")
@@ -51,8 +60,10 @@ async def test_setup_tool_builds_expected_command(record_commands):
     expect("--assume-yes" not in cmd, "Assume-yes should be omitted when false")
 
 
-@pytest.mark.asyncio
-async def test_net_tool_supports_status(record_commands):
+async def test_net_tool_supports_status(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    record_commands = _patch_run_command(monkeypatch)
     server = HotpassMCPServer()
     result = await server._execute_tool(  # pylint: disable=protected-access
         "hotpass.net",
@@ -63,8 +74,10 @@ async def test_net_tool_supports_status(record_commands):
     expect(cmd[-2:] == ["net", "status"], "Command should call hotpass net status")
 
 
-@pytest.mark.asyncio
-async def test_aws_tool_formats_arguments(record_commands):
+async def test_aws_tool_formats_arguments(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    record_commands = _patch_run_command(monkeypatch)
     server = HotpassMCPServer()
     result = await server._execute_tool(  # pylint: disable=protected-access
         "hotpass.aws",
@@ -87,8 +100,10 @@ async def test_aws_tool_formats_arguments(record_commands):
     expect("--dry-run" in cmd, "dry-run flag missing")
 
 
-@pytest.mark.asyncio
-async def test_arc_tool_captures_required_flags(record_commands):
+async def test_arc_tool_captures_required_flags(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    record_commands = _patch_run_command(monkeypatch)
     server = HotpassMCPServer()
     result = await server._execute_tool(  # pylint: disable=protected-access
         "hotpass.arc",

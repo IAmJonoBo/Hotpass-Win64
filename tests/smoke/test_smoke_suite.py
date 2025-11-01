@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
+from typing import cast
+
 import pytest
+
+from hotpass.telemetry.metrics import PipelineMetrics
 
 from hotpass.config import get_default_profile, load_industry_profile
 from hotpass.telemetry.bootstrap import (TelemetryBootstrapOptions,
@@ -35,8 +39,10 @@ def test_bootstrap_metrics_initialises(monkeypatch: pytest.MonkeyPatch) -> None:
     def fake_initialize_observability(**_: object) -> None:
         calls["initialise"] += 1
 
-    def fake_get_pipeline_metrics() -> str:
-        return "metrics"
+    fake_metrics = cast(PipelineMetrics, object())
+
+    def fake_get_pipeline_metrics() -> PipelineMetrics:
+        return fake_metrics
 
     monkeypatch.setattr(
         "hotpass.telemetry.bootstrap.initialize_observability",
@@ -51,4 +57,4 @@ def test_bootstrap_metrics_initialises(monkeypatch: pytest.MonkeyPatch) -> None:
     metrics = bootstrap_metrics(options, additional_attributes={"build": "ci"})
 
     expect(calls["initialise"] == 1, "Telemetry bootstrap should initialise observability")
-    expect(metrics == "metrics", "Bootstrap should return metrics object from helper")
+    expect(metrics is fake_metrics, "Bootstrap should return metrics object from helper")

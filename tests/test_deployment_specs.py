@@ -88,8 +88,16 @@ def _load_deployments_module() -> Iterator[types.ModuleType]:
             def backfill_pipeline_flow(**kwargs: object) -> dict[str, object]:
                 return dict(kwargs)
 
-            orchestration_module.refinement_pipeline_flow = refinement_pipeline_flow
-            orchestration_module.backfill_pipeline_flow = backfill_pipeline_flow
+            setattr(
+                orchestration_module,
+                "refinement_pipeline_flow",
+                refinement_pipeline_flow,
+            )
+            setattr(
+                orchestration_module,
+                "backfill_pipeline_flow",
+                backfill_pipeline_flow,
+            )
 
             with _temporary_module("hotpass.orchestration", orchestration_module):
                 yield deployments

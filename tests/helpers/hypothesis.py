@@ -14,7 +14,6 @@ from hypothesis.strategies import composite as _composite
 
 P = ParamSpec("P")
 R = TypeVar("R")
-T = TypeVar("T")
 
 # ``draw`` callbacks receive a strategy and return a generated value.
 DrawFn = Callable[[SearchStrategy[Any]], Any]
@@ -38,29 +37,10 @@ def settings(*args: Any, **kwargs: Any) -> Callable[[Callable[P, R]], Callable[P
     return decorator
 
 
-@overload
-def composite(func: Callable[P, T]) -> Callable[P, SearchStrategy[T]]:  # noqa: UP047
-    ...
-
-
-@overload
-def composite(
-    *args: Any, **kwargs: Any
-) -> Callable[[Callable[P, T]], Callable[P, SearchStrategy[T]]]:  # noqa: UP047
-    ...
-
-
 def composite(*args: Any, **kwargs: Any) -> Any:
-    """Typed wrapper around ``hypothesis.strategies.composite`` with bare and factory usage."""
+    """Typed wrapper around ``hypothesis.strategies.composite`` (default annotations suffice)."""
 
-    if args and callable(args[0]) and len(args) == 1 and not kwargs:
-        func = cast(Callable[P, T], args[0])
-        return cast(Callable[P, SearchStrategy[T]], _composite(func))
-
-    def decorator(func: Callable[P, T]) -> Callable[P, SearchStrategy[T]]:
-        return cast(Callable[P, SearchStrategy[T]], _composite(*args, **kwargs)(func))
-
-    return decorator
+    return _composite(*args, **kwargs)
 
 
 __all__ = [

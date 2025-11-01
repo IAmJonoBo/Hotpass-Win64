@@ -7,6 +7,7 @@ import sys
 import types
 from collections.abc import Mapping
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 
@@ -228,12 +229,13 @@ def test_lineage_emitter_honours_environment_configuration(
         "Producer setter should receive override value.",
     )
     latest_event = _StubClient.emitted[-1]
+    hotpass_facet = cast(dict[str, Any], latest_event.run.facets.get("hotpass", {}))
     expect(
-        "hotpass" in latest_event.run.facets,
+        bool(hotpass_facet),
         "Hotpass facet should be attached to run events.",
     )
     expect(
-        latest_event.run.facets["hotpass"].get("hotpass_version"),
+        hotpass_facet.get("hotpass_version") is not None,
         "Hotpass facet should include the package version.",
     )
 
