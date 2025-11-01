@@ -1,6 +1,7 @@
 ---
 title: Hotpass roadmap
 summary: Status of the Hotpass modernisation programme, quality gates, and follow-up work.
+owner: n00tropic
 last_updated: 2025-10-31
 ---
 

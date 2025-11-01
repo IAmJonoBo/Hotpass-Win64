@@ -10,11 +10,11 @@ Hotpass ingests messy spreadsheet collections (primarily XLSX) alongside orchest
 
 ## Product vision
 
-Hotpass is stewarded by Jonathan Botha to prove that an open, automation-friendly data refinery can match enterprise suites feature-for-feature. Every shipping artifact—Prefect deployments, Marquez lineage facets, ARC manifests, agent tools—lives in Git so staging runs mirror what lands in production. The goal: messy spreadsheets in, governed outputs out, with clear provenance and repeatable automation.
+Hotpass is stewarded by n00tropic to prove that an open, automation-friendly data refinery can match enterprise suites feature-for-feature. Every shipping artifact—Prefect deployments, Marquez lineage facets, ARC manifests, agent tools—lives in Git so staging runs mirror what lands in production. The goal: messy spreadsheets in, governed outputs out, with clear provenance and repeatable automation backed by a commercial support path when teams outgrow the Business Source License defaults.
 
 ## Five-minute quickstart
 
-1. Create an isolated environment with uv:
+1. Create an isolated environment with uv (n00tropic publishes the canonical extras list so agents and operators stay aligned):
 
    ```bash
    uv venv

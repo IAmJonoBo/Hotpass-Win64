@@ -1,6 +1,7 @@
 ---
 title: Hotpass documentation
 summary: Learn how to install, operate, and extend the Hotpass data refinement platform.
+owner: n00tropic
 last_updated: 2025-12-02
 ---
 
