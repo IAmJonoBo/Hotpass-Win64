@@ -1,0 +1,14 @@
+{
+  "defaults": {
+    "standard": "WCAG2AA",
+    "timeout": 60000,
+    "wait": 2000,
+    "screenCapture": "pa11y-snapshots/${index}-${slug}.png"
+  },
+  "urls": [
+    "http://127.0.0.1:4173/",
+    "http://127.0.0.1:4173/lineage",
+    "http://127.0.0.1:4173/admin",
+    "http://127.0.0.1:4173/assistant"
+  ]
+}

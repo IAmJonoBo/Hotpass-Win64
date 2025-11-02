@@ -27,8 +27,20 @@ export default defineConfig({
   workers: CI ? 2 : undefined,
   projects: [
     {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      name: 'chromium-desktop-dark',
+      use: {
+        ...devices['Desktop Chrome'],
+        colorScheme: 'dark',
+        storageState: 'tests/storage-states/dark.json',
+      },
+    },
+    {
+      name: 'chromium-desktop-light',
+      use: {
+        ...devices['Desktop Chrome'],
+        colorScheme: 'light',
+        storageState: 'tests/storage-states/light.json',
+      },
     },
   ],
 })
