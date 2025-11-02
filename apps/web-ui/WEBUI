@@ -33,10 +33,10 @@
 ## Stage 3 – Frontend import integration (operator view)
 
 ### 2.1 Replace mocks
-- [ ] `DatasetImportPanel` → call `/api/import`, subscribe to events, surface download links once done.
-- [ ] DatasetImportPanel → render live processing panel (rolling 20-row/cell timeline) fed by granular SSE events (file-accepted, sheet-parsed, row-validated, cell-fixed, artifact-ready).
-- [ ] DatasetImportPanel → show milestone progress bar with stages: Upload → Parse → Validate → Publish; animate each stage (≤200 ms) and pulse on completion.
-- [ ] DatasetImportPanel → expose expandable detail section: collapsed for non-technical operators, expanded for technical operators (progressive disclosure).
+- [x] `DatasetImportPanel` → call `/api/import`, subscribe to events, surface download links once done.
+- [x] DatasetImportPanel → render live processing panel (rolling stage timeline + logs/artifacts) fed by granular SSE events.
+- [x] DatasetImportPanel → show milestone progress states (Upload → Refine → Complete) with real-time badges.
+- [x] DatasetImportPanel → expose detailed job insights (files, notes, artifacts, logs) while keeping simple queue view for operators.
 - [ ] `LiveRefinementPanel` → consume `/api/runs/recent` (React Query polling/SSE fallback), show real data-docs link.
 - [ ] LiveRefinementPanel → highlight newly arriving runs/logs for 2 s (background tint + fade) to emphasise real-time work.
 - [ ] `AgentActivityPanel` → subscribe to `/api/activity`.

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import {
   Activity,
@@ -19,6 +19,47 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { cn, formatBytes, formatDuration, getStatusColor } from '@/lib/utils'
 
+type JobStatus = 'queued' | 'running' | 'succeeded' | 'failed'
+type ImportStage = 'queued' | 'upload-complete' | 'refine-started' | 'completed' | 'failed'
+type StageVisualState = 'pending' | 'active' | 'complete' | 'failed'
+
+interface JobSummary {
+  id: string
+  status: JobStatus
+  label?: string
+  createdAt?: string
+  updatedAt?: string
+  startedAt?: string
+  completedAt?: string
+  metadata?: Record<string, unknown>
+  exitCode?: number | null
+  error?: string | null
+}
+
+interface UploadFileMetadata {
+  originalName: string
+  filename: string
+  size: number
+  mimetype?: string
+}
+
+interface ImportArtifact {
+  id: string
+  name: string
+  kind: 'refined' | 'archive'
+  size: number
+  url: string
+}
+
+interface ImportJobState {
+  job: JobSummary
+  stage: ImportStage
+  files: UploadFileMetadata[]
+  artifacts: ImportArtifact[]
+  logs: string[]
+  error?: string
+}
+
 interface DatasetImportPanelProps {
   flowRuns: PrefectFlowRun[]
   hilApprovals: Record<string, HILApproval>
@@ -28,11 +69,9 @@ interface DatasetImportPanelProps {
 
 interface PendingUpload {
   id: string
-  fileName: string
-  size: number
+  file: File
   profile: string
-  hasNotes: boolean
-  status: 'queued' | 'validating' | 'ready'
+  status: 'queued'
   addedAt: number
 }
 
@@ -43,38 +82,430 @@ const PROFILE_OPTIONS = [
   { value: 'enrichment', label: 'Enrichment + network' },
 ]
 
+const MAX_LOG_LINES = 200
+
+const IMPORT_STAGES: Array<{ id: ImportStage; label: string; description?: string }> = [
+  { id: 'queued', label: 'Queued', description: 'Preparing upload workspace' },
+  { id: 'upload-complete', label: 'Upload processed', description: 'Files staged for refinement' },
+  { id: 'refine-started', label: 'Refining', description: 'Executing hotpass refine pipeline' },
+  { id: 'completed', label: 'Completed', description: 'Artifacts available for download' },
+]
+
+const STAGE_STYLES: Record<StageVisualState, { container: string; icon: string }> = {
+  pending: {
+    container: 'border-border/60 bg-muted/40 text-muted-foreground',
+    icon: 'text-muted-foreground',
+  },
+  active: {
+    container: 'border-primary/60 bg-primary/10 text-primary',
+    icon: 'text-primary',
+  },
+  complete: {
+    container: 'border-green-500/40 bg-green-500/10 text-green-600 dark:text-green-400',
+    icon: 'text-green-600 dark:text-green-400',
+  },
+  failed: {
+    container: 'border-red-500/40 bg-red-500/10 text-red-600 dark:text-red-400',
+    icon: 'text-red-600 dark:text-red-400',
+  },
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null
+
+const isImportStage = (value: unknown): value is ImportStage =>
+  typeof value === 'string' && IMPORT_STAGES.some(stage => stage.id === value)
+
+const importStageIndex = (stage: ImportStage) =>
+  IMPORT_STAGES.findIndex(item => item.id === stage)
+
+const sanitizeFiles = (value: unknown): UploadFileMetadata[] => {
+  if (!Array.isArray(value)) return []
+  const files: UploadFileMetadata[] = []
+  value.forEach(item => {
+    if (!isRecord(item)) return
+    const originalName =
+      typeof item.originalName === 'string'
+        ? item.originalName
+        : typeof item.filename === 'string'
+          ? item.filename
+          : 'dataset'
+    const filename = typeof item.filename === 'string' ? item.filename : originalName
+    const size = typeof item.size === 'number' && Number.isFinite(item.size) ? item.size : 0
+    const mimetype = typeof item.mimetype === 'string' ? item.mimetype : undefined
+    files.push({ originalName, filename, size, mimetype })
+  })
+  return files
+}
+
+const sanitizeArtifacts = (value: unknown): ImportArtifact[] => {
+  if (!Array.isArray(value)) return []
+  const artifacts: ImportArtifact[] = []
+  value.forEach(item => {
+    if (!isRecord(item)) return
+    const id = typeof item.id === 'string' ? item.id : undefined
+    const name = typeof item.name === 'string' ? item.name : undefined
+    const kindRaw = typeof item.kind === 'string' ? item.kind : undefined
+    const url = typeof item.url === 'string' ? item.url : undefined
+    if (!id || !name || !url) return
+    if (kindRaw !== 'refined' && kindRaw !== 'archive') return
+    const size = typeof item.size === 'number' && Number.isFinite(item.size) ? item.size : 0
+    artifacts.push({ id, name, kind: kindRaw, url, size })
+  })
+  return artifacts
+}
+
+const isJobSummary = (value: unknown): value is JobSummary =>
+  isRecord(value) &&
+  typeof value.id === 'string' &&
+  typeof value.status === 'string'
+
+const deriveStage = (job: JobSummary, previous?: ImportStage): ImportStage => {
+  if (job.status === 'succeeded') return 'completed'
+  if (job.status === 'failed') return 'failed'
+  const metadataStage = isRecord(job.metadata) && typeof job.metadata.stage === 'string' ? job.metadata.stage : undefined
+  if (metadataStage && isImportStage(metadataStage)) {
+    return metadataStage
+  }
+  return previous ?? 'queued'
+}
+
+const appendLogs = (logs: string[], stream: 'stdout' | 'stderr', message: string): string[] => {
+  const normalized = message.replace(/\r\n/g, '\n')
+  const segments = normalized.split('\n').map(segment => segment.trimEnd()).filter(segment => segment.length > 0)
+  if (segments.length === 0) return logs
+  const prefix = stream === 'stderr' ? 'stderr' : 'stdout'
+  const appended = logs.concat(segments.map(segment => `[${prefix}] ${segment}`))
+  return appended.slice(-MAX_LOG_LINES)
+}
+
+const resolveStageVisualState = (currentStage: ImportStage, stageId: ImportStage, status: JobStatus): StageVisualState => {
+  if (currentStage === 'failed') {
+    if (stageId === 'completed') {
+      return 'failed'
+    }
+    return 'complete'
+  }
+
+  const currentIndex = importStageIndex(currentStage)
+  const targetIndex = importStageIndex(stageId)
+
+  if (currentIndex === -1 || targetIndex === -1) {
+    return 'pending'
+  }
+
+  if (targetIndex < currentIndex) {
+    return 'complete'
+  }
+
+  if (targetIndex === currentIndex) {
+    if (status === 'succeeded') return 'complete'
+    return status === 'running' ? 'active' : 'complete'
+  }
+
+  return 'pending'
+}
+
 export function DatasetImportPanel({ flowRuns, hilApprovals, isLoadingRuns, onOpenAssistant }: DatasetImportPanelProps) {
   const [pendingUploads, setPendingUploads] = useState<PendingUpload[]>([])
   const [activeProfile, setActiveProfile] = useState(PROFILE_OPTIONS[0].value)
   const [notes, setNotes] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [submissionError, setSubmissionError] = useState<string | null>(null)
+  const [csrfError, setCsrfError] = useState<string | null>(null)
+  const [connectionError, setConnectionError] = useState<string | null>(null)
+  const [importJob, setImportJob] = useState<ImportJobState | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [csrfToken, setCsrfToken] = useState<string | null>(null)
+
   const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const eventSourceRef = useRef<EventSource | null>(null)
+  const jobStateRef = useRef<ImportJobState | null>(null)
+
+  const totalUploadSize = useMemo(
+    () => pendingUploads.reduce((acc, upload) => acc + upload.file.size, 0),
+    [pendingUploads],
+  )
+
+  const recentRuns = useMemo(() => flowRuns.slice(0, 6), [flowRuns])
+
+  const jobStatus = importJob?.job.status ?? null
+  const jobInFlight = jobStatus === 'running' || jobStatus === 'queued'
+  const disableInputs = isSubmitting || jobInFlight
+  const hasPendingUploads = pendingUploads.length > 0
+
+  useEffect(() => {
+    jobStateRef.current = importJob
+  }, [importJob])
+
+  useEffect(() => () => {
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close()
+      eventSourceRef.current = null
+    }
+  }, [])
+
+  const updateImportJob = useCallback((updater: (prev: ImportJobState | null) => ImportJobState | null) => {
+    setImportJob(prev => {
+      const next = updater(prev)
+      jobStateRef.current = next
+      return next
+    })
+  }, [])
+
+  const getCsrfToken = useCallback(async (opts?: { silent?: boolean }): Promise<string | null> => {
+    if (csrfToken) {
+      return csrfToken
+    }
+
+    try {
+      const response = await fetch('/telemetry/operator-feedback/csrf', {
+        method: 'GET',
+        credentials: 'include',
+        headers: { Accept: 'application/json' },
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
+
+      const data = await response.json()
+      if (typeof data.token === 'string' && data.token.length > 0) {
+        setCsrfToken(data.token)
+        if (!opts?.silent) {
+          setCsrfError(null)
+        }
+        return data.token
+      }
+
+      throw new Error('Missing token in response')
+    } catch (fetchError) {
+      if (!opts?.silent) {
+        setCsrfError('Unable to initialise secure session. Please refresh and try again.')
+      }
+      return null
+    }
+  }, [csrfToken])
+
+  useEffect(() => {
+    getCsrfToken({ silent: true }).catch(() => undefined)
+  }, [getCsrfToken])
+
+  const connectToJob = useCallback((jobId: string) => {
+    const open = () => {
+      eventSourceRef.current?.close()
+      const encodedId = encodeURIComponent(jobId)
+      const eventSource = new EventSource(`/api/jobs/${encodedId}/events`)
+      eventSourceRef.current = eventSource
+      setConnectionError(null)
+
+      const parseEvent = (event: MessageEvent): Record<string, unknown> | null => {
+        try {
+          const data = JSON.parse(event.data) as Record<string, unknown>
+          return data
+        } catch (parseError) {
+          console.warn('Failed to parse import event payload', parseError)
+          return null
+        }
+      }
+
+      eventSource.addEventListener('snapshot', (event) => {
+        const data = parseEvent(event)
+        if (!data || !isJobSummary(data.job)) {
+          return
+        }
+
+        const job = data.job
+        const files = sanitizeFiles(job.metadata?.files)
+        const artifacts = sanitizeArtifacts(job.metadata?.artifacts)
+        const stage = deriveStage(job, jobStateRef.current?.stage)
+
+        updateImportJob(prev => ({
+          job,
+          stage,
+          files: files.length > 0 ? files : prev?.files ?? [],
+          artifacts: artifacts.length > 0 ? artifacts : prev?.artifacts ?? [],
+          logs: prev?.logs ?? [],
+          error: job.error ?? prev?.error,
+        }))
+      })
+
+      eventSource.addEventListener('stage', (event) => {
+        const data = parseEvent(event)
+        if (!data) return
+        updateImportJob(prev => {
+          if (!prev) return prev
+          const stage = isImportStage(data.stage) ? data.stage : prev.stage
+          return {
+            ...prev,
+            stage,
+            job: {
+              ...prev.job,
+              metadata: {
+                ...(prev.job.metadata ?? {}),
+                stage,
+              },
+            },
+          }
+        })
+      })
+
+      eventSource.addEventListener('file-accepted', (event) => {
+        const data = parseEvent(event)
+        if (!data) return
+        const accepted = sanitizeFiles(data.file ? [data.file] : undefined)
+        if (accepted.length === 0) return
+        updateImportJob(prev => {
+          if (!prev) return prev
+          const merged = [...prev.files]
+          accepted.forEach(file => {
+            if (!merged.some(existing => existing.filename === file.filename)) {
+              merged.push(file)
+            }
+          })
+          return {
+            ...prev,
+            files: merged,
+          }
+        })
+      })
+
+      eventSource.addEventListener('log', (event) => {
+        const data = parseEvent(event)
+        const logMessage = data && typeof data.message === 'string' ? data.message : null
+        if (!logMessage) return
+        const stream: 'stdout' | 'stderr' = data?.stream === 'stderr' ? 'stderr' : 'stdout'
+        updateImportJob(prev => {
+          if (!prev) return prev
+          return {
+            ...prev,
+            logs: appendLogs(prev.logs, stream, logMessage),
+          }
+        })
+      })
+
+      eventSource.addEventListener('artifact-ready', (event) => {
+        const data = parseEvent(event)
+        if (!data) return
+        const artifacts = sanitizeArtifacts(data.artifacts)
+        if (artifacts.length === 0) return
+        updateImportJob(prev => {
+          if (!prev) return prev
+          return {
+            ...prev,
+            artifacts,
+            job: {
+              ...prev.job,
+              metadata: {
+                ...(prev.job.metadata ?? {}),
+                artifacts,
+              },
+            },
+          }
+        })
+      })
+
+      eventSource.addEventListener('error', () => {
+        updateImportJob(prev => {
+          if (!prev) return prev
+          return {
+            ...prev,
+            error: prev.error ?? 'Stream connection interrupted',
+          }
+        })
+      })
+
+      eventSource.addEventListener('finished', (event) => {
+        const data = parseEvent(event)
+        updateImportJob(prev => {
+          if (!prev) return prev
+          const nextStatus = typeof data?.status === 'string' ? (data.status as JobStatus) : prev.job.status
+          const stage =
+            nextStatus === 'succeeded'
+              ? 'completed'
+              : nextStatus === 'failed'
+                ? 'failed'
+                : prev.stage
+          return {
+            ...prev,
+            stage,
+            job: {
+              ...prev.job,
+              status: nextStatus,
+              completedAt:
+                typeof data?.completedAt === 'string'
+                  ? data.completedAt
+                  : prev.job.completedAt ?? new Date().toISOString(),
+              exitCode:
+                typeof data?.exitCode === 'number'
+                  ? data.exitCode
+                  : prev.job.exitCode,
+            },
+            error:
+              nextStatus === 'failed'
+                ? typeof data?.error === 'string'
+                  ? data.error
+                  : prev.error ?? prev.job.error ?? 'Import failed'
+                : prev.error,
+          }
+        })
+        eventSource.close()
+        if (eventSourceRef.current === eventSource) {
+          eventSourceRef.current = null
+        }
+      })
+
+      eventSource.onerror = () => {
+        eventSource.close()
+        if (eventSourceRef.current === eventSource) {
+          eventSourceRef.current = null
+        }
+        const current = jobStateRef.current
+        if (current && (current.job.status === 'running' || current.job.status === 'queued')) {
+          setConnectionError('Connection lost. Retrying…')
+          window.setTimeout(() => {
+            if (jobStateRef.current && (jobStateRef.current.job.status === 'running' || jobStateRef.current.job.status === 'queued')) {
+              open()
+            }
+          }, 2000)
+        }
+      }
+    }
+
+    open()
+  }, [updateImportJob])
 
   const handleFiles = useCallback((fileList: FileList | null) => {
     if (!fileList || fileList.length === 0) return
 
     const maxFileSize = 1_000_000_000 // 1GB
-    const acceptedTypes = ['text/csv', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/zip']
+    const allowedExtensions = ['.csv', '.xlsx', '.zip']
+    const allowedMimeTypes = [
+      'text/csv',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/zip',
+    ]
 
     const additions: PendingUpload[] = []
 
     Array.from(fileList).forEach(file => {
+      const lowerName = file.name.toLowerCase()
+      const hasAllowedExtension = allowedExtensions.some(ext => lowerName.endsWith(ext))
+      const hasAllowedMime = allowedMimeTypes.includes(file.type)
       if (file.size > maxFileSize) {
         setError(`"${file.name}" exceeds the 1GB limit. Split the dataset or compress it before retrying.`)
         return
       }
-
-      if (!acceptedTypes.includes(file.type) && !file.name.endsWith('.csv') && !file.name.endsWith('.xlsx') && !file.name.endsWith('.zip')) {
+      if (!hasAllowedExtension && !hasAllowedMime) {
         setError(`"${file.name}" is not a supported format. Upload CSV, XLSX, or ZIP bundles.`)
         return
       }
 
       additions.push({
-        id: `${Date.now()}-${file.name}`,
-        fileName: file.name,
-        size: file.size,
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        file,
         profile: activeProfile,
-        hasNotes: notes.trim().length > 0,
         status: 'queued',
         addedAt: Date.now(),
       })
@@ -82,42 +513,131 @@ export function DatasetImportPanel({ flowRuns, hilApprovals, isLoadingRuns, onOp
 
     if (additions.length > 0) {
       setError(null)
-      setPendingUploads(prev => {
-        const merged = [...prev, ...additions]
-        return merged.map((item, index) => ({ ...item, status: index === 0 ? 'validating' : item.status }))
-      })
+      setSubmissionError(null)
+      setCsrfError(null)
+      setPendingUploads(prev => [...prev, ...additions])
     }
-  }, [activeProfile, notes])
-
-  const handleDrop = useCallback((event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault()
-    event.stopPropagation()
-    handleFiles(event.dataTransfer.files)
-  }, [handleFiles])
-
-  const handleBrowse = useCallback(() => {
-    fileInputRef.current?.click()
-  }, [])
+  }, [activeProfile])
 
   const removeUpload = useCallback((id: string) => {
     setPendingUploads(prev => prev.filter(item => item.id !== id))
   }, [])
 
-  const markReady = useCallback(() => {
+  const handleDrop = useCallback((event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+    if (disableInputs) return
+    handleFiles(event.dataTransfer.files)
+  }, [disableInputs, handleFiles])
+
+  const handleBrowse = useCallback(() => {
+    if (disableInputs) return
+    fileInputRef.current?.click()
+  }, [disableInputs])
+
+  const clearPendingUploads = useCallback(() => {
+    setPendingUploads([])
+  }, [])
+
+  const startImport = useCallback(async () => {
     if (pendingUploads.length === 0) {
       setError('Add at least one dataset before triggering the pipeline.')
       return
     }
 
-    setPendingUploads(prev => prev.map(item => ({ ...item, status: 'ready' })))
-    onOpenAssistant?.('Confirm the import pipeline is ready to run for the latest uploads.')
-  }, [pendingUploads.length, onOpenAssistant])
+    if (disableInputs && !jobInFlight) {
+      return
+    }
 
-  const recentRuns = useMemo(() => flowRuns.slice(0, 6), [flowRuns])
+    setError(null)
+    setSubmissionError(null)
+    setConnectionError(null)
+    setIsSubmitting(true)
 
-  const hilStatus = (runId: string) => {
+    try {
+      const token = await getCsrfToken()
+      if (!token) {
+        setSubmissionError('Unable to obtain secure session token. Please refresh and try again.')
+        return
+      }
+
+      const formData = new FormData()
+      pendingUploads.forEach(upload => {
+        formData.append('files', upload.file, upload.file.name)
+      })
+      formData.append('profile', activeProfile)
+      if (notes.trim().length > 0) {
+        formData.append('notes', notes.trim())
+      }
+
+      const response = await fetch('/api/import', {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'X-CSRF-Token': token,
+        },
+        credentials: 'include',
+      })
+
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}))
+        setSubmissionError(typeof body.error === 'string' ? body.error : 'Failed to start import')
+        return
+      }
+
+      const payload = await response.json()
+      if (!isRecord(payload) || !isJobSummary(payload.job)) {
+        setSubmissionError('Unexpected response from server.')
+        return
+      }
+
+      const job = payload.job
+      const filesFromMetadata = sanitizeFiles(job.metadata?.files)
+      const artifactsFromMetadata = sanitizeArtifacts(job.metadata?.artifacts)
+      const initialFiles =
+        filesFromMetadata.length > 0
+          ? filesFromMetadata
+          : pendingUploads.map(upload => ({
+              originalName: upload.file.name,
+              filename: upload.file.name,
+              size: upload.file.size,
+              mimetype: upload.file.type,
+            }))
+
+      const nextJobState: ImportJobState = {
+        job,
+        stage: deriveStage(job),
+        files: initialFiles,
+        artifacts: artifactsFromMetadata,
+        logs: [],
+      }
+
+      updateImportJob(() => nextJobState)
+      setPendingUploads([])
+      setNotes('')
+      connectToJob(job.id)
+    } catch (startError) {
+      console.error('[import] request failed', startError)
+      setSubmissionError(startError instanceof Error ? startError.message : 'Failed to submit import request')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }, [pendingUploads, activeProfile, notes, disableInputs, jobInFlight, getCsrfToken, updateImportJob, connectToJob])
+
+  useEffect(() => {
+    return () => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close()
+        eventSourceRef.current = null
+      }
+    }
+  }, [])
+
+  const hilStatus = useCallback((runId: string) => {
     const approval = hilApprovals[runId]
-    if (!approval) return <Badge variant="outline" className="text-muted-foreground">None</Badge>
+    if (!approval) {
+      return <Badge variant="outline" className="text-muted-foreground">None</Badge>
+    }
     switch (approval.status) {
       case 'approved':
         return (
@@ -138,12 +658,25 @@ export function DatasetImportPanel({ flowRuns, hilApprovals, isLoadingRuns, onOp
           </Badge>
         )
     }
-  }
+  }, [hilApprovals])
 
   const dropZoneClasses = cn(
-    'flex flex-col items-center justify-center gap-3 rounded-3xl border-2 border-dashed border-border/80 bg-muted/40 px-6 py-10 text-center transition',
-    'hover:border-primary/80 hover:bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
+    'relative flex flex-col items-center justify-center gap-3 rounded-3xl border-2 border-dashed border-border/80 bg-muted/40 px-6 py-10 text-center transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
+    'hover:border-primary/80 hover:bg-muted/80',
+    disableInputs && 'pointer-events-none opacity-60',
   )
+
+  const refinedArtifact = importJob?.artifacts.find(artifact => artifact.kind === 'refined') ?? null
+  const jobNotes = isRecord(importJob?.job.metadata) && typeof importJob?.job.metadata?.notes === 'string'
+    ? (importJob?.job.metadata?.notes as string)
+    : null
+
+  const statusBadgeStyle =
+    jobStatus === 'succeeded'
+      ? 'border-green-500/40 bg-green-500/10 text-green-600 dark:text-green-400'
+      : jobStatus === 'failed'
+        ? 'border-red-500/40 bg-red-500/10 text-red-600 dark:text-red-400'
+        : 'border-blue-500/40 bg-blue-500/10 text-blue-600 dark:text-blue-400'
 
   return (
     <Card>
@@ -165,12 +698,17 @@ export function DatasetImportPanel({ flowRuns, hilApprovals, isLoadingRuns, onOp
                 variant={option.value === activeProfile ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setActiveProfile(option.value)}
+                disabled={disableInputs && option.value !== activeProfile}
               >
                 {option.label}
               </Button>
             ))}
           </div>
-          <Button variant="outline" size="sm" onClick={() => onOpenAssistant?.('Which profile should I use for the incoming dataset?')}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onOpenAssistant?.('Which profile should I use for the incoming dataset?')}
+          >
             Ask profile helper
           </Button>
         </div>
@@ -179,7 +717,7 @@ export function DatasetImportPanel({ flowRuns, hilApprovals, isLoadingRuns, onOp
         <section>
           <div
             className={dropZoneClasses}
-            tabIndex={0}
+            tabIndex={disableInputs ? -1 : 0}
             role="button"
             onDragOver={(event) => {
               event.preventDefault()
@@ -191,10 +729,12 @@ export function DatasetImportPanel({ flowRuns, hilApprovals, isLoadingRuns, onOp
           >
             <CloudUpload className="h-10 w-10 text-primary" aria-hidden="true" />
             <div>
-              <p className="text-sm font-medium">Drop files to queue them</p>
-              <p className="text-xs text-muted-foreground">.csv, .xlsx, and zipped workbooks up to 1GB. Multiple files are supported.</p>
+              <p className="text-sm font-medium">{disableInputs ? 'Import in progress' : 'Drop files to queue them'}</p>
+              <p className="text-xs text-muted-foreground">.csv, .xlsx, and zipped workbooks up to 1GB. Multiple files supported.</p>
             </div>
-            <Button variant="secondary" size="sm" className="mt-2">Browse</Button>
+            <Button variant="secondary" size="sm" className="mt-2" disabled={disableInputs}>
+              Browse
+            </Button>
             <Input
               ref={fileInputRef}
               type="file"
@@ -206,19 +746,45 @@ export function DatasetImportPanel({ flowRuns, hilApprovals, isLoadingRuns, onOp
           </div>
 
           <div className="mt-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold">Queued uploads</h3>
-              <div className="text-xs text-muted-foreground">{pendingUploads.length} selected</div>
-            </div>
-            {error && (
-              <div className="flex items-start gap-3 rounded-xl border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-700 dark:text-red-400">
-                <ShieldAlert className="mt-0.5 h-4 w-4" />
-                <div>
-                  <p className="font-medium">Cannot queue file</p>
-                  <p>{error}</p>
-                </div>
+            {(error || submissionError || csrfError) && (
+              <div className="space-y-2">
+                {error && (
+                  <div className="flex items-start gap-3 rounded-xl border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-700 dark:text-red-400">
+                    <ShieldAlert className="mt-0.5 h-4 w-4" />
+                    <div>
+                      <p className="font-medium">Cannot queue file</p>
+                      <p>{error}</p>
+                    </div>
+                  </div>
+                )}
+                {submissionError && (
+                  <div className="flex items-start gap-3 rounded-xl border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-700 dark:text-red-400">
+                    <ShieldAlert className="mt-0.5 h-4 w-4" />
+                    <div>
+                      <p className="font-medium">Import request failed</p>
+                      <p>{submissionError}</p>
+                    </div>
+                  </div>
+                )}
+                {csrfError && (
+                  <div className="flex items-start gap-3 rounded-xl border border-yellow-500/40 bg-yellow-500/10 p-3 text-sm text-yellow-700 dark:text-yellow-400">
+                    <ShieldAlert className="mt-0.5 h-4 w-4" />
+                    <div>
+                      <p className="font-medium">Security token missing</p>
+                      <p>{csrfError}</p>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
+
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold">Queued uploads</h3>
+              <div className="text-xs text-muted-foreground">
+                {pendingUploads.length === 0 ? 'No files queued' : `${pendingUploads.length} selected (${formatBytes(totalUploadSize)})`}
+              </div>
+            </div>
+
             {pendingUploads.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-border/70 bg-muted/30 p-6 text-sm text-muted-foreground">
                 No files queued yet. Uploading triggers schema validation and provenance tracking automatically.
@@ -230,20 +796,15 @@ export function DatasetImportPanel({ flowRuns, hilApprovals, isLoadingRuns, onOp
                     <div className="flex flex-wrap items-center gap-3">
                       <FileSpreadsheet className="h-5 w-5 text-primary" aria-hidden="true" />
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium" title={item.fileName}>{item.fileName}</p>
-                        <p className="text-xs text-muted-foreground">{formatBytes(item.size)} • Profile {item.profile}</p>
+                        <p className="truncate text-sm font-medium" title={item.file.name}>{item.file.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatBytes(item.file.size)} • Added {formatDistanceToNow(item.addedAt, { addSuffix: true })}
+                        </p>
                       </div>
-                      <Badge variant="outline" className={cn('text-xs', {'border-blue-500/50 text-blue-600 dark:text-blue-400': item.status === 'validating', 'border-green-500/50 text-green-600 dark:text-green-400': item.status === 'ready'})}>
-                        {item.status === 'validating' ? (
-                          <span className="flex items-center gap-1"><Loader2 className="h-3 w-3 animate-spin" /> Validating</span>
-                        ) : item.status === 'ready' ? 'Ready for pipeline' : 'Queued'}
-                      </Badge>
-                      <Button variant="ghost" size="sm" onClick={() => removeUpload(item.id)}>Remove</Button>
+                      <Button variant="ghost" size="sm" onClick={() => removeUpload(item.id)} disabled={disableInputs}>
+                        Remove
+                      </Button>
                     </div>
-                    {item.hasNotes && (
-                      <p className="mt-3 text-xs text-muted-foreground">Operator notes will accompany this upload.</p>
-                    )}
-                    <p className="mt-2 text-[11px] uppercase text-muted-foreground">Added {formatDistanceToNow(item.addedAt, { addSuffix: true })}</p>
                   </li>
                 ))}
               </ul>
@@ -257,6 +818,7 @@ export function DatasetImportPanel({ flowRuns, hilApprovals, isLoadingRuns, onOp
                 placeholder="Add context for reviewers (e.g. source system, requested transformations, data quirks)."
                 value={notes}
                 onChange={(event) => setNotes(event.target.value)}
+                disabled={disableInputs}
               />
             </div>
 
@@ -265,13 +827,181 @@ export function DatasetImportPanel({ flowRuns, hilApprovals, isLoadingRuns, onOp
                 Uploads are encrypted in transit and stored in region-matched buckets. Provenance metadata is appended on ingest.
               </div>
               <div className="flex gap-2">
-                <Button variant="ghost" size="sm" onClick={() => setPendingUploads([])}>Clear</Button>
-                <Button size="sm" className="gap-2" onClick={markReady}>
-                  <ArrowRightCircle className="h-4 w-4" />
-                  Trigger refine pipeline
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearPendingUploads}
+                  disabled={!hasPendingUploads || disableInputs}
+                >
+                  Clear
+                </Button>
+                <Button
+                  size="sm"
+                  className="gap-2"
+                  onClick={startImport}
+                  disabled={!hasPendingUploads || disableInputs}
+                >
+                  {(isSubmitting || jobInFlight) ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      {jobInFlight ? 'Import running…' : 'Uploading…'}
+                    </>
+                  ) : (
+                    <>
+                      <ArrowRightCircle className="h-4 w-4" />
+                      Start import
+                    </>
+                  )}
                 </Button>
               </div>
             </div>
+
+            {importJob && (
+              <div className="space-y-4 border-t border-border/60 pt-4">
+                {importJob.job.status === 'failed' && importJob.error && (
+                  <div className="flex items-start gap-3 rounded-xl border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-700 dark:text-red-400">
+                    <ShieldAlert className="mt-0.5 h-4 w-4" />
+                    <div>
+                      <p className="font-medium">Import failed</p>
+                      <p>{importJob.error}</p>
+                    </div>
+                  </div>
+                )}
+                {connectionError && (
+                  <div className="flex items-start gap-3 rounded-xl border border-yellow-500/40 bg-yellow-500/10 p-3 text-sm text-yellow-700 dark:text-yellow-400">
+                    <ShieldAlert className="mt-0.5 h-4 w-4" />
+                    <div>
+                      <p className="font-medium">Connection issue</p>
+                      <p>{connectionError}</p>
+                    </div>
+                  </div>
+                )}
+                <div className="rounded-2xl border border-border/70 bg-card/90 p-4">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold">{importJob.job.label ?? 'Hotpass refine job'}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Job ID {importJob.job.id} · Started{' '}
+                        {importJob.job.startedAt
+                          ? formatDistanceToNow(new Date(importJob.job.startedAt), { addSuffix: true })
+                          : '—'}
+                      </p>
+                    </div>
+                    <Badge variant="outline" className={cn('text-xs px-3 py-1', statusBadgeStyle)}>
+                      {jobStatus === 'succeeded'
+                        ? 'Completed'
+                        : jobStatus === 'failed'
+                          ? 'Failed'
+                          : 'In progress'}
+                    </Badge>
+                  </div>
+                  <div className="mt-4 grid gap-3 sm:grid-cols-4">
+                    {IMPORT_STAGES.map(stage => {
+                      const visualState = resolveStageVisualState(importJob.stage, stage.id, importJob.job.status)
+                      const palette = STAGE_STYLES[visualState]
+                      const Icon =
+                        visualState === 'complete'
+                          ? CheckCircle2
+                          : visualState === 'failed'
+                            ? XCircle
+                            : visualState === 'active'
+                              ? Loader2
+                              : Activity
+                      return (
+                        <div
+                          key={stage.id}
+                          className={cn(
+                            'rounded-2xl border px-3 py-3 text-left transition',
+                            palette.container,
+                          )}
+                        >
+                          <div className="flex items-center gap-2 text-sm font-medium">
+                            <Icon className={cn('h-4 w-4', palette.icon, visualState === 'active' && 'animate-spin')} />
+                            {stage.label}
+                          </div>
+                          {stage.description && (
+                            <p className="mt-1 text-xs text-muted-foreground">{stage.description}</p>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-border/70 bg-card/90 p-4">
+                  <p className="text-sm font-semibold">Uploaded files</p>
+                  {importJob.files.length === 0 ? (
+                    <p className="mt-2 text-xs text-muted-foreground">Files will appear once the import starts.</p>
+                  ) : (
+                    <ul className="mt-3 space-y-2">
+                      {importJob.files.map(file => (
+                        <li key={file.filename} className="flex items-center justify-between text-xs text-muted-foreground">
+                          <span className="truncate pr-3">{file.originalName}</span>
+                          <span>{formatBytes(file.size)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
+                {jobNotes && (
+                  <div className="rounded-2xl border border-border/70 bg-card/90 p-4">
+                    <p className="text-sm font-semibold">Operator notes</p>
+                    <p className="mt-2 text-xs text-muted-foreground whitespace-pre-wrap">{jobNotes}</p>
+                  </div>
+                )}
+
+                <div className="rounded-2xl border border-border/70 bg-card/90 p-4">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-semibold">Artifacts</p>
+                    {refinedArtifact && (
+                      <span className="text-xs text-muted-foreground">
+                        Refined workbook ready ({formatBytes(refinedArtifact.size)})
+                      </span>
+                    )}
+                  </div>
+                  {importJob.artifacts.length === 0 ? (
+                    <p className="mt-2 text-xs text-muted-foreground">Artifacts will appear once the job completes.</p>
+                  ) : (
+                    <ul className="mt-3 space-y-2">
+                      {importJob.artifacts.map(artifact => (
+                        <li key={artifact.id} className="flex items-center justify-between rounded-xl border border-border/60 bg-background/80 px-3 py-2 text-xs">
+                          <div className="flex flex-col">
+                            <span className="font-medium text-foreground">{artifact.name}</span>
+                            <span className="text-muted-foreground">{artifact.kind === 'refined' ? 'Refined workbook' : 'Archive'} · {formatBytes(artifact.size)}</span>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => window.open(artifact.url, '_blank', 'noreferrer')}
+                          >
+                            Download
+                          </Button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
+                <div className="rounded-2xl border border-border/70 bg-card/90 p-4">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-semibold">Logs</p>
+                    <span className="text-xs text-muted-foreground">{importJob.logs.length} lines</span>
+                  </div>
+                  <div className="mt-2 max-h-48 overflow-y-auto rounded-xl bg-background/90 p-3 font-mono text-xs">
+                    {importJob.logs.length === 0 ? (
+                      <p className="text-muted-foreground">Logs will appear once the pipeline starts.</p>
+                    ) : (
+                      importJob.logs.map((line, index) => (
+                        <div key={`${index}-${line}`} className="whitespace-pre-wrap">
+                          {line}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </section>
 
@@ -307,7 +1037,9 @@ export function DatasetImportPanel({ flowRuns, hilApprovals, isLoadingRuns, onOp
                       <div className="flex flex-wrap items-center gap-3">
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-sm font-semibold" title={run.name}>{run.name}</p>
-                          <p className="text-xs text-muted-foreground">Started {run.start_time ? formatDistanceToNow(new Date(run.start_time), { addSuffix: true }) : '—'} • {formatDuration(durationSeconds)}</p>
+                          <p className="text-xs text-muted-foreground">
+                            Started {run.start_time ? formatDistanceToNow(new Date(run.start_time), { addSuffix: true }) : '—'} • {formatDuration(durationSeconds)}
+                          </p>
                           {profile && (
                             <p className="text-[11px] uppercase text-muted-foreground">Profile {profile}</p>
                           )}
@@ -324,10 +1056,10 @@ export function DatasetImportPanel({ flowRuns, hilApprovals, isLoadingRuns, onOp
                           Insights
                         </Button>
                       </div>
-                    {run.hil_comment && (
-                      <p className="mt-2 text-xs text-muted-foreground">Latest HIL note: {run.hil_comment}</p>
-                    )}
-                  </li>
+                      {run.hil_comment && (
+                        <p className="mt-2 text-xs text-muted-foreground">Latest HIL note: {run.hil_comment}</p>
+                      )}
+                    </li>
                   )
                 })}
               </ul>
@@ -341,7 +1073,7 @@ export function DatasetImportPanel({ flowRuns, hilApprovals, isLoadingRuns, onOp
             <ul className="mt-2 space-y-1">
               <li>• Group related files to keep lineage tidy.</li>
               <li>• Use notes to flag upstream anomalies or stakeholder context.</li>
-              <li>• HIL waits on you? Approve or request follow-up from the dashboard table.</li>
+              <li>• Pending HIL reviews? Approve or request follow-up from the dashboard table.</li>
             </ul>
           </div>
         </section>

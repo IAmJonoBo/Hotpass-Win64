@@ -10,7 +10,7 @@ import { createProxyMiddleware } from 'http-proxy-middleware'
 import Busboy from 'busboy'
 import os from 'os'
 import fs from 'fs'
-import { copyFile, mkdir, mkdtemp, rm, rename, stat } from 'fs/promises'
+import { copyFile, mkdir, mkdtemp, readdir, rm, rename, stat } from 'fs/promises'
 import {
   createCommandJob,
   createJobId,
@@ -130,6 +130,69 @@ const moveFile = async (source, destination) => {
       throw error
     }
   }
+}
+
+const isImportJob = (job) => Boolean(job?.metadata && job.metadata.type === 'import')
+
+const safeStatFile = async (filePath) => {
+  try {
+    const stats = await stat(filePath)
+    if (stats.isFile()) {
+      return stats
+    }
+    return null
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      return null
+    }
+    throw error
+  }
+}
+
+const enumerateImportArtifacts = async (job) => {
+  if (!isImportJob(job)) {
+    return []
+  }
+  const artifacts = []
+  const outputPath = typeof job.metadata.outputPath === 'string' ? job.metadata.outputPath : null
+  const archiveDir = typeof job.metadata.archiveDir === 'string' ? job.metadata.archiveDir : null
+
+  if (outputPath) {
+    const refinedStats = await safeStatFile(outputPath)
+    if (refinedStats) {
+      artifacts.push({
+        id: 'refined',
+        name: path.basename(outputPath),
+        kind: 'refined',
+        size: refinedStats.size,
+        url: `/api/jobs/${job.id}/artifacts/refined`,
+      })
+    }
+  }
+
+  if (archiveDir) {
+    try {
+      const entries = await readdir(archiveDir)
+      for (const entry of entries) {
+        const archivePath = path.join(archiveDir, entry)
+        const archiveStats = await safeStatFile(archivePath)
+        if (!archiveStats) continue
+        artifacts.push({
+          id: `archive:${entry}`,
+          name: entry,
+          kind: 'archive',
+          size: archiveStats.size,
+          url: `/api/jobs/${job.id}/artifacts/archive/${encodeURIComponent(entry)}`,
+        })
+      }
+    } catch (error) {
+      if (error.code !== 'ENOENT') {
+        console.warn('[import] failed to enumerate archive artifacts', error)
+      }
+    }
+  }
+
+  return artifacts
 }
 
 app.post('/api/commands/run', csrfProtection, (req, res) => {
@@ -261,6 +324,9 @@ app.post('/api/import', csrfProtection, async (req, res) => {
   const profile = typeof fields.profile === 'string' && fields.profile.trim().length > 0
     ? fields.profile.trim()
     : 'generic'
+  const notes = typeof fields.notes === 'string' && fields.notes.trim().length > 0
+    ? fields.notes.trim()
+    : undefined
 
   const jobId = createJobId()
   const jobRoot = path.join(IMPORT_ROOT, jobId)
@@ -308,16 +374,19 @@ app.post('/api/import', csrfProtection, async (req, res) => {
       ? `Import ${filesMetadata[0].originalName}`
       : `Import ${filesMetadata.length} files`
 
+    const metadata = {
+      type: 'import',
+      profile,
+      inputDir,
+      outputPath,
+      archiveDir,
+      files: filesMetadata,
+      ...(notes ? { notes } : {}),
+    }
+
     const job = createCommandJob({
       command,
-      metadata: {
-        type: 'import',
-        profile,
-        inputDir,
-        outputPath,
-        archiveDir,
-        files: filesMetadata,
-      },
+      metadata,
       label: jobLabel,
       requestedId: jobId,
     })
@@ -326,6 +395,7 @@ app.post('/api/import', csrfProtection, async (req, res) => {
       stage: 'queued',
       profile,
       files: filesMetadata,
+      ...(notes ? { notes } : {}),
     })
 
     for (const fileMeta of filesMetadata) {
@@ -353,23 +423,15 @@ app.post('/api/import', csrfProtection, async (req, res) => {
       if (payload.type === 'finished') {
         (async () => {
           try {
-            const artifacts = {}
-            try {
-              const refinedStats = await stat(outputPath)
-              if (refinedStats.isFile()) {
-                artifacts.refined = {
-                  path: outputPath,
-                  size: refinedStats.size,
-                }
-              }
-            } catch {
-              // ignore missing refined artifact
+            const artifacts = await enumerateImportArtifacts(job)
+            if (artifacts.length > 0) {
+              mergeJobMetadata(job.id, { artifacts })
+              publishJobEvent(job.id, {
+                type: 'artifact-ready',
+                artifacts,
+                timestamp: new Date().toISOString(),
+              })
             }
-            publishJobEvent(job.id, {
-              type: 'artifact-ready',
-              artifacts,
-              timestamp: new Date().toISOString(),
-            })
           } finally {
             unsubscribe()
           }
@@ -440,6 +502,85 @@ app.get('/api/jobs/:id/events', (req, res) => {
     clearInterval(keepAlive)
     unsubscribe()
   })
+})
+
+app.get('/api/jobs/:id/artifacts', async (req, res) => {
+  const job = getJob(req.params.id)
+  if (!job) {
+    return sendError(res, 404, 'Job not found')
+  }
+  if (!isImportJob(job)) {
+    return sendError(res, 400, 'Artifacts are only available for import jobs')
+  }
+  try {
+    const artifacts = await enumerateImportArtifacts(job)
+    res.json({ artifacts })
+  } catch (error) {
+    console.error('[import] failed to enumerate artifacts', error)
+    sendError(res, 500, 'Failed to enumerate artifacts', { message: error.message })
+  }
+})
+
+app.get('/api/jobs/:id/artifacts/refined', async (req, res) => {
+  const job = getJob(req.params.id)
+  if (!job) {
+    return sendError(res, 404, 'Job not found')
+  }
+  if (!isImportJob(job)) {
+    return sendError(res, 400, 'Artifact available for import jobs only')
+  }
+  const outputPath = typeof job.metadata.outputPath === 'string' ? job.metadata.outputPath : null
+  if (!outputPath) {
+    return sendError(res, 404, 'Artifact not found')
+  }
+  try {
+    const stats = await stat(outputPath)
+    if (!stats.isFile()) {
+      return sendError(res, 404, 'Artifact not found')
+    }
+    res.setHeader('Content-Type', 'application/octet-stream')
+    res.setHeader('Content-Length', stats.size)
+    res.setHeader('Content-Disposition', `attachment; filename="${path.basename(outputPath)}"`)
+    fs.createReadStream(outputPath).pipe(res)
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      return sendError(res, 404, 'Artifact not found')
+    }
+    console.error('[import] failed to stream refined artifact', error)
+    sendError(res, 500, 'Failed to stream artifact', { message: error.message })
+  }
+})
+
+app.get('/api/jobs/:id/artifacts/archive/:filename', async (req, res) => {
+  const job = getJob(req.params.id)
+  if (!job) {
+    return sendError(res, 404, 'Job not found')
+  }
+  if (!isImportJob(job)) {
+    return sendError(res, 400, 'Artifact available for import jobs only')
+  }
+  const archiveDir = typeof job.metadata.archiveDir === 'string' ? job.metadata.archiveDir : null
+  if (!archiveDir) {
+    return sendError(res, 404, 'Artifact not found')
+  }
+  const safeFilename = path.basename(req.params.filename)
+  const archivePath = path.join(archiveDir, safeFilename)
+  try {
+    const stats = await stat(archivePath)
+    if (!stats.isFile()) {
+      return sendError(res, 404, 'Artifact not found')
+    }
+    res.setHeader('Content-Type', 'application/octet-stream')
+    res.setHeader('Content-Length', stats.size)
+    res.setHeader('Content-Disposition', `attachment; filename="${safeFilename}"`)
+    fs.createReadStream(archivePath).pipe(res)
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      return sendError(res, 404, 'Artifact not found')
+    }
+    console.error('[import] failed to stream archive artifact', error)
+    sendError(res, 500, 'Failed to stream artifact', { message: error.message })
+  }
 })
 
 app.use(express.static(path.join(__dirname, '..', 'dist'), { maxAge: '1d', index: false }))
