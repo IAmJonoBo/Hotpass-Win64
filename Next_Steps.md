@@ -21,6 +21,7 @@
 - [ ] Outline a targeted formatting plan (e.g., staged module batches) before running `ruff format` so the `make qa` gate can complete without destabilising history.
 - [ ] Catalogue missing stub packages and annotate ownership for the 90 mypy diagnostics before planning fixes.
 - [ ] Document a staged fix strategy for the 52 `ruff check` violations and schedule remediation runs.
+- [ ] Re-run `uv run pytest tests` to capture a clean baseline (2025-11-02 manual interruption stopped the session at ~43 tests; reschedule full suite once resources allow).
 
 ## Deliverables
 - Baseline QA run notes (2025-11-01) covering `make qa`, pytest, mypy, and SBOM status.

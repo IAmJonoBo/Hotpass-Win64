@@ -46,6 +46,50 @@ jobs:
           scripts/testing/full.sh
           uv run coverage report --fail-under=80
 
+      - name: Generate Python coverage badge
+        run: |
+          uv run python - <<'PY'
+          import json
+          import os
+          import xml.etree.ElementTree as ET
+          from pathlib import Path
+
+          coverage_path = Path('coverage.xml')
+          if not coverage_path.exists():
+              raise SystemExit('coverage.xml not found; coverage badge cannot be created')
+
+          root = ET.parse(coverage_path).getroot()
+          try:
+              line_rate = float(root.get('line-rate', '0')) * 100
+          except ValueError:
+              line_rate = 0.0
+
+          def colour(value: float) -> str:
+              if value >= 90:
+                  return 'green'
+              if value >= 80:
+                  return 'yellow'
+              if value >= 70:
+                  return 'orange'
+              return 'red'
+
+          badge_dir = Path('dist/ci-badges')
+          badge_dir.mkdir(parents=True, exist_ok=True)
+          payload = {
+              'schemaVersion': 1,
+              'label': 'python coverage',
+              'message': f"{line_rate:.1f}%",
+              'color': colour(line_rate),
+          }
+          (badge_dir / 'python-coverage.json').write_text(json.dumps(payload), encoding='utf-8')
+
+          summary_path = os.environ.get('GITHUB_STEP_SUMMARY')
+          if summary_path:
+              with open(summary_path, 'a', encoding='utf-8') as handle:
+                  handle.write('### Python coverage\n')
+                  handle.write(f"- **Line coverage:** {line_rate:.1f}%\n")
+          PY
+
       - name: Upload Python coverage artefacts
         uses: actions/upload-artifact@v5
         with:
@@ -55,6 +99,7 @@ jobs:
             .coverage*
             coverage.xml
             htmlcov/**
+            dist/ci-badges/python-coverage.json
 
   quality-gate-checks:
     runs-on: ubuntu-latest
@@ -120,10 +165,93 @@ jobs:
           echo "================================"
           uv run python ops/quality/run_all_gates.py --json
 
+  web-ui-unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    needs: pytest-full
+    strategy:
+      matrix:
+        node-version: [20, 22]
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ matrix['node-version'] }}
+          cache: npm
+          cache-dependency-path: apps/web-ui/package-lock.json
+
+      - name: Install dependencies
+        working-directory: apps/web-ui
+        run: npm ci
+
+      - name: Run Vitest unit suite with coverage
+        working-directory: apps/web-ui
+        env:
+          CI: 'true'
+        run: npm test
+
+      - name: Generate web coverage badge
+        working-directory: apps/web-ui
+        env:
+          NODE_VERSION: ${{ matrix['node-version'] }}
+        run: |
+          node - <<'NODE'
+          import { readFileSync, mkdirSync, writeFileSync } from 'node:fs'
+          import { join } from 'node:path'
+
+          const summaryFile = 'coverage/unit/coverage-summary.json'
+          const badgeDir = '../dist/ci-badges'
+          const nodeVersion = process.env.NODE_VERSION ?? '20'
+          try {
+            const payload = JSON.parse(readFileSync(summaryFile, 'utf-8'))
+            const pct = payload.total?.lines?.pct ?? 0
+            const colour = pct >= 90 ? 'green' : pct >= 80 ? 'yellow' : pct >= 70 ? 'orange' : 'red'
+            mkdirSync(badgeDir, { recursive: true })
+            writeFileSync(
+              join(badgeDir, `web-coverage-${nodeVersion}.json`),
+              JSON.stringify({
+                schemaVersion: 1,
+                label: `web coverage (node ${nodeVersion})`,
+                message: `${pct.toFixed(1)}%`,
+                color: colour,
+              }),
+              'utf-8',
+            )
+            const summaryTarget = process.env.GITHUB_STEP_SUMMARY
+            if (summaryTarget) {
+              const line = `- **Web coverage (node ${nodeVersion})**: ${pct.toFixed(1)}%\n`
+              writeFileSync(summaryTarget, '### Web coverage\n' + line, { encoding: 'utf-8', flag: 'a' })
+            }
+          } catch (error) {
+            console.warn('Unable to create coverage badge', error)
+            process.exit(1)
+          }
+          NODE
+
+      - name: Upload web unit artifacts
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: web-unit-${{ matrix['node-version'] }}
+          if-no-files-found: warn
+          path: |
+            apps/web-ui/coverage/unit/**
+            dist/ci-badges/web-coverage-${{ matrix['node-version'] }}.json
+
   playwright-e2e:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
-    needs: pytest-full
+    timeout-minutes: 45
+    needs: web-ui-unit
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: chromium-desktop-dark
+            theme: dark
+          - name: chromium-desktop-light
+            theme: light
     steps:
       - uses: actions/checkout@v5
 
@@ -142,16 +270,226 @@ jobs:
         working-directory: apps/web-ui
         run: npx playwright install --with-deps chromium
 
-      - name: Run Playwright suite (sharded)
+      - name: Run Playwright suite
         working-directory: apps/web-ui
         env:
           CI: 'true'
-        run: npx playwright test --shard=1/1 --reporter=list
+        run: npx playwright test --project=${{ matrix.name }} --reporter=list
 
       - name: Upload Playwright artifacts
         if: always()
         uses: actions/upload-artifact@v5
         with:
-          name: playwright-report
+          name: playwright-${{ matrix.theme }}
           path: apps/web-ui/playwright-report
-*** End Patch
+
+  accessibility-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    needs: playwright-e2e
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - id: axe-dark
+            tool: axe
+            theme: dark
+            project: chromium-desktop-dark
+          - id: axe-light
+            tool: axe
+            theme: light
+            project: chromium-desktop-light
+          - id: pa11y
+            tool: pa11y
+            theme: light
+            project: ''
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/web-ui/package-lock.json
+
+      - name: Install dependencies
+        working-directory: apps/web-ui
+        run: npm ci
+
+      - name: Install Playwright browsers
+        if: matrix.tool == 'axe'
+        working-directory: apps/web-ui
+        run: npx playwright install --with-deps chromium
+
+      - name: Run axe accessibility scans
+        if: matrix.tool == 'axe'
+        working-directory: apps/web-ui
+        env:
+          AXE_OUTPUT_DIR: playwright-report/axe/${{ matrix.theme }}
+          CI: 'true'
+        run: npx playwright test tests/accessibility.spec.ts --project=${{ matrix.project }}
+
+      - name: Build production bundle
+        if: matrix.tool == 'pa11y'
+        working-directory: apps/web-ui
+        run: npm run build
+
+      - name: Serve production bundle
+        if: matrix.tool == 'pa11y'
+        working-directory: apps/web-ui
+        run: |
+          npm run preview:ci &
+          npx wait-on http://127.0.0.1:4173
+
+      - name: Run pa11y-ci scans
+        if: matrix.tool == 'pa11y'
+        working-directory: apps/web-ui
+        env:
+          CI: 'true'
+        run: |
+          npx pa11y-ci --config pa11y.ci.json --json > pa11y-report.json
+
+      - name: Upload accessibility artifacts
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: accessibility-${{ matrix.id }}
+          if-no-files-found: warn
+          path: |
+            apps/web-ui/playwright-report/axe/**
+            apps/web-ui/pa11y-report.json
+            apps/web-ui/pa11y-snapshots/**
+
+  docker-compose-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    needs:
+      - quality-gate-checks
+    env:
+      DOCKER_BUILDKIT: '1'
+      COMPOSE_DOCKER_CLI_BUILD: '1'
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up uv and Python
+        uses: astral-sh/setup-uv@v7
+        with:
+          python-version: '3.13'
+
+      - name: Synchronise dependencies
+        env:
+          HOTPASS_UV_EXTRAS: 'dev orchestration'
+        run: bash ops/uv_sync_extras.sh
+
+      - name: Build and start docker-compose stack
+        run: |
+          docker compose -f deploy/docker/docker-compose.yml --profile llm build
+          docker compose -f deploy/docker/docker-compose.yml --profile llm up -d
+
+      - name: Wait for services
+        run: |
+          bash -c 'for i in {1..30}; do
+            if curl -fsS http://localhost:3001 >/dev/null 2>&1 && \
+               curl -fsS http://localhost:4200/api/health >/dev/null 2>&1 && \
+               curl -fsS http://localhost:5001/healthcheck >/dev/null 2>&1; then
+              exit 0
+            fi
+            sleep 10
+          done
+          exit 1'
+
+      - name: Run API smoke checks
+        run: |
+          uv run python ops/validation/docker_smoke.py --base-url http://localhost:3001 --prefect-url http://localhost:4200 --marquez-url http://localhost:5001 --llm-url http://localhost:11434
+
+      - name: Validate integration profiles
+        run: |
+          uv run python ops/validation/check_integration_profiles.py --arc-root infra/arc --llm-config apps/web-ui/public/config/llm-providers.yaml --output dist/ci-badges
+
+      - name: Tear down stack
+        if: always()
+        run: docker compose -f deploy/docker/docker-compose.yml --profile llm down -v
+
+      - name: Upload docker smoke artifacts
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: docker-compose-smoke
+          path: dist/ci-badges/integration-profiles.json
+
+  container-builds:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    needs:
+      - docker-compose-smoke
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    strategy:
+      matrix:
+        include:
+          - name: backend
+            context: .
+            dockerfile: Dockerfile
+          - name: web-ui
+            context: apps/web-ui
+            dockerfile: Dockerfile
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build ${{ matrix.name }} image
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.context }}/${{ matrix.dockerfile }}
+          load: true
+          push: false
+          tags: ghcr.io/${{ github.repository }}:${{ matrix.name }}-${{ github.sha }}
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,scope=${{ matrix.name }},mode=max
+          provenance: true
+          sbom: true
+
+      - name: Generate container SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          image: ghcr.io/${{ github.repository }}:${{ matrix.name }}-${{ github.sha }}
+          output-file: sbom-${{ matrix.name }}.spdx.json
+
+      - name: Generate container provenance
+        run: |
+          uv run python ops/supply_chain/generate_image_provenance.py --image ghcr.io/${{ github.repository }}:${{ matrix.name }}-${{ github.sha }} --output dist/provenance --filename provenance-${{ matrix.name }}.json
+
+      - name: Upload container artifacts
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: container-${{ matrix.name }}
+          path: |
+            sbom-${{ matrix.name }}.spdx.json
+            dist/provenance/provenance-${{ matrix.name }}.json
+
+  quality-gates-summary:
+    runs-on: ubuntu-latest
+    needs:
+      - quality-gate-checks
+      - web-ui-unit
+      - playwright-e2e
+      - accessibility-audit
+      - docker-compose-smoke
+      - container-builds
+    if: always()
+    steps:
+      - run: |
+          echo "### Quality Gates" >> "$GITHUB_STEP_SUMMARY"
+          echo "All upstream jobs completed. Review uploaded artifacts for coverage, accessibility, and supply-chain evidence." >> "$GITHUB_STEP_SUMMARY"
