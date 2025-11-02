@@ -20,6 +20,14 @@ import {
   publishJobEvent,
   subscribeToJob,
 } from './job-runner.js'
+import {
+  appendActivityEvent,
+  readActivityLog,
+  readHilApprovals,
+  readHilAudit,
+  writeHilApprovals,
+  writeHilAudit,
+} from './storage.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -193,6 +201,38 @@ const enumerateImportArtifacts = async (job) => {
   }
 
   return artifacts
+}
+
+const hilStatusSet = new Set(['waiting', 'approved', 'rejected'])
+
+const createHilApproval = ({ runId, status, operator, comment, reason }) => ({
+  id: `hil-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+  runId,
+  status,
+  operator,
+  comment: comment ?? undefined,
+  reason: reason ?? undefined,
+  timestamp: new Date().toISOString(),
+})
+
+const createHilAuditEntry = ({ runId, operator, action, comment, previousStatus, newStatus }) => ({
+  id: `audit-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+  runId,
+  operator,
+  action,
+  comment: comment ?? undefined,
+  previousStatus,
+  newStatus,
+  timestamp: new Date().toISOString(),
+})
+
+const parseLimitParam = (value) => {
+  const raw = Array.isArray(value) ? value[0] : value
+  if (typeof raw !== 'string') {
+    return undefined
+  }
+  const parsed = Number.parseInt(raw, 10)
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined
 }
 
 app.post('/api/commands/run', csrfProtection, (req, res) => {
@@ -502,6 +542,104 @@ app.get('/api/jobs/:id/events', (req, res) => {
     clearInterval(keepAlive)
     unsubscribe()
   })
+})
+
+app.get('/api/hil/approvals', async (_req, res) => {
+  try {
+    const approvals = await readHilApprovals()
+    res.json({ approvals })
+  } catch (error) {
+    console.error('[hil] failed to read approvals', error)
+    sendError(res, 500, 'Failed to read approvals', { message: error.message })
+  }
+})
+
+app.get('/api/hil/audit', async (req, res) => {
+  try {
+    const limit = parseLimitParam(req.query.limit)
+    const entries = await readHilAudit()
+    const slice = limit ? entries.slice(0, limit) : entries
+    res.json({ entries: slice })
+  } catch (error) {
+    console.error('[hil] failed to read audit log', error)
+    sendError(res, 500, 'Failed to read audit log', { message: error.message })
+  }
+})
+
+const createActivityEvent = (payload) => ({
+  id: `activity-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+  timestamp: new Date().toISOString(),
+  ...payload,
+})
+
+app.get('/api/activity', async (req, res) => {
+  try {
+    const limit = parseLimitParam(req.query.limit)
+    const events = await readActivityLog()
+    const slice = limit ? events.slice(0, limit) : events
+    res.json({ events: slice })
+  } catch (error) {
+    console.error('[activity] failed to read log', error)
+    sendError(res, 500, 'Failed to read activity log', { message: error.message })
+  }
+})
+
+app.post('/api/hil/approvals', csrfProtection, async (req, res) => {
+  const payload = req.body ?? {}
+  if (!isRecord(payload)) {
+    return sendError(res, 400, 'Invalid payload')
+  }
+  const runId = typeof payload.runId === 'string' && payload.runId.trim().length > 0 ? payload.runId.trim() : undefined
+  const status = typeof payload.status === 'string' ? payload.status.toLowerCase() : undefined
+  const operator = typeof payload.operator === 'string' && payload.operator.trim().length > 0 ? payload.operator.trim() : undefined
+  const comment = typeof payload.comment === 'string' && payload.comment.trim().length > 0 ? payload.comment.trim() : undefined
+  const reason = typeof payload.reason === 'string' && payload.reason.trim().length > 0 ? payload.reason.trim() : undefined
+
+  if (!runId) {
+    return sendError(res, 422, 'runId is required')
+  }
+  if (!status || !hilStatusSet.has(status)) {
+    return sendError(res, 422, 'status must be one of waiting, approved, rejected')
+  }
+  if (!operator) {
+    return sendError(res, 422, 'operator is required')
+  }
+
+  try {
+    const approvals = await readHilApprovals()
+    const previous = approvals[runId] ?? null
+    const approval = createHilApproval({ runId, status, operator, comment, reason })
+    approvals[runId] = approval
+    await writeHilApprovals(approvals)
+
+    const auditEntry = createHilAuditEntry({
+      runId,
+      operator,
+      action: status,
+      comment: comment ?? reason,
+      previousStatus: previous?.status ?? null,
+      newStatus: status,
+    })
+    const auditLog = await readHilAudit()
+    const updatedAudit = [auditEntry, ...auditLog].slice(0, Number.parseInt(process.env.HOTPASS_HIL_AUDIT_LIMIT ?? '500', 10))
+    await writeHilAudit(updatedAudit)
+
+    await appendActivityEvent(
+      createActivityEvent({
+        type: 'hil',
+        runId,
+        operator,
+        status,
+        comment: comment ?? undefined,
+        reason: reason ?? undefined,
+      }),
+    )
+
+    res.status(201).json({ approval })
+  } catch (error) {
+    console.error('[hil] failed to update approvals', error)
+    sendError(res, 500, 'Failed to update approval', { message: error.message })
+  }
 })
 
 app.get('/api/jobs/:id/artifacts', async (req, res) => {
