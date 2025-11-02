@@ -1,8 +1,10 @@
 ---
 title: Research log
 summary: External references supporting tool and standard selections.
-last_updated: 2025-10-25
+last_updated: 2025-11-02
 ---
+
+# Research log
 
 | Date       | Topic                         | Source                                                                                             | Key takeaway                                                            |
 | ---------- | ----------------------------- | -------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |

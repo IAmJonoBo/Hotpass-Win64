@@ -1,8 +1,10 @@
 ---
 title: Deployment notes and feature toggles
 summary: Rollback considerations and toggles for recent automation.
-last_updated: 2025-10-25
+last_updated: 2025-11-02
 ---
+
+# Deployment notes and feature toggles
 
 | Change                       | Toggle                                       | Rollback                                                                   | Notes                                                                    |
 | ---------------------------- | -------------------------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------ |

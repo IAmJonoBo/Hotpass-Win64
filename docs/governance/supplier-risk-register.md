@@ -1,8 +1,10 @@
 ---
 title: Supplier risk register
 summary: Inventory and review cadence for key suppliers supporting the Hotpass platform.
-last_updated: 2025-10-26
+last_updated: 2025-11-02
 ---
+
+# Supplier risk register
 
 | Supplier | Service scope                                  | Classification | Last review | Next review | Notes                                                                            |
 | -------- | ---------------------------------------------- | -------------- | ----------- | ----------- | -------------------------------------------------------------------------------- |
