@@ -1,7 +1,7 @@
 ---
 title: Resilience and observability enhancements
 summary: Guardrails for SLOs, chaos experiments, and observability improvements.
-last_updated: 2025-10-27
+last_updated: 2025-11-02
 ---
 
 ## SLOs and error budgets

@@ -1,7 +1,7 @@
 ---
 title: Metrics — delivery and DevEx plan
 summary: Definitions, targets, and instrumentation approach for Hotpass DORA and SPACE metrics.
-last_updated: 2025-10-25
+last_updated: 2025-11-02
 ---
 
 This plan defines how Hotpass will measure delivery performance and developer experience using the DORA Four Keys and the SPACE framework. It also records telemetry tooling, integrations, and open assumptions that require validation before rollout.

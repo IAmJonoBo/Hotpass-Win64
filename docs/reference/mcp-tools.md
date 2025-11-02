@@ -1,7 +1,7 @@
 ---
 title: Reference — MCP tools
 summary: Model Context Protocol tools exposed by Hotpass and their CLI equivalents.
-last_updated: 2025-10-31
+last_updated: 2025-11-02
 ---
 
 Hotpass ships a stdio MCP server (`python -m hotpass.mcp.server`) that mirrors the CLI surface so agents can orchestrate the platform without bespoke adapters. The table below documents each tool, the underlying CLI command, and common arguments.

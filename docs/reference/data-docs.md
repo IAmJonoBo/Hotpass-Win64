@@ -1,7 +1,7 @@
 ---
 title: Data Docs reference
 summary: Locations, refresh commands, and consumption tips for the generated Great Expectations Data Docs.
-last_updated: 2025-10-29
+last_updated: 2025-11-02
 ---
 
 # Data Docs reference

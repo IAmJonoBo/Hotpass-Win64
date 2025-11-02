@@ -1,7 +1,7 @@
 ---
 title: Tutorial — orchestrate the enhanced pipeline
 summary: Enable Hotpass orchestration, enrichment, and observability features using Prefect and OpenTelemetry.
-last_updated: 2025-10-25
+last_updated: 2025-11-02
 ---
 
 Follow this tutorial to move from the single-command pipeline to a production-ready deployment that orchestrates flows, enriches records, and publishes telemetry. You should complete the [quickstart tutorial](./quickstart.md) first.

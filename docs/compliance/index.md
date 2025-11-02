@@ -1,10 +1,78 @@
 ---
 title: Compliance — framework baseline
 summary: Overview of Hotpass compliance frameworks, maturity scoring, evidence mapping, and remediation approach.
-last_updated: 2025-10-26
+last_updated: 2025-11-02
 ---
 
+# Compliance framework baseline
+
 The Hotpass governance programme spans POPIA, ISO 27001, and SOC 2. This index tracks baseline maturity for each framework, links controls to evidence, and consolidates remediation and verification cadences.
+
+## Framework relationships
+
+```{mermaid}
+graph TD
+    subgraph "Compliance Frameworks"
+        POPIA[POPIA<br/>Data Privacy]
+        ISO[ISO 27001<br/>InfoSec Management]
+        SOC2[SOC 2<br/>Trust Services]
+    end
+
+    subgraph "Hotpass Controls"
+        Consent[Consent Validation]
+        Access[Access Controls]
+        Audit[Audit Logging]
+        Encrypt[Encryption]
+        DSAR[Data Subject Rights]
+        Incident[Incident Response]
+        Risk[Risk Management]
+    end
+
+    subgraph "Evidence Sources"
+        Code[Pipeline Code]
+        Configs[Config Files]
+        Logs[Audit Logs]
+        Docs[Documentation]
+        Reports[Quality Reports]
+    end
+
+    POPIA --> Consent
+    POPIA --> DSAR
+    POPIA --> Encrypt
+
+    ISO --> Access
+    ISO --> Audit
+    ISO --> Risk
+    ISO --> Incident
+
+    SOC2 --> Access
+    SOC2 --> Audit
+    SOC2 --> Encrypt
+    SOC2 --> Incident
+
+    Consent --> Code
+    Consent --> Logs
+
+    Access --> Configs
+    Access --> Docs
+
+    Audit --> Logs
+    Audit --> Reports
+
+    DSAR --> Code
+    DSAR --> Logs
+
+    Risk --> Docs
+    Risk --> Reports
+
+    classDef framework fill:#e1f5ff,stroke:#333,stroke-width:2px
+    classDef control fill:#fff3cd,stroke:#333,stroke-width:2px
+    classDef evidence fill:#d4edda,stroke:#333,stroke-width:2px
+
+    class POPIA,ISO,SOC2 framework
+    class Consent,Access,Audit,Encrypt,DSAR,Incident,Risk control
+    class Code,Configs,Logs,Docs,Reports evidence
+```
 
 ## How maturity scoring works
 

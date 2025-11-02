@@ -1,7 +1,7 @@
 ---
 title: Compliance — verification plan
 summary: Review cadence, trigger events, and measurement approach for each compliance framework.
-last_updated: 2025-10-25
+last_updated: 2025-11-02
 ---
 
 ## Cadence overview

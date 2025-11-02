@@ -1,7 +1,7 @@
 ---
 title: Reference — repository inventory
 summary: Snapshot of Hotpass packages, interfaces, orchestration flows, tests, datasets, and CI automation.
-last_updated: 2025-10-31
+last_updated: 2025-11-02
 ---
 
 This inventory highlights the moving parts that power Hotpass. Use the tables below to

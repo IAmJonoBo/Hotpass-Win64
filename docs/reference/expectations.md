@@ -1,7 +1,7 @@
 ---
 title: Reference — data quality expectations
 summary: Catalogue of Great Expectations suites enforced by the Hotpass pipeline.
-last_updated: 2025-10-28
+last_updated: 2025-11-02
 ---
 
 Hotpass uses [Great Expectations](https://greatexpectations.io/) to protect downstream consumers. Expectations are grouped by domain and run during validation and orchestration using checkpoints with automated Data Docs publishing.

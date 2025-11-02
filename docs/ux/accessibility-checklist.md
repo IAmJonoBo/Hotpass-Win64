@@ -1,7 +1,7 @@
 ---
 title: Accessibility checklist (WCAG 2.2 AA)
 summary: Component-level acceptance criteria to keep the Streamlit dashboard WCAG 2.2 AA compliant.
-last_updated: 2025-10-26
+last_updated: 2025-11-02
 ---
 
 | Component             | Criteria                                                                                     | WCAG ref            | Status                                                 | Evidence                                                                          |

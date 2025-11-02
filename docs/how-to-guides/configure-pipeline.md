@@ -1,7 +1,7 @@
 ---
 title: How-to — configure Hotpass for your organisation
 summary: Customise industry profiles, column mapping, and runtime options to fit your data landscape.
-last_updated: 2025-10-28
+last_updated: 2025-11-02
 ---
 
 Hotpass ships with aviation defaults but can be tailored to any industry. Follow these steps to align the platform with your organisation’s data.

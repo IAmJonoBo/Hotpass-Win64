@@ -1,7 +1,7 @@
 ---
 title: Fitness functions and architectural guardrails
 summary: Automated checks safeguarding Hotpass architecture characteristics.
-last_updated: 2025-10-25
+last_updated: 2025-11-02
 ---
 
 ## Active fitness functions

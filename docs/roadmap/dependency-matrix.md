@@ -1,7 +1,7 @@
 ---
 title: Dependency and tooling matrix
 summary: Ownership, lifecycle, and compliance posture for dependencies.
-last_updated: 2025-10-25
+last_updated: 2025-11-02
 ---
 
 | Dependency    | Version | Owner       | Lifecycle | Integration points     | License      | Compliance notes                    |

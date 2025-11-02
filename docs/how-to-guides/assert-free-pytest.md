@@ -1,7 +1,7 @@
 ---
 title: Assert-free pytest patterns
 summary: Maintain Bandit compliance without sacrificing test clarity
-last_updated: 2025-10-29
+last_updated: 2025-11-02
 ---
 
 Bandit runs as part of the Hotpass quality gates and raises finding **B101** when tests rely on bare `assert` statements.

@@ -1,7 +1,7 @@
 ---
 title: Streamlit dashboard heuristic review
 summary: Findings from a Nielsen heuristic evaluation of the Hotpass Streamlit dashboard.
-last_updated: 2025-10-25
+last_updated: 2025-11-02
 ---
 
 | Heuristic                                           | Observation                                                                                                           | Impact | Recommendation                                                                     | Owner       | Status      |

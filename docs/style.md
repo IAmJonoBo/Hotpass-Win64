@@ -1,7 +1,7 @@
 ---
 title: Documentation style guide
 summary: Conventions for writing Hotpass documentation using the Google Developer Documentation Style Guide.
-last_updated: 2025-10-25
+last_updated: 2025-11-02
 ---
 
 Hotpass documentation follows the [Google Developer Documentation Style Guide](https://developers.google.com/style). Apply the conventions below when updating or creating content.

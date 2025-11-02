@@ -1,7 +1,7 @@
 ---
 title: Dataset schemas
 summary: Canonical dataset contracts for Hotpass source and refined tables.
-last_updated: 2025-10-29
+last_updated: 2025-11-02
 ---
 
 # Dataset schemas

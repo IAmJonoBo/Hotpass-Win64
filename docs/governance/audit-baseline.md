@@ -1,7 +1,7 @@
 ---
 title: Governance audit baseline
 summary: Catalog of Hotpass 2.0 configuration defaults, quality expectations, feature toggles, and compliance artefacts.
-last_updated: 2025-10-28
+last_updated: 2025-11-02
 ---
 
 Hotpass 2.0 treats the orchestrator's default bundle as the authoritative execution contract. Use this

@@ -1,7 +1,7 @@
 ---
 title: Architecture decisions index
 summary: Status snapshot for the MADR catalogue and how the documentation strategy maps to each decision.
-last_updated: 2025-10-29
+last_updated: 2025-11-02
 ---
 
 # Architecture decisions index

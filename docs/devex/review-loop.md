@@ -1,7 +1,7 @@
 ---
 title: Developer experience review cadence
 summary: Governance process for monitoring DevEx metrics, experiments, and platform enablement.
-last_updated: 2025-10-25
+last_updated: 2025-11-02
 ---
 
 ## Quarterly governance forum

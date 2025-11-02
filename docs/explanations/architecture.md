@@ -1,10 +1,56 @@
 ---
 title: Explanation — architecture overview
 summary: High-level view of Hotpass components and how data flows between them.
-last_updated: 2025-10-30
+last_updated: 2025-11-02
 ---
 
+# Architecture overview
+
 Hotpass ingests spreadsheet workbooks and orchestrated research crawlers, applies cleaning, backfilling, relationship mapping, validation, and enrichment logic, and emits governed, analysis-ready outputs. The platform is composed of the following layers.
+
+## System context diagram
+
+```{mermaid}
+graph TB
+    subgraph "External Systems"
+        Operator[Operator/Data Analyst]
+        Prefect[Prefect Cloud/Orion]
+        Marquez[Marquez Lineage UI]
+        OTLP[OpenTelemetry Collector]
+        Registries[External Registries<br/>& Web Sources]
+    end
+
+    subgraph "Hotpass Platform"
+        CLI[Hotpass CLI]
+        MCP[MCP Server]
+        Pipeline[Pipeline Engine]
+        Dashboard[Streamlit Dashboard]
+        Storage[(File System<br/>data/, dist/, logs/)]
+    end
+
+    Operator -->|Commands| CLI
+    Operator -->|Chat/AI Tools| MCP
+    Operator -->|Monitor| Dashboard
+
+    CLI -->|Execute| Pipeline
+    MCP -->|Execute| Pipeline
+    Prefect -->|Orchestrate| Pipeline
+
+    Pipeline -->|Read/Write| Storage
+    Dashboard -->|Read| Storage
+
+    Pipeline -->|Emit Spans| OTLP
+    Pipeline -->|Lineage Events| Marquez
+    Pipeline -->|Optional Enrichment| Registries
+
+    classDef external fill:#e1f5ff,stroke:#333,stroke-width:2px
+    classDef hotpass fill:#fff3cd,stroke:#333,stroke-width:2px
+    classDef storage fill:#d4edda,stroke:#333,stroke-width:2px
+
+    class Operator,Prefect,Marquez,OTLP,Registries external
+    class CLI,MCP,Pipeline,Dashboard hotpass
+    class Storage storage
+```
 
 ## Architecture views
 
@@ -29,6 +75,60 @@ Then open `http://localhost:8080` and load `hotpass-architecture.dsl`.
 - **Data loaders**: Parsers convert Excel, CSV, and Parquet into Pandas dataframes while preserving lineage metadata.
 
 ## 2. Processing
+
+The pipeline follows a five-stage process, each with clear responsibilities:
+
+```{mermaid}
+flowchart LR
+    subgraph "1. Ingestion"
+        Input[Excel/CSV/Parquet<br/>Spreadsheets]
+        Loader[Data Loaders]
+        Profile[Profile Config]
+        Input --> Loader
+        Profile --> Loader
+    end
+
+    subgraph "2. Mapping & Cleaning"
+        Mapper[Column Mapper<br/>Fuzzy Match]
+        Canon[Canonicalization]
+        Loader --> Mapper
+        Mapper --> Canon
+    end
+
+    subgraph "3. Validation"
+        GX[Great Expectations<br/>Suites]
+        POPIA[POPIA Compliance<br/>Checks]
+        Canon --> GX
+        Canon --> POPIA
+    end
+
+    subgraph "4. Enrichment & Resolution"
+        Enrich[Optional Enrichment<br/>Registries/Web]
+        Splink[Entity Resolution<br/>Splink/RapidFuzz]
+        GX --> Enrich
+        POPIA --> Enrich
+        Enrich --> Splink
+    end
+
+    subgraph "5. Export"
+        Format[Multi-Format<br/>Excel/CSV/Parquet]
+        QA[Quality Reports<br/>JSON/Markdown]
+        Lineage[OpenLineage<br/>Events]
+        Splink --> Format
+        Splink --> QA
+        Splink --> Lineage
+    end
+
+    Format --> Output[(dist/<br/>Refined Outputs)]
+    QA --> Output
+    Lineage --> Marquez[Marquez UI]
+
+    classDef stage fill:#fff3cd,stroke:#333,stroke-width:2px
+    classDef output fill:#d4edda,stroke:#333,stroke-width:2px
+
+    class Loader,Mapper,Canon,GX,POPIA,Enrich,Splink,Format,QA,Lineage stage
+    class Output,Marquez output
+```
 
 - **Column mapping**: Fuzzy matching and synonym dictionaries align source headers with canonical fields.
 - **Entity resolution**: Splink-based duplicate detection merges overlapping organisations with deterministic fallbacks.
@@ -60,6 +160,57 @@ The pipeline runtime has been modularised so each stage now lives in a focused m
 The architecture emphasises modularity—each layer can be extended independently without disrupting the pipeline contract. See the [platform scope explanation](./platform-scope.md) for upcoming investments.
 
 ## Trust boundaries
+
+```{mermaid}
+graph TB
+    subgraph "Trust Boundary 1: Runner & Worker"
+        CLI[Hotpass CLI]
+        Flows[Prefect Flows]
+        Engine[Pipeline Engine]
+        FS[(File System<br/>data/, dist/, logs/)]
+
+        CLI --> Engine
+        Flows --> Engine
+        Engine --> FS
+    end
+
+    subgraph "Trust Boundary 2: Dashboard"
+        Dashboard[Streamlit UI]
+        Session[In-Memory State]
+        Dashboard --> FS
+        Dashboard --> Session
+    end
+
+    subgraph "Trust Boundary 3: External Services"
+        PrefectCloud[Prefect Cloud/Orion]
+        OTLPCollector[OTLP Collector]
+        Registries[External Registries]
+
+        PrefectCloud -.->|Orchestrate| Flows
+        Engine -.->|Metrics/Spans| OTLPCollector
+        Engine -.->|Optional Fetch| Registries
+    end
+
+    subgraph "Critical Assets"
+        PII[PII Data<br/>Raw & Refined]
+        Audit[Audit Trails<br/>Quality Reports]
+        Creds[Credentials<br/>API Keys/Tokens]
+    end
+
+    FS --> PII
+    FS --> Audit
+    Engine -.->|Requires| Creds
+
+    classDef boundary1 fill:#fff3cd,stroke:#f00,stroke-width:3px
+    classDef boundary2 fill:#e1f5ff,stroke:#00f,stroke-width:3px
+    classDef boundary3 fill:#fce4ec,stroke:#333,stroke-width:2px,stroke-dasharray: 5 5
+    classDef asset fill:#d4edda,stroke:#333,stroke-width:2px
+
+    class CLI,Flows,Engine,FS boundary1
+    class Dashboard,Session boundary2
+    class PrefectCloud,OTLPCollector,Registries boundary3
+    class PII,Audit,Creds asset
+```
 
 ### Runner and worker boundary
 

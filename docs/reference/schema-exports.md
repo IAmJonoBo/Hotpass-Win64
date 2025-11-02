@@ -1,7 +1,7 @@
 ---
 title: Schema export reference
 summary: JSON Schema artefacts generated from the dataset contract registry.
-last_updated: 2025-10-29
+last_updated: 2025-11-02
 ---
 
 # Schema export reference
