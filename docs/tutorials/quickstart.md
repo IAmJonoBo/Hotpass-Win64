@@ -4,7 +4,22 @@ summary: Run the core Hotpass pipeline end-to-end using sample data and explore 
 last_updated: 2025-12-08
 ---
 
+# Quickstart
+
 This tutorial shows you how to install Hotpass, validate a spreadsheet, and publish a refined workbook with quality insights. It assumes you are comfortable with Python tooling but are new to the Hotpass platform.
+
+## Workflow overview
+
+```{mermaid}
+flowchart LR
+    Setup[1. Install & Setup] --> Sample[2. Load Sample Data]
+    Sample --> Run[3. Run Pipeline]
+    Run --> Review[4. Review Outputs]
+    Review --> Extend[5. Optional:<br/>Extend & Enrich]
+
+    classDef step fill:#fff3cd,stroke:#333,stroke-width:2px
+    class Setup,Sample,Run,Review,Extend step
+```
 
 ## 1. Install the tooling
 

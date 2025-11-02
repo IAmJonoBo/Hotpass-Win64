@@ -1,7 +1,7 @@
 ---
 title: Use the Hotpass setup wizard
 summary: Run the guided CLI wizard to sync dependencies, open tunnels, configure contexts, and emit environment files in one pass.
-last_updated: 2025-10-31
+last_updated: 2025-11-02
 ---
 
 The `hotpass setup` command wraps the most common operator tasks—dependency sync, tunnel

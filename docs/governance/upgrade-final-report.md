@@ -1,7 +1,7 @@
 ---
 title: Hotpass upgrade final report
 summary: Consolidated critical-reasoning checks and delivery package for the Hotpass frontier upgrade initiative.
-last_updated: 2025-10-28
+last_updated: 2025-11-02
 ---
 
 ## 1. Critical-reasoning checks

@@ -1,7 +1,7 @@
 ---
 title: Establish dataset contracts and regeneration workflow
 summary: Define dataset contracts in code, regenerate JSON schemas, and publish reference documentation.
-last_updated: 2025-10-28
+last_updated: 2025-11-02
 status: Accepted
 ---
 

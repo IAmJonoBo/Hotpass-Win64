@@ -1,7 +1,7 @@
 ---
 title: How-to — manage Prefect deployment manifests
 summary: Version, review, and apply Prefect deployment manifests for Hotpass flows.
-last_updated: 2025-10-31
+last_updated: 2025-11-02
 ---
 
 This guide explains how to work with the manifest-based Prefect deployment workflow introduced in October 2025.

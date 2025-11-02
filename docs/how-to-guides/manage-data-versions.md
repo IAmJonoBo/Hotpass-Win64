@@ -1,7 +1,7 @@
 ---
 title: Managing data versions
 summary: How to version datasets with DVC and track refined outputs
-last_updated: 2025-10-28
+last_updated: 2025-11-02
 ---
 
 # Managing data versions

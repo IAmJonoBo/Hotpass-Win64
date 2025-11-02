@@ -1,7 +1,7 @@
 ---
 title: Quality and security gates
 summary: Expanded automated gates covering testing, linting, mutation, contracts, and security scans.
-last_updated: 2025-10-28
+last_updated: 2025-11-02
 ---
 
 ## Current automation

@@ -1,8 +1,10 @@
 ---
 title: Reference — command-line interface
 summary: Detailed options for the unified `hotpass` CLI entry point and its subcommands.
-last_updated: 2025-10-31
+last_updated: 2025-11-02
 ---
+
+# Command-line interface reference
 
 Hotpass now ships a single console script: `hotpass`. Subcommands map to the core
 pipeline as well as orchestrator, entity resolution, dashboard, and deployment workflows.
@@ -10,6 +12,47 @@ Legacy `hotpass-enhanced` invocations continue to work but simply delegate to th
 CLI after printing a deprecation warning.
 
 > ℹ️ Need the MCP equivalents? See [Reference — MCP tools](mcp-tools.md) for the tool names that mirror each CLI verb.
+
+## Command structure
+
+```{mermaid}
+graph TD
+    Root[hotpass]
+
+    Root --> Core[Core Commands]
+    Root --> Infra[Infrastructure]
+    Root --> Utils[Utilities]
+
+    Core --> Overview[overview]
+    Core --> Refine[refine]
+    Core --> Enrich[enrich]
+    Core --> QA[qa]
+    Core --> Contracts[contracts]
+
+    Infra --> Setup[setup]
+    Infra --> Net[net]
+    Infra --> AWS[aws]
+    Infra --> Ctx[ctx]
+    Infra --> Env[env]
+    Infra --> Arc[arc]
+
+    Utils --> Distro[distro]
+    Utils --> Doctor[doctor]
+    Utils --> Init[init]
+    Utils --> Orchestrate[orchestrate]
+    Utils --> Resolve[resolve]
+    Utils --> Dashboard[dashboard]
+    Utils --> Deploy[deploy]
+    Utils --> Version[version]
+
+    classDef core fill:#d4edda,stroke:#333,stroke-width:2px
+    classDef infra fill:#fff3cd,stroke:#333,stroke-width:2px
+    classDef util fill:#e1f5ff,stroke:#333,stroke-width:2px
+
+    class Overview,Refine,Enrich,QA,Contracts core
+    class Setup,Net,AWS,Ctx,Env,Arc infra
+    class Distro,Doctor,Init,Orchestrate,Resolve,Dashboard,Deploy,Version util
+```
 
 ## Quick start
 

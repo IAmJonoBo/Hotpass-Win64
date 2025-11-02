@@ -1,7 +1,7 @@
 ---
 title: Safely run the bootstrap execute mode
 summary: Guardrails and rollback guidance for applying Hotpass bootstrap changes.
-last_updated: 2025-10-26
+last_updated: 2025-11-02
 ---
 
 The Hotpass bootstrap utility (`ops/idp/bootstrap.py`) provisions local dependencies,

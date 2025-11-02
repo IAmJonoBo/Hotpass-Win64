@@ -1,7 +1,7 @@
 ---
 title: Reference — SSOT data model
 summary: Canonical fields, types, and descriptions for the Hotpass single source of truth (SSOT).
-last_updated: 2025-10-25
+last_updated: 2025-11-02
 ---
 
 Hotpass standardises heterogeneous spreadsheets into a single source of truth (SSOT). The table below lists the core entities and fields produced by the pipeline.

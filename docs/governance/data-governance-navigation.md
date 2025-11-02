@@ -1,7 +1,7 @@
 ---
 title: Data governance navigation
 summary: How to locate, maintain, and review the governance artefacts that prove Hotpass data quality.
-last_updated: 2025-10-29
+last_updated: 2025-11-02
 ---
 
 # Data governance navigation

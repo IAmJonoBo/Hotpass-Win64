@@ -2,7 +2,7 @@
 title: Governance — project charter
 summary: Mission, personas, guardrails, and governance rhythms for the Hotpass modernisation programme.
 owner: n00tropic
-last_updated: 2025-10-30
+last_updated: 2025-11-02
 ---
 
 Hotpass ingests spreadsheet workbooks (primarily XLSX) alongside orchestrated research crawlers, cleans and backfills the data, maps relationships, and publishes analysis-ready intelligence that operators steer through the CLI and MCP-managed automations. This charter links the programme mission to the personas we serve, the constraints we must respect, and the boundaries we will not cross.

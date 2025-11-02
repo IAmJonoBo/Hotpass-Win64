@@ -1,7 +1,7 @@
 ---
 title: Configure Presidio redaction
 summary: Enable and tune Presidio-powered redaction for ingestion pipelines.
-last_updated: 2025-10-26
+last_updated: 2025-11-02
 ---
 
 Hotpass now redacts sensitive content at ingest time using Microsoft Presidio. The

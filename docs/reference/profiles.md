@@ -1,7 +1,7 @@
 ---
 title: Reference — industry profiles
 summary: Schema, required blocks, and optional research metadata for Hotpass industry profiles.
-last_updated: 2025-10-31
+last_updated: 2025-11-02
 ---
 
 Hotpass industry profiles describe how spreadsheets are ingested, normalised, enriched,

@@ -1,7 +1,7 @@
 ---
 title: How-to — broker agentic runs with Prefect
 summary: Configure Model Context Protocol policies and Prefect tasks to approve or deny agent-triggered Hotpass runs.
-last_updated: 2025-10-26
+last_updated: 2025-11-02
 ---
 
 This guide explains how to use the new Prefect tasks and MCP configuration files to control autonomous agents that want to run the Hotpass refinement pipeline.

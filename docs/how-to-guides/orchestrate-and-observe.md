@@ -1,7 +1,7 @@
 ---
 title: How-to — orchestrate and observe Hotpass runs
 summary: Configure Prefect deployments and OpenTelemetry exporters for continuous Hotpass operations.
-last_updated: 2025-10-31
+last_updated: 2025-11-02
 ---
 
 Use this guide when you need to promote Hotpass from ad-hoc execution to a scheduled, observable service.

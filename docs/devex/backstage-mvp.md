@@ -1,7 +1,7 @@
 ---
 title: Backstage MVP and internal developer platform enablement
 summary: Minimal Backstage footprint, catalog entries, and TechDocs integration for Hotpass.
-last_updated: 2025-10-26
+last_updated: 2025-11-02
 ---
 
 ## Catalog entries

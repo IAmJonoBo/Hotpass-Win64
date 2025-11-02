@@ -1,7 +1,7 @@
 ---
 title: Accessibility testing approach
 summary: Automated and manual accessibility testing strategy integrated into CI workflows.
-last_updated: 2025-10-25
+last_updated: 2025-11-02
 ---
 
 ## Automated checks

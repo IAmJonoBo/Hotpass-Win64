@@ -1,7 +1,7 @@
 ---
 title: Deploy GitHub ARC runners for Hotpass pipelines
 summary: Provision and operate ephemeral GitHub Actions runners on Kubernetes using OIDC and the Actions Runner Controller.
-last_updated: 2025-10-31
+last_updated: 2025-11-02
 ---
 
 This guide walks platform engineers through deploying the GitHub Actions Runner Controller (ARC) manifests shipped with Hotpass,

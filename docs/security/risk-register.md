@@ -1,7 +1,7 @@
 ---
 title: Security — risk register
 summary: Baseline SOC 2-aligned risk register derived from the Hotpass threat model with scoring, owners, and treatments.
-last_updated: 2025-10-26
+last_updated: 2025-11-02
 ---
 
 This register translates the Hotpass threat model into SOC 2-aligned risks with likelihood, impact, and mitigation tracking. Scores use a 1–5 scale (5 = highest).

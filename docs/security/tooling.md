@@ -1,7 +1,7 @@
 ---
 title: Security tooling
 summary: Run security automation (Semgrep) in controlled environments with custom CA bundles.
-last_updated: 2025-10-28
+last_updated: 2025-11-02
 ---
 
 ## Semgrep auto scans

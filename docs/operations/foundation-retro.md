@@ -1,7 +1,7 @@
 ---
 title: Phase 1 foundation retro plan
 summary: Agenda, deliverables, and follow-ups for the Phase 1 programme retrospective.
-last_updated: 2025-10-29
+last_updated: 2025-11-02
 ---
 
 # Phase 1 foundation retro plan

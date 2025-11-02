@@ -1,7 +1,7 @@
 ---
 title: Choose dependency profiles
 summary: Install only the uv extras you need while keeping runners reproducible and firewall-friendly.
-last_updated: 2025-10-28
+last_updated: 2025-11-02
 ---
 
 Hotpass ships several optional dependency “extras” (docs, geospatial, compliance, dashboards, etc.). Use the guidance below to keep ephemeral runners fast while ensuring every task has the libraries it needs before the firewall comes up.

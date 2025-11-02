@@ -1,7 +1,7 @@
 ---
 title: Metrics forecast
 summary: Forecasted impact of DevEx, security, and UX initiatives on key metrics.
-last_updated: 2025-10-25
+last_updated: 2025-11-02
 ---
 
 | Metric                          | Baseline | 30-day forecast | 60-day forecast | 90-day forecast | Driver                                                    |

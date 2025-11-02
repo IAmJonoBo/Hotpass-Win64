@@ -1,7 +1,7 @@
 ---
 title: Staging Rehearsal Plan — Marquez & ARC Lifecycle
 summary: Scheduled activities, owners, and artefact collection steps for the pending staging rehearsals.
-last_updated: 2025-10-31
+last_updated: 2025-11-02
 ---
 
 ## Overview

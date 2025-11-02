@@ -1,7 +1,7 @@
 ---
 title: Security — threat model
 summary: Multi-surface threat model covering CLI, Prefect flows, and the Streamlit dashboard with STRIDE and MITRE mappings.
-last_updated: 2025-10-26
+last_updated: 2025-11-02
 ---
 
 ## Executive summary

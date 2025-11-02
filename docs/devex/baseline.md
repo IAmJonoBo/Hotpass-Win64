@@ -1,7 +1,7 @@
 ---
 title: Developer experience baseline
 summary: Personas, workflows, and SPACE-aligned friction points captured from stakeholder interviews.
-last_updated: 2025-10-25
+last_updated: 2025-11-02
 ---
 
 ## Personas and context
