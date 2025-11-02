@@ -19,6 +19,7 @@ import { prefectApi, mockPrefectData } from '@/api/prefect'
 import { useHILApprovals } from '@/store/hilStore'
 import { LiveRefinementPanel } from '@/components/refinement/LiveRefinementPanel'
 import { PowerTools } from '@/components/powertools/PowerTools'
+import { DatasetImportPanel } from '@/components/import/DatasetImportPanel'
 import { useLineageTelemetry, jobHasHotpassFacet } from '@/hooks/useLineageTelemetry'
 
 interface OutletContext {
@@ -136,6 +137,13 @@ export function Dashboard() {
           Monitor pipeline runs, track performance, and explore data lineage
         </p>
       </div>
+
+      <DatasetImportPanel
+        flowRuns={flowRuns}
+        hilApprovals={hilApprovals}
+        isLoadingRuns={isLoadingPrefect}
+        onOpenAssistant={openAssistant}
+      />
 
       {prefectError && (
         <ApiBanner
