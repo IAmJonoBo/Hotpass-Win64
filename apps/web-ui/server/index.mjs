@@ -374,11 +374,12 @@ app.post('/api/import', csrfProtection, async (req, res) => {
   const outputPath = path.join(jobRoot, 'refined.xlsx')
   const archiveDir = path.join(jobRoot, 'archives')
 
+  const filesMetadata = []
+  let jobLabel = ''
+
   try {
     await ensureDirectory(inputDir)
     await ensureDirectory(archiveDir)
-
-    const filesMetadata = []
     for (const uploaded of uploadedFiles) {
       const destination = path.join(inputDir, uploaded.filename)
       await ensureDirectory(path.dirname(destination))
@@ -410,7 +411,7 @@ app.post('/api/import', csrfProtection, async (req, res) => {
       archiveDir,
     ]
 
-    const jobLabel = filesMetadata.length === 1
+    jobLabel = filesMetadata.length === 1
       ? `Import ${filesMetadata[0].originalName}`
       : `Import ${filesMetadata.length} files`
 
@@ -438,6 +439,16 @@ app.post('/api/import', csrfProtection, async (req, res) => {
       ...(notes ? { notes } : {}),
     })
 
+    await appendActivityEvent(createActivityEvent({
+      category: 'import',
+      action: 'queued',
+      jobId: job.id,
+      label: jobLabel,
+      profile,
+      files: filesMetadata.map(file => file.originalName),
+      success: true,
+    }))
+
     for (const fileMeta of filesMetadata) {
       publishJobEvent(job.id, {
         type: 'file-accepted',
@@ -452,6 +463,16 @@ app.post('/api/import', csrfProtection, async (req, res) => {
       timestamp: new Date().toISOString(),
     })
 
+    void appendActivityEvent(createActivityEvent({
+      category: 'import',
+      action: 'upload-complete',
+      jobId: job.id,
+      label: jobLabel,
+      profile,
+      files: filesMetadata.map(file => file.originalName),
+      success: true,
+    })).catch(() => {})
+
     const unsubscribe = subscribeToJob(job.id, (payload) => {
       if (payload.type === 'started') {
         publishJobEvent(job.id, {
@@ -459,6 +480,14 @@ app.post('/api/import', csrfProtection, async (req, res) => {
           stage: 'refine-started',
           timestamp: new Date().toISOString(),
         })
+        void appendActivityEvent(createActivityEvent({
+          category: 'import',
+          action: 'refine-started',
+          jobId: job.id,
+          label: jobLabel,
+          profile,
+          success: true,
+        })).catch(() => {})
       }
       if (payload.type === 'finished') {
         (async () => {
@@ -472,6 +501,19 @@ app.post('/api/import', csrfProtection, async (req, res) => {
                 timestamp: new Date().toISOString(),
               })
             }
+            const status = typeof payload?.status === 'string' ? payload.status : job.status
+            const completed = status === 'succeeded'
+            await appendActivityEvent(createActivityEvent({
+              category: 'import',
+              action: completed ? 'completed' : 'failed',
+              jobId: job.id,
+              label: jobLabel,
+              profile,
+              success: completed,
+              status,
+              artifacts,
+              error: completed ? undefined : payload?.error ?? job.error ?? null,
+            }))
           } finally {
             unsubscribe()
           }
@@ -481,6 +523,16 @@ app.post('/api/import', csrfProtection, async (req, res) => {
         })
       }
       if (payload.type === 'error') {
+        void appendActivityEvent(createActivityEvent({
+          category: 'import',
+          action: 'errored',
+          jobId: job.id,
+          label: jobLabel,
+          profile,
+          success: false,
+          status: 'failed',
+          error: payload?.error ?? 'unknown',
+        })).catch(() => {})
         unsubscribe()
       }
     })
@@ -490,6 +542,15 @@ app.post('/api/import', csrfProtection, async (req, res) => {
     console.error('[import] failed to dispatch refine job', error)
     await rm(jobRoot, { recursive: true, force: true }).catch(() => {})
     await rm(tempDir, { recursive: true, force: true }).catch(() => {})
+    await appendActivityEvent(createActivityEvent({
+      category: 'import',
+      action: 'failed-to-start',
+      label: jobLabel,
+      profile,
+      success: false,
+      files: filesMetadata.map(file => file.originalName),
+      error: error instanceof Error ? error.message : String(error),
+    })).catch(() => {})
     sendError(res, 500, 'Failed to start import job', { message: error.message })
   }
 })
@@ -569,6 +630,7 @@ app.get('/api/hil/audit', async (req, res) => {
 const createActivityEvent = (payload) => ({
   id: `activity-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
   timestamp: new Date().toISOString(),
+  category: payload.category ?? payload.type ?? 'general',
   ...payload,
 })
 
@@ -624,16 +686,16 @@ app.post('/api/hil/approvals', csrfProtection, async (req, res) => {
     const updatedAudit = [auditEntry, ...auditLog].slice(0, Number.parseInt(process.env.HOTPASS_HIL_AUDIT_LIMIT ?? '500', 10))
     await writeHilAudit(updatedAudit)
 
-    await appendActivityEvent(
-      createActivityEvent({
-        type: 'hil',
-        runId,
-        operator,
-        status,
-        comment: comment ?? undefined,
-        reason: reason ?? undefined,
-      }),
-    )
+    await appendActivityEvent(createActivityEvent({
+      category: 'hil',
+      action: status,
+      runId,
+      operator,
+      status,
+      success: status !== 'rejected',
+      comment: comment ?? undefined,
+      reason: reason ?? undefined,
+    }))
 
     res.status(201).json({ approval })
   } catch (error) {

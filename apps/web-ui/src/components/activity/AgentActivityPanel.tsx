@@ -4,124 +4,92 @@
  * Side panel showing recent agent actions and tool calls.
  */
 
+import { Fragment, useMemo } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { formatDistanceToNow } from 'date-fns'
-import { Activity, Wrench, MessageSquare, CheckCircle, XCircle } from 'lucide-react'
+import { Activity, Wrench, MessageSquare, CheckCircle, XCircle, CloudUpload } from 'lucide-react'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetBody } from '@/components/ui/sheet'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import { fetchActivityEvents } from '@/api/activity'
+import type { ActivityEvent } from '@/types'
 
-interface AgentAction {
-  id: string
-  type: 'tool_call' | 'approval' | 'chat' | 'navigation'
-  tool?: string
-  message?: string
-  success: boolean
-  timestamp: Date
-  operator?: string
-}
+const REFRESH_INTERVAL = 15_000
+const ACTIVITY_LIMIT = 50
+const HIGHLIGHT_WINDOW_MS = 60_000
 
 interface AgentActivityPanelProps {
   open: boolean
   onOpenChange: (open: boolean) => void
 }
 
-// Mock data - in production this would come from a store
-const mockActions: AgentAction[] = [
-  {
-    id: '1',
-    type: 'tool_call',
-    tool: 'listFlows',
-    success: true,
-    timestamp: new Date(Date.now() - 5 * 60 * 1000),
-  },
-  {
-    id: '2',
-    type: 'approval',
-    message: 'Approved run-001',
-    success: true,
-    timestamp: new Date(Date.now() - 10 * 60 * 1000),
-    operator: 'current-user',
-  },
-  {
-    id: '3',
-    type: 'chat',
-    message: 'Asked about flow runs',
-    success: true,
-    timestamp: new Date(Date.now() - 15 * 60 * 1000),
-  },
-  {
-    id: '4',
-    type: 'tool_call',
-    tool: 'getFlowRuns',
-    success: true,
-    timestamp: new Date(Date.now() - 20 * 60 * 1000),
-  },
-  {
-    id: '5',
-    type: 'navigation',
-    message: 'Navigated to run details',
-    success: true,
-    timestamp: new Date(Date.now() - 25 * 60 * 1000),
-  },
-  {
-    id: '6',
-    type: 'tool_call',
-    tool: 'listLineage',
-    success: false,
-    timestamp: new Date(Date.now() - 30 * 60 * 1000),
-  },
-  {
-    id: '7',
-    type: 'approval',
-    message: 'Rejected run-002',
-    success: true,
-    timestamp: new Date(Date.now() - 35 * 60 * 1000),
-    operator: 'current-user',
-  },
-  {
-    id: '8',
-    type: 'chat',
-    message: 'Listed all flows',
-    success: true,
-    timestamp: new Date(Date.now() - 40 * 60 * 1000),
-  },
-  {
-    id: '9',
-    type: 'tool_call',
-    tool: 'openRun',
-    success: true,
-    timestamp: new Date(Date.now() - 45 * 60 * 1000),
-  },
-  {
-    id: '10',
-    type: 'navigation',
-    message: 'Opened lineage page',
-    success: true,
-    timestamp: new Date(Date.now() - 50 * 60 * 1000),
-  },
-]
-
 export function AgentActivityPanel({ open, onOpenChange }: AgentActivityPanelProps) {
-  const getActionIcon = (type: string) => {
-    switch (type) {
-      case 'tool_call':
-        return Wrench
-      case 'approval':
-        return CheckCircle
-      case 'chat':
-        return MessageSquare
-      case 'navigation':
-        return Activity
-      default:
-        return Activity
-    }
-  }
+  const {
+    data: events = [],
+    isLoading,
+    isError,
+    error,
+  } = useQuery<ActivityEvent[]>({
+    queryKey: ['activity', { limit: ACTIVITY_LIMIT }],
+    queryFn: () => fetchActivityEvents(ACTIVITY_LIMIT),
+    refetchInterval: REFRESH_INTERVAL,
+  })
 
-  const getActionLabel = (action: AgentAction) => {
-    if (action.tool) return `Tool: ${action.tool}`
-    if (action.message) return action.message
-    return action.type
-  }
+  const mappedEvents = useMemo(() => {
+    const now = Date.now()
+    return events.map((event) => {
+      const category = (event.category || event.type || 'general').toString().toLowerCase()
+      const status = (event.status || '').toString().toLowerCase()
+      const baseSuccess =
+        typeof event.success === 'boolean'
+          ? event.success
+          : !['failed', 'errored', 'rejected', 'failed-to-start'].includes(status)
+
+      const timestamp = new Date(event.timestamp)
+      const isRecent = now - timestamp.getTime() <= HIGHLIGHT_WINDOW_MS
+
+      let icon = Activity
+      if (category === 'hil') icon = CheckCircle
+      else if (category === 'import') icon = CloudUpload
+      else if (category === 'assistant' || category === 'chat') icon = MessageSquare
+      else if (category === 'tool' || category === 'command') icon = Wrench
+
+      let title = event.message
+      if (!title) {
+        if (category === 'hil' && event.runId) {
+          title = `${event.status ?? 'Updated'} ${event.runId}`
+        } else if (category === 'import' && event.label) {
+          title = `${event.action ? `${event.action} – ` : ''}${event.label}`
+        } else if (event.action) {
+          title = `${event.action} ${event.runId ?? event.jobId ?? ''}`.trim()
+        } else {
+          title = category.charAt(0).toUpperCase() + category.slice(1)
+        }
+      }
+
+      const detailParts: string[] = []
+      if (event.operator) {
+        detailParts.push(event.operator)
+      }
+      if (event.runId && category !== 'hil') {
+        detailParts.push(event.runId)
+      }
+      if (event.jobId) {
+        detailParts.push(event.jobId)
+      }
+
+      return {
+        raw: event,
+        icon,
+        title,
+        detailParts,
+        success: baseSuccess,
+        category,
+        timestamp,
+        isRecent,
+      }
+    })
+  }, [events])
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -133,21 +101,33 @@ export function AgentActivityPanel({ open, onOpenChange }: AgentActivityPanelPro
           </div>
         </SheetHeader>
         <SheetBody>
+          {isError && (
+            <div className="mb-4 rounded-lg border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-700 dark:text-red-400">
+              {error instanceof Error ? error.message : 'Unable to load activity events.'}
+            </div>
+          )}
+          {isLoading && (
+            <div className="space-y-2 text-xs text-muted-foreground">
+              Loading recent activity…
+            </div>
+          )}
           <div className="space-y-1">
-            {mockActions.map((action) => {
-              const Icon = getActionIcon(action.type)
-
+            {mappedEvents.map(({ raw, icon: Icon, title, detailParts, success, category, timestamp, isRecent }) => {
               return (
                 <div
-                  key={action.id}
-                  className="border-l-2 border-muted pl-4 py-3 hover:bg-accent/50 transition-colors rounded-r"
+                  key={raw.id}
+                  className={cn(
+                    'border-l-2 border-muted pl-4 py-3 transition-colors rounded-r',
+                    'hover:bg-accent/50',
+                    isRecent && 'bg-primary/5 border-primary/60',
+                  )}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-start gap-3 flex-1">
                       <div
                         className={cn(
                           'p-1.5 rounded-lg',
-                          action.success
+                          success
                             ? 'bg-green-500/10 text-green-600 dark:text-green-400'
                             : 'bg-red-500/10 text-red-600 dark:text-red-400'
                         )}
@@ -156,10 +136,10 @@ export function AgentActivityPanel({ open, onOpenChange }: AgentActivityPanelPro
                       </div>
                       <div className="flex-1 space-y-1">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium">
-                            {getActionLabel(action)}
+                          <span className="text-sm font-medium break-words">
+                            {title}
                           </span>
-                          {action.success ? (
+                          {success ? (
                             <CheckCircle className="h-3 w-3 text-green-600 dark:text-green-400" />
                           ) : (
                             <XCircle className="h-3 w-3 text-red-600 dark:text-red-400" />
@@ -167,17 +147,17 @@ export function AgentActivityPanel({ open, onOpenChange }: AgentActivityPanelPro
                         </div>
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
                           <Badge variant="outline" className="text-xs capitalize">
-                            {action.type.replace('_', ' ')}
+                            {category.replace('_', ' ')}
                           </Badge>
-                          {action.operator && (
-                            <>
+                          {detailParts.map((part, index) => (
+                            <Fragment key={`${raw.id}-detail-${index}`}>
                               <span>•</span>
-                              <span>{action.operator}</span>
-                            </>
-                          )}
+                              <span>{part}</span>
+                            </Fragment>
+                          ))}
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          {formatDistanceToNow(action.timestamp, { addSuffix: true })}
+                          {formatDistanceToNow(timestamp, { addSuffix: true })}
                         </div>
                       </div>
                     </div>
@@ -187,7 +167,7 @@ export function AgentActivityPanel({ open, onOpenChange }: AgentActivityPanelPro
             })}
           </div>
 
-          {mockActions.length === 0 && (
+          {!isLoading && mappedEvents.length === 0 && (
             <div className="flex items-center justify-center py-12 text-center">
               <div>
                 <Activity className="h-8 w-8 text-muted-foreground mx-auto mb-2" />

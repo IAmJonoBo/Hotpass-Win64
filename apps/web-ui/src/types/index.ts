@@ -155,6 +155,23 @@ export interface HILAuditEntry {
   newStatus: string
 }
 
+export interface ActivityEvent {
+  id: string
+  timestamp: string
+  category?: string
+  action?: string
+  message?: string
+  operator?: string
+  runId?: string
+  jobId?: string
+  status?: string
+  success?: boolean
+  label?: string
+  files?: string[]
+  metadata?: Record<string, unknown>
+  [key: string]: unknown
+}
+
 export interface PrefectDeployment {
   id: string
   name: string

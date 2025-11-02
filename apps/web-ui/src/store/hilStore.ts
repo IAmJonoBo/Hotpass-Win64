@@ -7,36 +7,51 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { HILApproval, HILAuditEntry } from '@/types'
 import { readApprovals, readAudit, writeApprovals, writeAudit } from '@/lib/secureStorage'
+import { fetchHilApprovals, fetchHilAudit, submitHilApproval } from '@/api/hil'
 
 async function ensureApprovals(): Promise<Record<string, HILApproval>> {
   try {
-    return await readApprovals()
+    const approvals = await fetchHilApprovals()
+    try {
+      await writeApprovals(approvals)
+    } catch {
+      // ignore secure storage errors (likely disabled)
+    }
+    return approvals
   } catch (error) {
-    console.error('Failed to load approvals from secure storage', error)
-    throw error
+    console.warn('Failed to fetch approvals from server, falling back to secure storage', error)
+    return readApprovals()
   }
 }
 
-async function ensureAudit(): Promise<HILAuditEntry[]> {
+async function ensureAudit(limit?: number): Promise<HILAuditEntry[]> {
   try {
-    return await readAudit()
+    const entries = await fetchHilAudit(limit)
+    try {
+      await writeAudit(entries)
+    } catch {
+      // ignore secure storage errors
+    }
+    return entries
   } catch (error) {
-    console.error('Failed to load audit history from secure storage', error)
-    throw error
+    console.warn('Failed to fetch audit history from server, falling back to secure storage', error)
+    return readAudit()
   }
 }
 
 export function useHILApprovals() {
   return useQuery({
-    queryKey: ['hil-approvals'],
+    queryKey: ['hil', 'approvals'],
     queryFn: ensureApprovals,
+    staleTime: 30_000,
   })
 }
 
-export function useHILAudit() {
+export function useHILAudit(limit = 100) {
   return useQuery({
-    queryKey: ['hil-audit'],
-    queryFn: ensureAudit,
+    queryKey: ['hil', 'audit', limit],
+    queryFn: () => ensureAudit(limit),
+    staleTime: 30_000,
   })
 }
 
@@ -53,38 +68,16 @@ export function useApproveRun() {
       operator: string
       comment?: string
     }) => {
-      const approvals = await ensureApprovals()
-      const audit = await ensureAudit()
-
-      const approval: HILApproval = {
-        id: `approval-${Date.now()}`,
+      return submitHilApproval({
         runId,
         status: 'approved',
         operator,
-        timestamp: new Date().toISOString(),
         comment,
-      }
-
-      const auditEntry: HILAuditEntry = {
-        id: `audit-${Date.now()}`,
-        runId,
-        action: 'approve',
-        operator,
-        timestamp: new Date().toISOString(),
-        comment,
-        previousStatus: approvals[runId]?.status,
-        newStatus: 'approved',
-      }
-
-      approvals[runId] = approval
-      await writeApprovals(approvals)
-      await writeAudit([auditEntry, ...audit])
-
-      return approval
+      })
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['hil-approvals'] })
-      queryClient.invalidateQueries({ queryKey: ['hil-audit'] })
+      queryClient.invalidateQueries({ queryKey: ['hil'] })
+      queryClient.invalidateQueries({ queryKey: ['activity'] })
     },
   })
 }
@@ -104,46 +97,24 @@ export function useRejectRun() {
       reason?: string
       comment?: string
     }) => {
-      const approvals = await ensureApprovals()
-      const audit = await ensureAudit()
-
-      const approval: HILApproval = {
-        id: `approval-${Date.now()}`,
+      return submitHilApproval({
         runId,
         status: 'rejected',
         operator,
-        timestamp: new Date().toISOString(),
         reason,
         comment,
-      }
-
-      const auditEntry: HILAuditEntry = {
-        id: `audit-${Date.now()}`,
-        runId,
-        action: 'reject',
-        operator,
-        timestamp: new Date().toISOString(),
-        comment: reason || comment,
-        previousStatus: approvals[runId]?.status,
-        newStatus: 'rejected',
-      }
-
-      approvals[runId] = approval
-      await writeApprovals(approvals)
-      await writeAudit([auditEntry, ...audit])
-
-      return approval
+      })
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['hil-approvals'] })
-      queryClient.invalidateQueries({ queryKey: ['hil-audit'] })
+      queryClient.invalidateQueries({ queryKey: ['hil'] })
+      queryClient.invalidateQueries({ queryKey: ['activity'] })
     },
   })
 }
 
 export function useGetRunApproval(runId: string) {
   return useQuery({
-    queryKey: ['hil-approval', runId],
+    queryKey: ['hil', 'approval', runId],
     queryFn: async () => {
       const approvals = await ensureApprovals()
       return approvals[runId] || null
@@ -153,9 +124,9 @@ export function useGetRunApproval(runId: string) {
 
 export function useGetRunHistory(runId: string) {
   return useQuery({
-    queryKey: ['hil-history', runId],
+    queryKey: ['hil', 'history', runId],
     queryFn: async () => {
-      const audit = await ensureAudit()
+      const audit = await ensureAudit(200)
       return audit.filter(entry => entry.runId === runId)
     },
   })
