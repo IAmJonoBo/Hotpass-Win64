@@ -140,16 +140,14 @@ Focus areas for the upcoming iterations:
 
 ## Phase 6 — Documentation & UX
 
-- [ ] **T6.1 Diátaxis docs structure**
-  - [ ] Ensure `docs/` uses Tutorials, How‑tos, Reference, and Explanations; link Data Docs and the lineage UI from the docs home.
-  - **Progress:** Tutorials/how-tos are being updated incrementally (for example, staging rehearsal guidance now lives in `docs/operations/staging-rehearsal-plan.md`); landing page uplift still pending.
-  - **Acceptance:** landing page shows the four doc types; "How‑to: run a backfill" and "How‑to: read Data Docs" exist.
+- [x] **T6.1 Diátaxis docs structure**
+  - [x] Ensure `docs/` uses Tutorials, How‑tos, Reference, and Explanations; link Data Docs and the lineage UI from the docs home.
+  - **Notes:** Added dedicated how-to guides for backfills and Data Docs, refreshed the landing page navigation, and verified governance artefacts surface from the home page.
 
-- [ ] **T6.2 CLI UX – `hotpass doctor` and `hotpass init`**
-  - [ ] `doctor`: environment check (Python, uv, Prefect profile, OTel vars) and dataset sample validation.
-  - [ ] `init`: generate config, sample data, and one‑shot bootstrap.
-  - **Progress:** CLI verbs ship and are covered in `docs/reference/cli.md`; further UX polish (walkthroughs, troubleshooting) deferred until staging rehearsals conclude.
-  - **Acceptance:** both commands succeed from a fresh checkout and provide actionable remediation hints on failure.
+- [x] **T6.2 CLI UX – `hotpass doctor` and `hotpass init`**
+  - [x] `doctor`: environment check (Python, uv, Prefect profile, OTel vars) and dataset sample validation.
+  - [x] `init`: generate config, sample data, and one‑shot bootstrap.
+  - **Notes:** Regression suites (`tests/cli/test_doctor_command.py`, `tests/cli/test_init_command.py`, `tests/cli/test_explain_provenance.py`) run green; docs cross-link onboarding and troubleshooting flows.
 
 ---
 

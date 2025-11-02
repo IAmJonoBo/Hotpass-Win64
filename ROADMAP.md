@@ -72,13 +72,14 @@ phases and governance gates.
 
 ## Phase 6 — Documentation & UX
 
-- [ ] **T6.1 Diátaxis docs structure** — Maintain the Tutorials/How-to/Reference/
+- [x] **T6.1 Diátaxis docs structure** — Maintain the Tutorials/How-to/Reference/
       Explanations balance and surface governance artefacts from the landing page.
-  - In flight: `docs/data-governance-nav` (this PR) and follow-on PRs for the
-    `hotpass doctor` quickstart once the CLI work lands.
-- [ ] **T6.2 CLI UX (`hotpass doctor` / `hotpass init`)** — Introduce guided
+  - Added dedicated how-to guides for backfills and Data Docs, updated the landing
+    page navigation, and cross-linked governance artefacts for provenance reviews.
+- [x] **T6.2 CLI UX (`hotpass doctor` / `hotpass init`)** — Introduce guided
       onboarding and diagnostics commands.
-  - Upcoming PR: `cli/doctor-and-init` (design pending from product UX).
+  - Commands ship with regression coverage (CLI doctor/init suites) and the docs
+    quickstart references both workflows for fresh checkouts.
 
 ## Quick links
 

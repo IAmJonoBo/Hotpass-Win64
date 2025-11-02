@@ -75,7 +75,7 @@ platform = ["boto3>=1.35.0"]
 ci = [
   "build>=1.2.2.post1",
   "cyclonedx-bom>=7.2.1",
-  "cyclonedx-python-lib[validation]>=11,<12",
+  "cyclonedx-python-lib[validation]>=9,<10",
   "pip-audit>=2.7.3",
 ]
 

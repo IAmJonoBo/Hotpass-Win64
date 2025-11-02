@@ -22,6 +22,8 @@ Welcome to the Hotpass knowledge base. These pages follow the [Diátaxis](https:
 /how-to-guides/configure-pipeline
 /how-to-guides/format-and-validate
 /how-to-guides/orchestrate-and-observe
+/how-to-guides/run-a-backfill
+/how-to-guides/read-data-docs
 /how-to-guides/agentic-orchestration
 /how-to-guides/bootstrap-execute-mode
 /how-to-guides/dependency-profiles

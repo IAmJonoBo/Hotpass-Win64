@@ -34,7 +34,7 @@ redis>=5.0.0
 [ci]
 build>=1.2.2.post1
 cyclonedx-bom>=7.2.1
-cyclonedx-python-lib[validation]<10,>=8
+cyclonedx-python-lib[validation]<10,>=9
 pip-audit>=2.7.3
 
 [compliance]
