@@ -49,14 +49,14 @@ function resolveMockRoles(): string[] {
   const source = stored || import.meta.env.VITE_AUTH_MOCK_ROLES || 'admin,operator,approver'
   return source
     .split(',')
-    .map(role => role.trim().toLowerCase())
+    .map((role: string) => role.trim().toLowerCase())
     .filter(Boolean)
 }
 
 function normaliseRoles(input: unknown): string[] {
   if (!input) return []
   if (Array.isArray(input)) {
-    return input.map(role => String(role).toLowerCase())
+    return input.map((role: unknown) => String(role).toLowerCase())
   }
   if (typeof input === 'string') {
     return input.split(',').map(role => role.trim().toLowerCase()).filter(Boolean)

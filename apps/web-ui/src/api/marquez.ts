@@ -111,13 +111,13 @@ const normalizeLineageGraph = (payload: unknown): MarquezLineageGraph => {
         const rawData = (rawNode.data ?? {}) as (Partial<MarquezDataset & MarquezJob> & Record<string, unknown>)
 
         const namespaceCandidate =
-          typeof rawData.namespace === 'string'
+          (typeof rawData.namespace === 'string'
             ? rawData.namespace
             : typeof rawNode.namespace === 'string'
               ? rawNode.namespace
               : typeof (rawData.id as { namespace?: string } | undefined)?.namespace === 'string'
                 ? (rawData.id as { namespace?: string }).namespace
-                : namespacePart
+                : namespacePart) || 'default'
 
         const nameCandidate =
           typeof rawData.name === 'string'

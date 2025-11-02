@@ -10,13 +10,15 @@ ENV PREFECT_API_URL=${PREFECT_API_URL}
 ENV OPENLINEAGE_URL=${OPENLINEAGE_URL}
 ENV VITE_PREFECT_API_URL=${PREFECT_API_URL}
 ENV VITE_MARQUEZ_API_URL=${OPENLINEAGE_URL}
+ENV SKIP_TOOLS_SYNC=1
 
 WORKDIR /app
 
-COPY package*.json ./
+COPY apps/web-ui/package*.json ./
 RUN npm ci
 
-COPY . .
+COPY tools.json ./public/tools.json
+COPY apps/web-ui/ .
 RUN npm run build
 
 FROM node:24-alpine AS runner
@@ -26,7 +28,7 @@ ENV PORT=3000
 
 WORKDIR /app
 
-COPY package*.json ./
+COPY apps/web-ui/package*.json ./
 RUN npm ci --omit=dev
 
 COPY --from=builder /app/dist ./dist
