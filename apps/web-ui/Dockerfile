@@ -14,12 +14,12 @@ ENV SKIP_TOOLS_SYNC=1
 
 WORKDIR /app
 
-COPY apps/web-ui/package*.json ./
-RUN npm ci
+COPY package*.json pnpm-lock.yaml ./
+RUN npm install -g pnpm && pnpm install --frozen-lockfile
 
-COPY tools.json ./public/tools.json
-COPY apps/web-ui/ .
-RUN npm run build
+COPY public/tools.json ./public/tools.json
+COPY . .
+RUN pnpm run build
 
 FROM node:24-alpine AS runner
 
@@ -28,8 +28,8 @@ ENV PORT=3000
 
 WORKDIR /app
 
-COPY apps/web-ui/package*.json ./
-RUN npm ci --omit=dev
+COPY package*.json pnpm-lock.yaml ./
+RUN npm install -g pnpm && pnpm install --frozen-lockfile --prod
 
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/server ./server

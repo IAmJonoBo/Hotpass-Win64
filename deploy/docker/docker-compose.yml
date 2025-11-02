@@ -5,8 +5,6 @@
 # - marquez: OpenLineage metadata service
 # - prefect: Workflow orchestration server
 
-version: '3.8'
-
 services:
   # Hotpass Web UI
   hotpass-web:
@@ -17,7 +15,7 @@ services:
         PREFECT_API_URL: http://prefect:4200/api
         OPENLINEAGE_URL: http://marquez:5000/api/v1
     ports:
-      - "3001:80"
+      - "3001:3000"
     environment:
       - PREFECT_API_URL=http://prefect:4200/api
       - OPENLINEAGE_URL=http://marquez:5000/api/v1
@@ -29,11 +27,8 @@ services:
         condition: service_healthy
     networks:
       - hotpass-network
-    volumes:
-      - ../../apps/web-ui:/app
-      - /app/node_modules
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost"]
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -41,9 +36,10 @@ services:
   # Marquez - OpenLineage Metadata Service
   marquez:
     image: marquezproject/marquez:latest
+    platform: linux/amd64
     ports:
-      - "5000:5000"
-      - "5001:5001"
+      - "5002:5000"
+      - "5003:5001"
     environment:
       - MARQUEZ_PORT=5000
       - MARQUEZ_ADMIN_PORT=5001
@@ -64,7 +60,7 @@ services:
 
   # Marquez PostgreSQL Database
   marquez-db:
-    image: postgres:18
+    image: postgres:16-alpine
     ports:
       - "5432:5432"
     environment:
@@ -76,7 +72,7 @@ services:
     networks:
       - hotpass-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U marquez"]
+      test: ["CMD-SHELL", "pg_isready -U marquez -h localhost"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -94,7 +90,11 @@ services:
     networks:
       - hotpass-network
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:4200/api/health"]
+      test:
+        [
+          "CMD-SHELL",
+          "python -c \"import sys, urllib.request; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:4200/api/health', timeout=5).status == 200 else 1)\"",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3

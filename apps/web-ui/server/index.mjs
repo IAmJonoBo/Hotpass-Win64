@@ -94,7 +94,19 @@ app.post('/telemetry/operator-feedback', csrfProtection, (req, res) => {
 
 app.use(express.static(path.join(__dirname, '..', 'dist'), { maxAge: '1d', index: false }))
 
-app.get('*', (req, res) => {
+app.get('/health', (_req, res) => {
+  res.json({ status: 'ok' })
+})
+
+app.use((req, res, next) => {
+  if (req.method !== 'GET') {
+    return next()
+  }
+
+  if (req.path.startsWith('/api/') || req.path.startsWith('/telemetry/') || req.path === '/health') {
+    return next()
+  }
+
   res.sendFile(path.join(__dirname, '..', 'dist', 'index.html'))
 })
 
