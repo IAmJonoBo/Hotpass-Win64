@@ -63,8 +63,9 @@ phases and governance gates.
   - Implemented via `.github/workflows/docker-cache.yml` hydrating BuildKit caches through `docker/build-push-action` with GitHub Actions cache scopes.【F:.github/workflows/docker-cache.yml†L1-L60】
 - [x] **T5.4 Provenance** — Generate SBOMs and SLSA attestations.
   - The `supply-chain` job in `.github/workflows/process-data.yml` invokes `ops/supply_chain/generate_sbom.py` and `generate_provenance.py`, publishing artefacts and checksums for audits.【F:.github/workflows/process-data.yml†L180-L260】【F:ops/supply_chain/generate_sbom.py†L1-L120】【F:ops/supply_chain/generate_provenance.py†L1-L160】
-- [x] **T5.5 Ephemeral runners** — Roll out ARC manifests and AWS OIDC wiring (pending stakeholder confirmation that programme expectations are met).
+- [x] **T5.5 Ephemeral runners** — Roll out ARC manifests and AWS OIDC wiring (programme expectations confirmed in 2025-11-02 release).
   - Completed via updated ARC smoke workflow and lifecycle verifier that now confirm AWS role assumptions alongside runner drain; staging rollout follows the refreshed runbook and workflow configuration.【F:ops/arc/verify_runner_lifecycle.py†L1-L210】【F:.github/workflows/arc-ephemeral-runner.yml†L1-L60】【F:docs/how-to-guides/manage-arc-runners.md†L1-L110】
+  - Release evidence: `dist/staging/backfill/20251101T171853Z/` rehearsal logs and `dist/staging/marquez/20251101T171901Z/cli.log` captured in the 2025-11-02 changelog entry.【F:docs/CHANGELOG.md†L1-L23】
 - [x] **T5.6 Telemetry instrumentation** — Propagate OpenTelemetry exporters
       through CLI and Prefect.
   - Completed via `telemetry/bootstrap` integrating `TelemetryBootstrapOptions` into CLI entry points and Prefect flows; follow-up docs remain tracked separately.【F:apps/data-platform/hotpass/cli/commands/run.py†L156-L531】【F:apps/data-platform/hotpass/telemetry/bootstrap.py†L1-L200】

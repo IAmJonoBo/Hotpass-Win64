@@ -482,3 +482,10 @@ This implementation successfully delivers all requirements:
 - ✅ Fixed all mypy errors and hardened code
 
 All tests pass, code quality is high, and the implementation follows existing patterns and conventions in the Hotpass codebase.
+
+## Addendum — 2025-11-02 release (UI, pipeline, security)
+
+- **UI & accessibility**: Delivered Okta/OIDC-aware route guards, encrypted HIL evidence storage, and sidebar status indicators so approver/admin workflows stay gated while assistive technologies surface actionable states. See `apps/web-ui/src/auth/guards.tsx`, `apps/web-ui/src/lib/secureStorage.ts`, and Playwright coverage in `apps/web-ui/tests/auth.spec.ts`.
+- **Pipeline resilience**: Exercised refine→enrich bundle runs and archive rehydration, capturing artefacts under `dist/staging/backfill/20251101T171853Z/` and `dist/staging/marquez/20251101T171901Z/` alongside the `HotpassConfig.merge` benchmark stored at `dist/benchmarks/hotpass_config_merge.json`.
+- **Security posture**: Added rate-limited Prefect/Marquez proxies with CSRF-protected telemetry endpoints, refreshed SBOM/provenance artefacts via `ops/supply_chain/generate_sbom.py` and `generate_provenance.py`, and logged outcomes in `docs/how-to-guides/secure-web-auth.md`.
+- **Quality snapshot**: Accessibility/Playwright suites remain green; pytest coverage stayed at 72% from the last successful full run (2025-11-01) while current `uv run` invocations are blocked by the `pip-audit` vs `cyclonedx-python-lib` resolver conflict captured in `Next_Steps.md`.

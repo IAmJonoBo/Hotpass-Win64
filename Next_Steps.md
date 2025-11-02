@@ -1,7 +1,6 @@
 # Next Steps
 
 ## Tasks
-- [ ] Confirm Phase 5 T5.5 completion so roadmap status reflects programme expectations. (owner: Programme, due: backlog)
 - [ ] Execute full end-to-end runs with canonical configuration toggles using Prefect deployment `hotpass-e2e-staging`. (owner: QA, due: backlog)
 - [ ] Validate Prefect backfill deployment guardrails in staging. (owner: Platform, due: post-1.0)
 - [ ] Design and implement new CLI surface commands (`hotpass net`, `hotpass aws`, `hotpass ctx`, `hotpass env`). (owner: Engineering & Platform, due: backlog)
@@ -22,6 +21,7 @@
 - [ ] Catalogue missing stub packages and annotate ownership for the 90 mypy diagnostics before planning fixes.
 - [ ] Document a staged fix strategy for the 52 `ruff check` violations and schedule remediation runs.
 - [ ] Re-run `uv run pytest tests` to capture a clean baseline (2025-11-02 manual interruption stopped the session at ~43 tests; reschedule full suite once resources allow).
+- [ ] Break the `pip-audit`/`cyclonedx-python-lib` resolver conflict so `uv run hotpass explain-provenance` succeeds during pytest runs; track candidate pin overrides in `pyproject.toml` extras.
 
 ## Deliverables
 - Baseline QA run notes (2025-11-01) covering `make qa`, pytest, mypy, and SBOM status.
@@ -31,12 +31,12 @@
 - Simulated staging artefacts at `dist/staging/backfill/20251101T171853Z/` and `dist/staging/marquez/20251101T171901Z/` pending live access.
 
 ## Quality Gates
-- tests: **pass** — `uv run pytest tests` (533 passed, 6 skipped; coverage 72%) completed successfully on 2025-11-01. (owner: Engineering)
+- tests: **fail** — `pytest tests --maxfail=1 --cov=hotpass --cov=apps --cov-report=term-missing` halts at `tests/cli/test_explain_provenance.py` because `uv run hotpass explain-provenance` cannot resolve `pip-audit` with `cyclonedx-python-lib>=11` (extras `hotpass[ci]`). (owner: Engineering)
 - linters/formatters: **blocked** — `scripts/testing/trunk_check.sh` still flags 200+ pre-existing diffs (e.g. `tests/conftest.py`, `tests/test_pipeline_enhancements_exports.py`) when comparing against `origin/main`; no changes were applied to avoid clobbering user work. (owner: Engineering)
-- type-checks: **blocked** — `uv run mypy apps/data-platform tests ops` reports 44 errors (missing stubs for requests/yaml/hypothesis, scrapy imports). (owner: Engineering & QA)
-- security scan: **warning** — `uv run bandit -r apps/data-platform ops` flagged existing subprocess usage (B403/B603) in CLI helpers; detect-secrets produced no findings. (owner: Engineering & Security)
-- coverage: **partial** — Latest full-suite run reported 72% line coverage; future efforts should track deltas once remaining gates unblock (`uv run pytest tests --cov ...`). (owner: QA)
-- build: **blocked** — `uv run python -m build` failed (module not installed); add packaging dependency before rerunning. (owner: Engineering)
+- type-checks: **blocked** — `mypy apps/data-platform tests ops` reports 30 errors (missing stubs for requests/yaml/hypothesis, scrapy imports). (owner: Engineering & QA)
+- security scan: **warning** — `bandit -r apps/data-platform ops` flagged existing subprocess usage (B404/B603) in CLI helpers; detect-secrets produced no findings. (owner: Engineering & Security)
+- coverage: **partial** — Latest full-suite run reported 72% line coverage; current attempt blocked by resolver failure preventing new coverage delta capture. (owner: QA)
+- build: **pass** — `python -m build` now succeeds after installing `build` into the local venv (artifacts generated under `dist/`). (owner: Engineering)
 - docs updated: **pending** — documentation changes contingent on resolving gating regressions. (owner: Docs)
 - supply chain: **pass** — `uv run python ops/supply_chain/generate_sbom.py --output dist/sbom/hotpass-sbom.json` completed after installing `cyclonedx-bom`; artifact stored under `dist/sbom/hotpass-sbom.json`. (owner: Platform)
 

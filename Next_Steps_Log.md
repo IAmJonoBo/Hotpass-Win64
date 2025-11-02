@@ -169,6 +169,9 @@ _Updated 2025-11-01_
   - checks: tests=pass, lint=pass, type=pass, sec=pass, build=n/a
 
 ## 2025-11-02 (branch: work, pr: n/a, actor: codex)
+- [x] Confirm Phase 5 T5.5 completion so roadmap status reflects programme expectations. (owner: Programme, due: backlog)
+  - notes: Tagged T5.5 as complete in `ROADMAP.md` and `docs/roadmap.md`, linked release artefacts (`dist/staging/backfill/20251101T171853Z/`, `dist/staging/marquez/20251101T171901Z/`) via the 2025-11-02 changelog, and updated docs metadata.
+  - checks: tests=fail, lint=fail, type=fail, sec=warn, build=pass
 - [x] Land Okta/OIDC auth provider with route gating and secure HIL storage encryption.
   - notes: Wrapped the router in `AuthProvider`, introduced reusable `RequireRole` guards, and updated pages/components to respect approver/admin permissions while initialising encrypted HIL storage via IndexedDB. 【F:apps/web-ui/src/App.tsx†L1-L58】【F:apps/web-ui/src/auth/guards.tsx†L1-L99】【F:apps/web-ui/src/pages/RunDetails.tsx†L32-L108】【F:apps/web-ui/src/components/hil/ApprovalPanel.tsx†L20-L170】【F:apps/web-ui/src/lib/secureStorage.ts†L1-L174】【F:apps/web-ui/src/lib/hilRetention.ts†L1-L56】
   - checks: tests=pass, lint=pass, type=n/a, sec=n/a, build=n/a
