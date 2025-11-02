@@ -10,6 +10,11 @@ policy/ @security-team @n00tropic
 ops/supply_chain/ @security-team @n00tropic
 
 # Workflows
+.github/workflows/security-scan.yml @security-team @platform-eng @n00tropic
+.github/workflows/codeql.yml @security-team @platform-eng @n00tropic
+.github/workflows/secret-scanning.yml @security-team @platform-eng @n00tropic
+.github/workflows/zap-baseline.yml @security-team @platform-eng @n00tropic
+.github/workflows/release-security-reports.yml @security-team @platform-eng @n00tropic
 .github/workflows/ @platform-eng @n00tropic
 .github/labeler.yml @platform-eng @n00tropic
 .github/release-drafter.yml @platform-eng @n00tropic

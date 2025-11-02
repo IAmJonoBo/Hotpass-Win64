@@ -1,0 +1,82 @@
+name: release-security-reports
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  security-reports:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+
+      - name: Set up uv and Python
+        uses: astral-sh/setup-uv@85856786d1ce8acfbcc2f13a5f3fbd6b938f9f41 # v7
+        with:
+          python-version: '3.13'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6
+        with:
+          node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: apps/web-ui/package-lock.json
+
+      - name: Synchronise dependencies
+        env:
+          HOTPASS_UV_EXTRAS: 'ci dev orchestration'
+        run: bash ops/uv_sync_extras.sh
+
+      - name: Run pip-audit
+        run: |
+          mkdir -p artifacts/security
+          uv tool run pip-audit -f json -o artifacts/security/pip-audit.json || true
+
+      - name: Install web UI dependencies
+        working-directory: apps/web-ui
+        run: npm ci
+
+      - name: Run npm audit
+        working-directory: apps/web-ui
+        run: |
+          npm audit --json > ../artifacts/security/npm-audit.json || true
+
+      - name: Render security summary
+        run: |
+          uv run python ops/supply_chain/render_security_summary.py \
+            --pip-audit artifacts/security/pip-audit.json \
+            --npm-audit artifacts/security/npm-audit.json \
+            --output artifacts/security/summary.md
+
+      - name: Upload release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          gh release upload "$RELEASE_TAG" \
+            artifacts/security/pip-audit.json \
+            artifacts/security/npm-audit.json \
+            artifacts/security/summary.md \
+            --clobber
+
+      - name: Update release notes with security summary
+        uses: actions/github-script@60ab8c6d9833d633e2702fbb88467d84c0bb5441 # v7.0.1
+        with:
+          script: |
+            const fs = require('fs');
+            const summary = fs.readFileSync('artifacts/security/summary.md', 'utf8');
+            const release = context.payload.release;
+            const existingBody = release.body ? release.body.trim() + '\n\n' : '';
+            const assetBase = `https://github.com/${context.repo.owner}/${context.repo.repo}/releases/download/${release.tag_name}`;
+            const attachmentList = `\n- [pip-audit.json](${assetBase}/pip-audit.json)\n- [npm-audit.json](${assetBase}/npm-audit.json)\n- [security-summary.md](${assetBase}/summary.md)`;
+            await github.rest.repos.updateRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: release.id,
+              body: `${existingBody}${summary}${attachmentList}`,
+            });

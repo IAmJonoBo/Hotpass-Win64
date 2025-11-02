@@ -18,6 +18,7 @@ import { Badge } from '@/components/ui/badge'
 import { LLMProviderSelector } from '@/components/settings/LLMProviderSelector'
 import { getRetentionPolicy, applyRetentionImmediately } from '@/lib/secureStorage'
 import { setHilRetentionPolicy, type HilRetentionPolicy } from '@/lib/hilRetention'
+import { sanitizeUrlInput } from '@/lib/security'
 
 interface ConfigSettings {
   prefectApiUrl: string
@@ -54,6 +55,7 @@ export function Admin() {
     marquez: 'unknown' | 'success' | 'error'
   }>({ prefect: 'unknown', marquez: 'unknown' })
   const [retentionPolicy, setRetentionPolicy] = useState<HilRetentionPolicy>(() => getRetentionPolicy())
+  const [errors, setErrors] = useState<{ prefectApiUrl?: string; marquezApiUrl?: string }>({})
 
   // Load settings from localStorage on mount
   useEffect(() => {
@@ -72,7 +74,12 @@ export function Admin() {
     setRetentionPolicy(getRetentionPolicy())
   }, [])
 
+  const hasActiveErrors = Object.values(errors).some(Boolean)
+
   const handleSave = () => {
+    if (hasActiveErrors) {
+      return
+    }
     // Save to localStorage
     localStorage.setItem('hotpass_config', JSON.stringify(settings))
     localStorage.setItem('hotpass_environment', settings.environment)
@@ -84,14 +91,29 @@ export function Admin() {
     // or update a global config context
   }
 
+  const setUrlValue = (field: 'prefectApiUrl' | 'marquezApiUrl', value: string) => {
+    const sanitised = sanitizeUrlInput(value, { allowEmpty: false })
+    setSettings(prev => ({ ...prev, [field]: sanitised.value }))
+    setErrors(prev => ({ ...prev, [field]: sanitised.valid ? undefined : sanitised.reason }))
+  }
+
   const testConnection = async (type: 'prefect' | 'marquez') => {
+    const field = type === 'prefect' ? 'prefectApiUrl' : 'marquezApiUrl'
+    if (errors[field]) {
+      return
+    }
     setTestingConnection(prev => ({ ...prev, [type]: true }))
 
     try {
       const url = type === 'prefect' ? settings.prefectApiUrl : settings.marquezApiUrl
+      const sanitised = sanitizeUrlInput(url, { allowEmpty: false })
+      if (!sanitised.valid) {
+        setErrors(prev => ({ ...prev, [field]: sanitised.reason }))
+        return
+      }
       const testEndpoint = type === 'prefect'
-        ? `${url}/health`
-        : `${url}/api/v1/namespaces`
+        ? `${sanitised.value}/health`
+        : `${sanitised.value}/api/v1/namespaces`
 
       const response = await fetch(testEndpoint, {
         method: 'GET',
@@ -303,11 +325,16 @@ export function Admin() {
               type="url"
               placeholder="http://localhost:4200"
               value={settings.prefectApiUrl}
-              onChange={(e) => setSettings({ ...settings, prefectApiUrl: e.target.value })}
+              onChange={(e) => setUrlValue('prefectApiUrl', e.target.value)}
             />
             <p className="text-xs text-muted-foreground mt-1">
               Base URL for the Prefect API (e.g., http://localhost:4200 or https://api.prefect.cloud)
             </p>
+            {errors.prefectApiUrl && (
+              <p className="mt-1 text-xs text-red-600 dark:text-red-400" role="alert">
+                {errors.prefectApiUrl}
+              </p>
+            )}
             {settings.prefectApiUrl.includes('.internal') && (
               <div className="mt-2 bg-yellow-500/10 border border-yellow-500/20 rounded p-2 text-xs">
                 <div className="flex items-center gap-2 text-yellow-600 dark:text-yellow-400 font-medium">
@@ -365,11 +392,16 @@ export function Admin() {
               type="url"
               placeholder="http://localhost:5000"
               value={settings.marquezApiUrl}
-              onChange={(e) => setSettings({ ...settings, marquezApiUrl: e.target.value })}
+              onChange={(e) => setUrlValue('marquezApiUrl', e.target.value)}
             />
             <p className="text-xs text-muted-foreground mt-1">
               Base URL for the Marquez API (e.g., http://localhost:5000 or https://marquez.staging.internal)
             </p>
+            {errors.marquezApiUrl && (
+              <p className="mt-1 text-xs text-red-600 dark:text-red-400" role="alert">
+                {errors.marquezApiUrl}
+              </p>
+            )}
             {settings.marquezApiUrl.includes('.internal') && (
               <div className="mt-2 bg-yellow-500/10 border border-yellow-500/20 rounded p-2 text-xs">
                 <div className="flex items-center gap-2 text-yellow-600 dark:text-yellow-400 font-medium">

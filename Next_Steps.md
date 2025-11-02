@@ -16,7 +16,6 @@
 - [ ] Reduce `uv run ruff check` baseline failures (52 violations as of 2025-11-04) without mass reformatting. (owner: Engineering, due: backlog)
 
 ## Steps
-- [ ] Re-run full `uv run pytest tests` after documentation updates (local run was interrupted for time).
 - [ ] Restore packaging build path by adding the `build` module or alternative to the dev extras before rerunning `uv run python -m build`.
 - [ ] Reproduce `tests/test_deployment_specs.py::test_deploy_pipeline_filters_and_registers` with Prefect runner mocks to isolate extra registrations and draft remediation.
 - [ ] Outline a targeted formatting plan (e.g., staged module batches) before running `ruff format` so the `make qa` gate can complete without destabilising history.
@@ -31,11 +30,11 @@
 - Simulated staging artefacts at `dist/staging/backfill/20251101T171853Z/` and `dist/staging/marquez/20251101T171901Z/` pending live access.
 
 ## Quality Gates
-- tests: **blocked** — full `uv run pytest tests` run was interrupted locally; rerun pending (see Steps). Targeted lineage integration test now passes. (owner: Engineering)
+- tests: **pass** — `uv run pytest tests` (533 passed, 6 skipped; coverage 72%) completed successfully on 2025-11-01. (owner: Engineering)
 - linters/formatters: **blocked** — `scripts/testing/trunk_check.sh` still flags 200+ pre-existing diffs (e.g. `tests/conftest.py`, `tests/test_pipeline_enhancements_exports.py`) when comparing against `origin/main`; no changes were applied to avoid clobbering user work. (owner: Engineering)
 - type-checks: **blocked** — `uv run mypy apps/data-platform tests ops` reports 44 errors (missing stubs for requests/yaml/hypothesis, scrapy imports). (owner: Engineering & QA)
 - security scan: **warning** — `uv run bandit -r apps/data-platform ops` flagged existing subprocess usage (B403/B603) in CLI helpers; detect-secrets produced no findings. (owner: Engineering & Security)
-- coverage: **partial** — Targeted lineage test emitted coverage XML; full-suite coverage run deferred until pytest task above completes. (owner: QA)
+- coverage: **partial** — Latest full-suite run reported 72% line coverage; future efforts should track deltas once remaining gates unblock (`uv run pytest tests --cov ...`). (owner: QA)
 - build: **blocked** — `uv run python -m build` failed (module not installed); add packaging dependency before rerunning. (owner: Engineering)
 - docs updated: **pending** — documentation changes contingent on resolving gating regressions. (owner: Docs)
 - supply chain: **pass** — `uv run python ops/supply_chain/generate_sbom.py --output dist/sbom/hotpass-sbom.json` completed after installing `cyclonedx-bom`; artifact stored under `dist/sbom/hotpass-sbom.json`. (owner: Platform)

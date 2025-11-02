@@ -1,6 +1,14 @@
 # Next Steps Log
 
-_Updated 2025-10-31_
+_Updated 2025-11-01_
+
+## 2025-11-01 (branch: work, pr: n/a, actor: codex) — Frontier security compliance
+- [x] Align security automation with frontier compliance (Semgrep, Trivy, SBOM/provenance uploads, release reporting).
+  - notes: Added a `ci` dependency extra covering build tooling and CycloneDX libraries, updated security workflows to run Semgrep, Trivy, and SBOM/provenance generation with artifact uploads, introduced release security reporting automation, and extended CODEOWNERS coverage for security-critical workflows.【F:pyproject.toml†L52-L58】【F:uv.lock†L7-L1994】【F:.github/workflows/codeql.yml†L1-L60】【F:.github/workflows/secret-scanning.yml†L1-L50】【F:.github/workflows/security-scan.yml†L1-L90】【F:.github/workflows/zap-baseline.yml†L1-L70】【F:.github/workflows/release-security-reports.yml†L1-L80】【F:ops/supply_chain/generate_sbom.py†L1-L80】【F:ops/supply_chain/generate_provenance.py†L1-L120】【F:ops/supply_chain/render_security_summary.py†L1-L118】【F:.github/CODEOWNERS†L9-L14】
+  - checks: tests=pass (npm run test:unit -- --run), lint=not-run, type=not-run, sec=pass (uv run python ops/supply_chain/generate_sbom.py --output-dir dist/sbom; uv run python ops/supply_chain/generate_provenance.py --output-dir dist/provenance; uv run python ops/supply_chain/render_security_summary.py --pip-audit tmp/pip.json --npm-audit tmp/npm.json --output tmp/summary.md), build=not-run
+- [x] Ship UI security hardening (input validation, CSRF/session handling, client-side rate limiting) and record residual risks.
+  - notes: Implemented shared security helpers for sanitisation and rate limiting, refactored Prefect/Marquez clients to respect throttling, tightened Admin/Lineage/refinement inputs, added CSRF-aware feedback submission safeguards, documented residual risk in SECURITY.md, and added unit coverage.【F:apps/web-ui/src/lib/security.ts†L1-L120】【F:apps/web-ui/src/lib/security.test.ts†L1-L55】【F:apps/web-ui/src/api/prefect.ts†L1-L120】【F:apps/web-ui/src/api/marquez.ts†L1-L220】【F:apps/web-ui/src/components/refinement/LiveRefinementPanel.tsx†L1-L320】【F:apps/web-ui/src/pages/Admin.tsx†L1-L220】【F:apps/web-ui/src/pages/Lineage.tsx†L1-L520】【F:SECURITY.md†L69-L86】
+  - checks: tests=pass (npm run test:unit -- --run), lint=not-run, type=not-run, sec=pass (CSRF & rate limit validations exercised via unit suite), build=not-run
 
 ## Tasks
 
@@ -195,3 +203,8 @@ _Updated 2025-10-31_
   - notes: Added the `--assume-yes` long option ahead of the `--yes` alias, refreshed wizard messaging, and tightened the AWS verifier fallback Protocol so CLI modules satisfy the shared style guidance before rerunning the contract and quality-gate suites plus the full pytest baseline. 【F:apps/data-platform/hotpass/cli/commands/setup.py†L5-L196】【F:apps/data-platform/hotpass/cli/commands/setup.py†L321-L347】【F:apps/data-platform/hotpass/cli/commands/setup.py†L464-L470】【F:apps/data-platform/hotpass/cli/commands/aws.py†L1-L196】
   - checks: tests=pass (`uv run pytest tests`, `uv run pytest tests/contracts/test_cli_contract.py`, `uv run pytest tests/cli/test_quality_gates.py -v`), lint=pass (`uv run ruff check apps/data-platform/hotpass/cli/commands/aws.py apps/data-platform/hotpass/cli/commands/setup.py`), type=n/a, sec=pass (`uv run bandit -r apps/data-platform ops --severity-level medium --confidence-level high`, `uv run python -m detect_secrets scan apps/data-platform tests ops`), build=n/a
 
+
+## 2025-11-01 (branch: work, pr: n/a, actor: codex)
+- [x] Re-run full `uv run pytest tests` after documentation updates (local run was interrupted for time).
+  - notes: Executed `uv run pytest tests`; suite completed (533 passed, 6 skipped) with coverage reported at 72%, establishing a fresh QA baseline. 【1c29b0†L1-L210】
+  - checks: tests=pass, lint=fail, type=fail, sec=warn, build=fail

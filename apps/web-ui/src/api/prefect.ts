@@ -13,6 +13,7 @@ import type {
   PrefectFlowRun,
   PrefectDeployment,
 } from '@/types'
+import { createRateLimiter } from '@/lib/security'
 
 const getBaseUrl = (): string => {
   return (
@@ -22,11 +23,16 @@ const getBaseUrl = (): string => {
   )
 }
 
+const prefectLimiter = createRateLimiter(30, 60_000)
+
+const fetchWithLimiter = (url: string, init: RequestInit = {}) =>
+  prefectLimiter(() => fetch(url, { credentials: 'include', ...init }))
+
 export const prefectApi = {
   // List flows
   async getFlows(limit = 100, offset = 0): Promise<PrefectFlow[]> {
     const url = `${getBaseUrl()}/flows?limit=${limit}&offset=${offset}`
-    const response = await fetch(url, { credentials: 'include' })
+    const response = await fetchWithLimiter(url)
     if (!response.ok) {
       throw new Error(`Failed to fetch flows: ${response.statusText}`)
     }
@@ -36,7 +42,7 @@ export const prefectApi = {
   // Get a specific flow
   async getFlow(flowId: string): Promise<PrefectFlow> {
     const url = `${getBaseUrl()}/flows/${encodeURIComponent(flowId)}`
-    const response = await fetch(url, { credentials: 'include' })
+    const response = await fetchWithLimiter(url)
     if (!response.ok) {
       throw new Error(`Failed to fetch flow: ${response.statusText}`)
     }
@@ -59,7 +65,7 @@ export const prefectApi = {
     queryParams.append('offset', String(params?.offset || 0))
 
     const url = `${getBaseUrl()}/flow_runs?${queryParams}`
-    const response = await fetch(url, { credentials: 'include' })
+    const response = await fetchWithLimiter(url)
     if (!response.ok) {
       throw new Error(`Failed to fetch flow runs: ${response.statusText}`)
     }
@@ -69,7 +75,7 @@ export const prefectApi = {
   // Get a specific flow run
   async getFlowRun(flowRunId: string): Promise<PrefectFlowRun> {
     const url = `${getBaseUrl()}/flow_runs/${encodeURIComponent(flowRunId)}`
-    const response = await fetch(url, { credentials: 'include' })
+    const response = await fetchWithLimiter(url)
     if (!response.ok) {
       throw new Error(`Failed to fetch flow run: ${response.statusText}`)
     }
@@ -79,7 +85,7 @@ export const prefectApi = {
   // List deployments
   async getDeployments(limit = 100, offset = 0): Promise<PrefectDeployment[]> {
     const url = `${getBaseUrl()}/deployments?limit=${limit}&offset=${offset}`
-    const response = await fetch(url, { credentials: 'include' })
+    const response = await fetchWithLimiter(url)
     if (!response.ok) {
       throw new Error(`Failed to fetch deployments: ${response.statusText}`)
     }
@@ -89,7 +95,7 @@ export const prefectApi = {
   async checkHealth(): Promise<boolean> {
     const url = `${getBaseUrl()}/health`
     try {
-      const response = await fetch(url, { headers: { Accept: 'application/json' }, credentials: 'include' })
+      const response = await fetchWithLimiter(url, { headers: { Accept: 'application/json' } })
       if (!response.ok) {
         return false
       }

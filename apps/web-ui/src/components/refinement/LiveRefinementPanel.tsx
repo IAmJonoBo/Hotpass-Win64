@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
+import { clampText } from '@/lib/security'
 import { formatDistanceToNow } from 'date-fns'
 
 interface RefinedRow {
@@ -27,6 +28,8 @@ interface RefinedRow {
 }
 
 // Mock data generator
+const MAX_FEEDBACK_LENGTH = 500
+
 function generateMockRows(): RefinedRow[] {
   const sources = ['aviation.xlsx', 'maritime.csv', 'logistics.json', 'freight.xlsx']
   const entities = ['Airlines', 'Airports', 'Routes', 'Vessels', 'Ports', 'Shipments', 'Warehouses']
@@ -45,6 +48,7 @@ function generateMockRows(): RefinedRow[] {
 export function LiveRefinementPanel() {
   const [expandedRow, setExpandedRow] = useState<string | null>(null)
   const [feedback, setFeedback] = useState<Record<string, string>>({})
+  const [feedbackErrors, setFeedbackErrors] = useState<Record<string, string | undefined>>({})
   const [lastSync, setLastSync] = useState(new Date())
   const [csrfToken, setCsrfToken] = useState<string | null>(null)
   const [telemetryError, setTelemetryError] = useState<string | null>(null)
@@ -98,8 +102,9 @@ export function LiveRefinementPanel() {
   }, [])
 
   const handleFeedbackSubmit = async (rowId: string) => {
-    const feedbackText = feedback[rowId]
-    if (!feedbackText?.trim() || !csrfToken) return
+    const rawFeedback = feedback[rowId]
+    const sanitised = clampText(rawFeedback || '', MAX_FEEDBACK_LENGTH).trim()
+    if (!sanitised || !csrfToken || feedbackErrors[rowId]) return
 
     try {
       const response = await fetch('/telemetry/operator-feedback', {
@@ -109,7 +114,7 @@ export function LiveRefinementPanel() {
           'Content-Type': 'application/json',
           'X-CSRF-Token': csrfToken,
         },
-        body: JSON.stringify({ rowId, feedback: feedbackText, metadata: { submittedAt: new Date().toISOString() } }),
+        body: JSON.stringify({ rowId, feedback: sanitised, metadata: { submittedAt: new Date().toISOString() } }),
       })
       if (!response.ok) {
         throw new Error(`Feedback submission failed: ${response.status}`)
@@ -122,6 +127,7 @@ export function LiveRefinementPanel() {
 
     // Clear feedback and collapse
     setFeedback(prev => ({ ...prev, [rowId]: '' }))
+    setFeedbackErrors(prev => ({ ...prev, [rowId]: undefined }))
     setExpandedRow(null)
   }
 
@@ -245,26 +251,41 @@ export function LiveRefinementPanel() {
                           <label className="text-sm font-medium">
                             Operator feedback on row {row.id}:
                           </label>
-                          <div className="flex gap-2">
-                            <Input
-                              placeholder="Add your feedback..."
-                              value={feedback[row.id] || ''}
-                              onChange={(e) =>
-                                setFeedback(prev => ({
-                                  ...prev,
-                                  [row.id]: e.target.value,
-                                }))
-                              }
-                              onKeyPress={(e) => {
-                                if (e.key === 'Enter') {
-                                  handleFeedbackSubmit(row.id)
-                                }
-                              }}
-                            />
+                          <div className="flex gap-2 items-start">
+                            <div className="flex-1 space-y-1">
+                              <Input
+                                placeholder="Add your feedback..."
+                                value={feedback[row.id] || ''}
+                                onChange={(e) => {
+                                  const nextValue = clampText(e.target.value, MAX_FEEDBACK_LENGTH)
+                                  setFeedback(prev => ({
+                                    ...prev,
+                                    [row.id]: nextValue,
+                                  }))
+                                  setFeedbackErrors(prev => ({
+                                    ...prev,
+                                    [row.id]: nextValue.trim().length === 0
+                                      ? 'Feedback cannot be empty.'
+                                      : undefined,
+                                  }))
+                                }}
+                                onKeyPress={(e) => {
+                                  if (e.key === 'Enter') {
+                                    handleFeedbackSubmit(row.id)
+                                  }
+                                }}
+                                maxLength={MAX_FEEDBACK_LENGTH}
+                              />
+                              {feedbackErrors[row.id] && (
+                                <p className="text-xs text-red-600 dark:text-red-400" role="alert">
+                                  {feedbackErrors[row.id]}
+                                </p>
+                              )}
+                            </div>
                             <Button
                               size="sm"
                               onClick={() => handleFeedbackSubmit(row.id)}
-                              disabled={!feedback[row.id]?.trim()}
+                              disabled={!feedback[row.id]?.trim() || Boolean(feedbackErrors[row.id])}
                             >
                               Submit
                             </Button>

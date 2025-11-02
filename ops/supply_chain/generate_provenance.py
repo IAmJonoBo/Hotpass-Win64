@@ -33,7 +33,7 @@ def build_subjects() -> list[dict[str, Any]]:
     return subjects
 
 
-def generate_provenance(output_dir: Path) -> Path:
+def generate_provenance(output_dir: Path, filename: str = "provenance.json") -> Path:
     output_dir.mkdir(parents=True, exist_ok=True)
     statement = {
         "_type": "https://in-toto.io/Statement/v1",
@@ -54,13 +54,29 @@ def generate_provenance(output_dir: Path) -> Path:
             },
         },
     }
-    output_path = output_dir / "provenance.json"
+    output_path = output_dir / filename
     output_path.write_text(json.dumps(statement, indent=2))
     return output_path
 
 
 def main() -> None:
-    provenance_path = generate_provenance(Path("dist/provenance"))
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Generate a SLSA provenance statement for build artefacts.")
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=Path("dist/provenance"),
+        help="Directory where the provenance JSON should be written (default: dist/provenance)",
+    )
+    parser.add_argument(
+        "--filename",
+        default="provenance.json",
+        help="Optional filename for the provenance statement",
+    )
+    args = parser.parse_args()
+
+    provenance_path = generate_provenance(args.output_dir, args.filename)
     print(f"Provenance statement written to {provenance_path}")
 
 
