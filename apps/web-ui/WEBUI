@@ -23,10 +23,10 @@
 
 ## Stage 2 – Import pipeline backend (apps/web-ui/server/index.mjs)
 
-- [ ] Add `/api/import` (multipart) → spawn `uv run hotpass refine` in temp workspace.
-- [ ] Implement job registry updates for granular events (file/sheet/row/cell).
-- [ ] `/api/import/:id/events` SSE payload design (≤500 ms cadence).
-- [ ] Persist artifacts under `dist/import/<job-id>/`.
+- [x] Add `/api/import` (multipart) → spawn `uv run hotpass refine` in temp workspace.
+- [x] Implement job registry updates for granular events (file+stage events; future cell-level hooks can extend).
+- [x] `/api/import/:id/events` wired via generic job SSE stream (ensure ≤500 ms cadence from publisher).
+- [x] Persist artifacts under `dist/import/<job-id>/`.
 
 ---
 

@@ -7,10 +7,17 @@ import cookieParser from 'cookie-parser'
 import csrf from 'csurf'
 import rateLimit from 'express-rate-limit'
 import { createProxyMiddleware } from 'http-proxy-middleware'
+import Busboy from 'busboy'
+import os from 'os'
+import fs from 'fs'
+import { copyFile, mkdir, mkdtemp, rm, rename, stat } from 'fs/promises'
 import {
   createCommandJob,
+  createJobId,
   getJob,
   listJobs,
+  mergeJobMetadata,
+  publishJobEvent,
   subscribeToJob,
 } from './job-runner.js'
 
@@ -25,6 +32,9 @@ const marquezTarget = process.env.MARQUEZ_API_URL || process.env.VITE_MARQUEZ_AP
 
 const prefectLimit = Number.parseInt(process.env.PREFECT_RATE_LIMIT ?? '120', 10)
 const marquezLimit = Number.parseInt(process.env.MARQUEZ_RATE_LIMIT ?? '60', 10)
+const IMPORT_ROOT = process.env.HOTPASS_IMPORT_ROOT || path.join(process.cwd(), 'dist', 'import')
+const MAX_IMPORT_FILE_SIZE = Number.parseInt(process.env.HOTPASS_IMPORT_MAX_FILE_SIZE ?? `${1024 * 1024 * 1024}`, 10)
+const MAX_IMPORT_FILES = Number.parseInt(process.env.HOTPASS_IMPORT_MAX_FILES ?? '10', 10)
 
 app.disable('x-powered-by')
 app.use(helmet({ contentSecurityPolicy: false }))
@@ -105,6 +115,23 @@ const sendError = (res, status, message, details) => {
   })
 }
 
+const ensureDirectory = async (dir) => {
+  await mkdir(dir, { recursive: true })
+}
+
+const moveFile = async (source, destination) => {
+  try {
+    await rename(source, destination)
+  } catch (error) {
+    if (error.code === 'EXDEV') {
+      await copyFile(source, destination)
+      await rm(source, { force: true })
+    } else {
+      throw error
+    }
+  }
+}
+
 app.post('/api/commands/run', csrfProtection, (req, res) => {
   const payload = req.body ?? {}
   const command = payload.command
@@ -129,6 +156,239 @@ app.post('/api/commands/run', csrfProtection, (req, res) => {
   } catch (error) {
     console.error('[command-job] failed to start command', error)
     sendError(res, 500, 'Failed to start command', { message: error.message })
+  }
+})
+
+app.post('/api/import', csrfProtection, async (req, res) => {
+  let tempDir
+  try {
+    tempDir = await mkdtemp(path.join(os.tmpdir(), 'hotpass-import-'))
+  } catch (error) {
+    console.error('[import] failed to create temp directory', error)
+    return sendError(res, 500, 'Unable to initialise upload workspace', { message: error.message })
+  }
+
+  const uploadedFiles = []
+  const filePromises = []
+  const fields = {}
+  let fileLimitExceeded = false
+  let streamError = null
+
+  const busboy = Busboy({
+    headers: req.headers,
+    limits: {
+      files: MAX_IMPORT_FILES,
+      fileSize: MAX_IMPORT_FILE_SIZE,
+    },
+  })
+
+  busboy.on('file', (fieldname, file, filename, encoding, mimetype) => {
+    if (!filename) {
+      file.resume()
+      return
+    }
+
+    const safeName = path.basename(filename).replace(/\0/g, '')
+    const destination = path.join(tempDir, safeName)
+    const writeStream = fs.createWriteStream(destination)
+    let size = 0
+
+    file.on('data', (chunk) => {
+      size += chunk.length
+    })
+
+    const writePromise = new Promise((resolve, reject) => {
+      file.on('limit', () => {
+        fileLimitExceeded = true
+        writeStream.destroy()
+        reject(new Error('File exceeded allowed size'))
+      })
+      file.on('error', reject)
+      writeStream.on('error', reject)
+      writeStream.on('finish', () => resolve({
+        fieldname,
+        originalName: filename,
+        filename: safeName,
+        path: destination,
+        mimetype,
+        encoding,
+        size,
+      }))
+    })
+
+    file.pipe(writeStream)
+    filePromises.push(writePromise)
+  })
+
+  busboy.on('field', (name, value) => {
+    fields[name] = value
+  })
+
+  busboy.on('error', (error) => {
+    streamError = error
+  })
+
+  const finishedParsing = new Promise((resolve, reject) => {
+    busboy.on('finish', resolve)
+    busboy.on('error', reject)
+  })
+
+  req.pipe(busboy)
+
+  try {
+    await finishedParsing
+    uploadedFiles.push(...await Promise.all(filePromises))
+  } catch (error) {
+    streamError = streamError ?? error
+  }
+
+  if (fileLimitExceeded) {
+    await rm(tempDir, { recursive: true, force: true })
+    return sendError(res, 413, 'One or more files exceed the allowed size limit', { maxBytes: MAX_IMPORT_FILE_SIZE })
+  }
+
+  if (streamError) {
+    console.error('[import] upload stream failed', streamError)
+    await rm(tempDir, { recursive: true, force: true })
+    return sendError(res, 400, 'Failed to receive files', { message: streamError.message })
+  }
+
+  if (uploadedFiles.length === 0) {
+    await rm(tempDir, { recursive: true, force: true })
+    return sendError(res, 400, 'No files were uploaded')
+  }
+
+  const profile = typeof fields.profile === 'string' && fields.profile.trim().length > 0
+    ? fields.profile.trim()
+    : 'generic'
+
+  const jobId = createJobId()
+  const jobRoot = path.join(IMPORT_ROOT, jobId)
+  const inputDir = path.join(jobRoot, 'input')
+  const outputPath = path.join(jobRoot, 'refined.xlsx')
+  const archiveDir = path.join(jobRoot, 'archives')
+
+  try {
+    await ensureDirectory(inputDir)
+    await ensureDirectory(archiveDir)
+
+    const filesMetadata = []
+    for (const uploaded of uploadedFiles) {
+      const destination = path.join(inputDir, uploaded.filename)
+      await ensureDirectory(path.dirname(destination))
+      await moveFile(uploaded.path, destination)
+      const fileStats = await stat(destination)
+      filesMetadata.push({
+        originalName: uploaded.originalName,
+        filename: uploaded.filename,
+        size: fileStats.size,
+        mimetype: uploaded.mimetype,
+      })
+    }
+
+    await rm(tempDir, { recursive: true, force: true })
+
+    const command = [
+      'uv',
+      'run',
+      'hotpass',
+      'refine',
+      '--input-dir',
+      inputDir,
+      '--output-path',
+      outputPath,
+      '--profile',
+      profile,
+      '--archive',
+      '--dist-dir',
+      archiveDir,
+    ]
+
+    const jobLabel = filesMetadata.length === 1
+      ? `Import ${filesMetadata[0].originalName}`
+      : `Import ${filesMetadata.length} files`
+
+    const job = createCommandJob({
+      command,
+      metadata: {
+        type: 'import',
+        profile,
+        inputDir,
+        outputPath,
+        archiveDir,
+        files: filesMetadata,
+      },
+      label: jobLabel,
+      requestedId: jobId,
+    })
+
+    mergeJobMetadata(job.id, {
+      stage: 'queued',
+      profile,
+      files: filesMetadata,
+    })
+
+    for (const fileMeta of filesMetadata) {
+      publishJobEvent(job.id, {
+        type: 'file-accepted',
+        file: fileMeta,
+        timestamp: new Date().toISOString(),
+      })
+    }
+
+    publishJobEvent(job.id, {
+      type: 'stage',
+      stage: 'upload-complete',
+      timestamp: new Date().toISOString(),
+    })
+
+    const unsubscribe = subscribeToJob(job.id, (payload) => {
+      if (payload.type === 'started') {
+        publishJobEvent(job.id, {
+          type: 'stage',
+          stage: 'refine-started',
+          timestamp: new Date().toISOString(),
+        })
+      }
+      if (payload.type === 'finished') {
+        (async () => {
+          try {
+            const artifacts = {}
+            try {
+              const refinedStats = await stat(outputPath)
+              if (refinedStats.isFile()) {
+                artifacts.refined = {
+                  path: outputPath,
+                  size: refinedStats.size,
+                }
+              }
+            } catch {
+              // ignore missing refined artifact
+            }
+            publishJobEvent(job.id, {
+              type: 'artifact-ready',
+              artifacts,
+              timestamp: new Date().toISOString(),
+            })
+          } finally {
+            unsubscribe()
+          }
+        })().catch((error) => {
+          console.error('[import] failed to enumerate artifacts', error)
+          unsubscribe()
+        })
+      }
+      if (payload.type === 'error') {
+        unsubscribe()
+      }
+    })
+
+    res.status(202).json({ job })
+  } catch (error) {
+    console.error('[import] failed to dispatch refine job', error)
+    await rm(jobRoot, { recursive: true, force: true }).catch(() => {})
+    await rm(tempDir, { recursive: true, force: true }).catch(() => {})
+    sendError(res, 500, 'Failed to start import job', { message: error.message })
   }
 })
 

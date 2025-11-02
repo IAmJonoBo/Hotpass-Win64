@@ -29,6 +29,7 @@
     "cookie-parser": "^1.4.7",
     "csurf": "^1.11.0",
     "date-fns": "^4.1.0",
+    "busboy": "^1.6.0",
     "express": "^5.1.0",
     "express-rate-limit": "^8.2.1",
     "helmet": "^8.1.0",

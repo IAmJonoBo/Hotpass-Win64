@@ -11,7 +11,7 @@ jobEvents.setMaxListeners(0)
 const MAX_LOG_ENTRIES = Number.parseInt(process.env.HOTPASS_MAX_JOB_LOGS ?? '2000', 10)
 const DEFAULT_CWD = process.cwd()
 
-const createJobId = () => crypto.randomUUID?.() ?? `job-${Date.now()}-${Math.random().toString(16).slice(2, 10)}`
+const generateJobId = () => crypto.randomUUID?.() ?? `job-${Date.now()}-${Math.random().toString(16).slice(2, 10)}`
 
 const normaliseCommand = (command) => {
   if (Array.isArray(command)) {
@@ -51,19 +51,49 @@ export function subscribeToJob(jobId, handler) {
   return () => jobEvents.off(jobId, listener)
 }
 
+export function publishJobEvent(jobId, payload) {
+  if (!jobs.has(jobId)) {
+    return false
+  }
+  emitForJob(jobId, payload)
+  return true
+}
+
+export function mergeJobMetadata(jobId, metadataPatch) {
+  const job = jobs.get(jobId)
+  if (!job) {
+    throw new Error(`Job ${jobId} not found`)
+  }
+  job.metadata = {
+    ...(job.metadata ?? {}),
+    ...(metadataPatch ?? {}),
+  }
+  job.updatedAt = new Date().toISOString()
+  emitForJob(jobId, { type: 'metadata', metadata: job.metadata })
+  return job.metadata
+}
+
+export function createJobId() {
+  return generateJobId()
+}
+
 export function createCommandJob({
   command,
   cwd = DEFAULT_CWD,
   env = {},
   metadata = {},
   label,
+  requestedId,
 }) {
   if (!command) {
     throw new Error('Command is required')
   }
 
   const { cmd, args } = normaliseCommand(command)
-  const jobId = createJobId()
+  const jobId = requestedId ?? generateJobId()
+  if (jobs.has(jobId)) {
+    throw new Error(`Job with id ${jobId} already exists`)
+  }
   const createdAt = new Date().toISOString()
 
   const job = {
