@@ -233,7 +233,7 @@ class SearxThrottleSettings(BaseModel):
 
 class SearxRuntimeSettings(BaseModel):
     enabled: bool = False
-    base_url: str | AnyHttpUrl = "http://localhost:8080"
+    base_url: AnyHttpUrl = "http://localhost:8080"
     api_key: str | None = None
     api_key_header: str = "Authorization"
     api_key_prefix: str | None = "Bearer"
