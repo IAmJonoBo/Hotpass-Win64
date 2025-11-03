@@ -32,7 +32,9 @@ class _StubSession:
         self.payload = payload
         self.calls: list[dict[str, object]] = []
 
-    def get(self, url: str, params: dict[str, object], headers: dict[str, str], timeout: float) -> _StubResponse:
+    def get(
+        self, url: str, params: dict[str, object], headers: dict[str, str], timeout: float
+    ) -> _StubResponse:
         self.calls.append({"url": url, "params": params, "headers": headers, "timeout": timeout})
         return _StubResponse(self.payload)
 

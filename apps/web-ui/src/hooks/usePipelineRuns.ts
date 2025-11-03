@@ -4,7 +4,7 @@ import type { PipelineRunResponse } from '@/types'
 const DEFAULT_LIMIT = 70
 const REFRESH_INTERVAL = 15_000
 
-const fetchPipelineRuns = async (limit = DEFAULT_LIMIT): Promise<PipelineRunResponse> => {
+export const fetchPipelineRuns = async (limit = DEFAULT_LIMIT): Promise<PipelineRunResponse> => {
   const response = await fetch(`/api/runs/recent?limit=${encodeURIComponent(limit)}`, {
     credentials: 'include',
     headers: {

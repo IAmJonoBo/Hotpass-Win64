@@ -15,7 +15,13 @@ fi
 
 # Comprehensive suite (lint, coverage, security) for scheduled/nightly runs
 # Use -n auto for parallel execution with pytest-xdist
-uv run pytest -n auto "$@"
+if uv run python -c "import xdist" >/dev/null 2>&1; then
+	echo "[testing] Detected pytest-xdist; running in parallel."
+	uv run pytest -n auto "$@"
+else
+	echo "[testing] pytest-xdist not available; falling back to serial pytest run."
+	uv run pytest "$@"
+fi
 uv run coverage html
 uv run python tools/coverage/report_low_coverage.py coverage.xml --min-lines 5 --min-branches 0
 

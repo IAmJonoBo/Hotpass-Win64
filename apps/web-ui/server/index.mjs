@@ -47,20 +47,6 @@ import {
   buildContractOutput,
 } from './template-utils.js'
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
-
-export const app = express()
-await ensureDirectory(IMPORT_ROOT).catch((error) => {
-  console.warn('[bootstrap] unable to prepare import root', { IMPORT_ROOT, error })
-})
-
-await ensureDirectory(CONTRACTS_ROOT).catch((error) => {
-  console.warn('[bootstrap] unable to prepare contracts root', { CONTRACTS_ROOT, error })
-})
-
-const app = express()
-
 const port = process.env.PORT || 3000
 const prefectTarget = process.env.PREFECT_API_URL || process.env.VITE_PREFECT_API_URL || 'http://localhost:4200/api'
 const marquezTarget = process.env.MARQUEZ_API_URL || process.env.VITE_MARQUEZ_API_URL || process.env.OPENLINEAGE_URL || 'http://localhost:5000/api/v1'
@@ -99,6 +85,19 @@ const INVENTORY_CACHE_TTL_MS = resolveNonNegativeInt(
   'HOTPASS_INVENTORY_CACHE_TTL_MS',
   INVENTORY_CACHE_TTL_SECONDS * 1000,
 )
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+
+export const app = express()
+
+await mkdir(IMPORT_ROOT, { recursive: true }).catch((error) => {
+  console.warn('[bootstrap] unable to prepare import root', { IMPORT_ROOT, error })
+})
+
+await mkdir(CONTRACTS_ROOT, { recursive: true }).catch((error) => {
+  console.warn('[bootstrap] unable to prepare contracts root', { CONTRACTS_ROOT, error })
+})
 
 const inventoryCache = {
   snapshot: null,

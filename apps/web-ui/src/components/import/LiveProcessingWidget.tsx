@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import { Activity, AlertTriangle, CheckCircle2, Clock, ListChecks, Sparkles, TrendingDown, TrendingUp } from 'lucide-react'
 import type { ImportProfile } from '@/types'
@@ -53,6 +53,104 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 const formatNumber = (value: number | undefined | null) =>
   Number.isFinite(value) ? value!.toLocaleString() : '—'
 
+const EMPTY_LOGS: readonly string[] = []
+const ROW_COUNT_PATTERN = /(\d[\d,]*)\s+(rows?|records?)\s+(processed|cleaned|normalized)/i
+const AUTO_FIX_PATTERN = /\bauto[-\s]?fix(ed|es|ing)?\b/i
+const ERROR_PATTERN = /\b(error|failed|exception|traceback)\b/i
+
+interface SheetSummary {
+  name: string
+  rows: number
+}
+
+interface RowStats {
+  processed: number
+  total: number | null
+  percent: number
+}
+
+const deriveMetadataSheets = (metadata: unknown): SheetSummary[] => {
+  if (!isRecord(metadata)) return []
+
+  const sheetsFromProfile = metadata.profile
+  if (isRecord(sheetsFromProfile) && Array.isArray(sheetsFromProfile.sheets)) {
+    return sheetsFromProfile.sheets
+      .filter(isRecord)
+      .map(sheet => ({
+        name: typeof sheet.name === 'string' ? sheet.name : 'Sheet',
+        rows: typeof sheet.rows === 'number' ? sheet.rows : 0,
+      }))
+  }
+
+  if (Array.isArray(metadata.sheets)) {
+    return metadata.sheets
+      .filter(isRecord)
+      .map(sheet => ({
+        name: typeof sheet.name === 'string' ? sheet.name : 'Sheet',
+        rows: typeof sheet.rows === 'number' ? sheet.rows : 0,
+      }))
+  }
+
+  return []
+}
+
+const computeRowStats = (
+  logs: readonly string[],
+  metadata: unknown,
+  stage: ImportStageId,
+  computedTotalRows: number | null,
+): RowStats => {
+  let latestLoggedRows = 0
+  logs.forEach(line => {
+    const match = ROW_COUNT_PATTERN.exec(line)
+    if (match) {
+      const value = Number.parseInt(match[1].replace(/,/g, ''), 10)
+      if (Number.isFinite(value)) {
+        latestLoggedRows = Math.max(latestLoggedRows, value)
+      }
+    }
+  })
+
+  const metadataRows =
+    isRecord(metadata) && typeof metadata.rowsProcessed === 'number'
+      ? metadata.rowsProcessed
+      : 0
+
+  const total = typeof computedTotalRows === 'number' ? Math.max(computedTotalRows, 0) : null
+  const progressFallback = total != null ? Math.round(total * (STAGE_PROGRESS[stage] ?? 0)) : 0
+  const processed = Math.min(
+    total ?? Number.MAX_SAFE_INTEGER,
+    Math.max(latestLoggedRows, metadataRows, progressFallback),
+  )
+
+  return {
+    processed,
+    total,
+    percent: total
+      ? Math.min(100, Math.round((processed / total) * 100))
+      : Math.round((STAGE_PROGRESS[stage] ?? 0) * 100),
+  }
+}
+
+const countAutoFixes = (logs: readonly string[], metadata: unknown): number => {
+  const logMatches = logs.reduce((acc, line) => acc + (AUTO_FIX_PATTERN.test(line) ? 1 : 0), 0)
+  const metaValue =
+    isRecord(metadata) && typeof metadata.autofixes === 'number'
+      ? metadata.autofixes
+      : 0
+  return Math.max(metaValue, logMatches)
+}
+
+const countErrors = (logs: readonly string[], metadata: unknown, jobError: string | null | undefined): number => {
+  const logMatches = logs.reduce((acc, line) => acc + (ERROR_PATTERN.test(line) ? 1 : 0), 0)
+  const metaValue =
+    isRecord(metadata) && typeof metadata.errors === 'number'
+      ? metadata.errors
+      : 0
+  const jobErrorCount = jobError ? 1 : 0
+  return Math.max(metaValue, logMatches + jobErrorCount)
+}
+
 export function LiveProcessingWidget({
   job,
   profile,
@@ -61,7 +159,7 @@ export function LiveProcessingWidget({
   totalRows,
   refreshIntervalMs = FALLBACK_INTERVAL,
 }: LiveProcessingWidgetProps) {
-  const logs = job?.logs ?? []
+  const logs = Array.isArray(job?.logs) ? job.logs : EMPTY_LOGS
   const status: JobStatus = job?.status ?? 'queued'
   const stage: ImportStageId = job?.stage ?? 'queued'
 
@@ -84,27 +182,7 @@ export function LiveProcessingWidget({
     return () => window.clearInterval(interval)
   }, [startedAtMs, completedAtMs, status, refreshIntervalMs])
 
-  const metadataSheets = useMemo(() => {
-    if (!isRecord(job?.metadata)) return []
-    const profileMeta = job?.metadata?.profile
-    if (isRecord(profileMeta) && Array.isArray(profileMeta.sheets)) {
-      return profileMeta.sheets
-        .filter(isRecord)
-        .map(sheet => ({
-          name: typeof sheet.name === 'string' ? sheet.name : 'Sheet',
-          rows: typeof sheet.rows === 'number' ? sheet.rows : 0,
-        }))
-    }
-    if (Array.isArray(job?.metadata?.sheets)) {
-      return job.metadata.sheets
-        .filter(isRecord)
-        .map(sheet => ({
-          name: typeof sheet.name === 'string' ? sheet.name : 'Sheet',
-          rows: typeof sheet.rows === 'number' ? sheet.rows : 0,
-        }))
-    }
-    return []
-  }, [job?.metadata])
+  const metadataSheets = deriveMetadataSheets(job?.metadata)
 
   const computedSheetCount =
     sheetCount ??
@@ -118,59 +196,9 @@ export function LiveProcessingWidget({
       ? metadataSheets.reduce((acc, sheet) => acc + sheet.rows, 0)
       : null)
 
-  const rowStats = useMemo(() => {
-    let latestLoggedRows = 0
-    const rowPattern = /(\d[\d,]*)\s+(rows?|records?)\s+(processed|cleaned|normalized)/i
-    logs.forEach(line => {
-      const match = rowPattern.exec(line)
-      if (match) {
-        const value = Number.parseInt(match[1].replace(/,/g, ''), 10)
-        if (Number.isFinite(value)) {
-          latestLoggedRows = Math.max(latestLoggedRows, value)
-        }
-      }
-    })
-    const metadataRows =
-      isRecord(job?.metadata) && typeof job?.metadata?.rowsProcessed === 'number'
-        ? job.metadata.rowsProcessed
-        : 0
-
-    const total = typeof computedTotalRows === 'number' ? Math.max(computedTotalRows, 0) : null
-    const progressFallback = total != null
-      ? Math.round(total * (STAGE_PROGRESS[stage] ?? 0))
-      : 0
-    const processed = Math.min(
-      total ?? Number.MAX_SAFE_INTEGER,
-      Math.max(latestLoggedRows, metadataRows, progressFallback),
-    )
-
-    return {
-      processed,
-      total,
-      percent: total ? Math.min(100, Math.round((processed / total) * 100)) : Math.round((STAGE_PROGRESS[stage] ?? 0) * 100),
-    }
-  }, [computedTotalRows, job?.metadata, logs, stage])
-
-  const autoFixCount = useMemo(() => {
-    const autoFixPattern = /\bauto[-\s]?fix(ed|es|ing)?\b/i
-    const logMatches = logs.reduce((acc, line) => acc + (autoFixPattern.test(line) ? 1 : 0), 0)
-    const metaValue =
-      isRecord(job?.metadata) && typeof job?.metadata?.autofixes === 'number'
-        ? job.metadata.autofixes
-        : 0
-    return Math.max(metaValue, logMatches)
-  }, [job?.metadata, logs])
-
-  const errorCount = useMemo(() => {
-    const errorPattern = /\b(error|failed|exception|traceback)\b/i
-    const logMatches = logs.reduce((acc, line) => acc + (errorPattern.test(line) ? 1 : 0), 0)
-    const metaValue =
-      isRecord(job?.metadata) && typeof job?.metadata?.errors === 'number'
-        ? job.metadata.errors
-        : 0
-    const jobError = job?.error ? 1 : 0
-    return Math.max(metaValue, logMatches + jobError)
-  }, [job?.metadata, logs, job?.error])
+  const rowStats = computeRowStats(logs, job?.metadata, stage, computedTotalRows)
+  const autoFixCount = countAutoFixes(logs, job?.metadata)
+  const errorCount = countErrors(logs, job?.metadata, job?.error)
 
   const elapsedSeconds =
     startedAtMs && !Number.isNaN(startedAtMs)

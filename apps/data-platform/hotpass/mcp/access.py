@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from collections.abc import Mapping as ABCMapping, Sequence as ABCSequence
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import Iterable, Mapping, Sequence
 
 
 @dataclass(frozen=True, slots=True)
@@ -79,7 +78,7 @@ class RolePolicy:
     @classmethod
     def from_payload(
         cls, payload: Mapping[str, object], default_role: str | None = None
-    ) -> "RolePolicy":
+    ) -> RolePolicy:
         """Create a policy from a mapping payload."""
 
         raw_roles = payload.get("roles", {})
@@ -124,8 +123,8 @@ def _to_iterable(value: object) -> Iterable[str]:
         return ()
     if isinstance(value, str):
         return (value,)
-    if isinstance(value, ABCMapping):
+    if isinstance(value, Mapping):
         return (str(item) for item in value.values())
-    if isinstance(value, ABCSequence):
+    if isinstance(value, Sequence):
         return [str(item) for item in value]
     return (str(value),)

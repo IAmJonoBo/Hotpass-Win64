@@ -27,6 +27,7 @@ apps/data-platform/hotpass/orchestration.py
 apps/data-platform/hotpass/pipeline_enhanced.py
 apps/data-platform/hotpass/pipeline_enhancements.py
 apps/data-platform/hotpass/pipeline_reporting.py
+apps/data-platform/hotpass/pipeline_supervision.py
 apps/data-platform/hotpass/quality.py
 apps/data-platform/hotpass/secrets.py
 apps/data-platform/hotpass/validation.py
@@ -125,6 +126,8 @@ apps/data-platform/hotpass/linkage/runner.py
 apps/data-platform/hotpass/linkage/settings.py
 apps/data-platform/hotpass/mcp/__init__.py
 apps/data-platform/hotpass/mcp/__main__.py
+apps/data-platform/hotpass/mcp/access.py
+apps/data-platform/hotpass/mcp/harness.py
 apps/data-platform/hotpass/mcp/server.py
 apps/data-platform/hotpass/ml/__init__.py
 apps/data-platform/hotpass/ml/tracking.py

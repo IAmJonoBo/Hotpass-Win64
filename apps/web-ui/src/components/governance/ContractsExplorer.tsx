@@ -1,4 +1,3 @@
-import { useMemo } from 'react'
 import { FileText, Download, RefreshCw, HelpCircle, MessageSquare } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -31,8 +30,7 @@ const describeContract = (contract: ContractSummary) => {
 export function ContractsExplorer({ className, onOpenAssistant, onOpenHelp }: ContractsExplorerProps) {
   const contractsQuery = useContracts()
   const contracts = contractsQuery.data ?? []
-
-  const topThree = useMemo(() => contracts.slice(0, 6), [contracts])
+  const topThree = contracts.slice(0, 6)
 
   return (
     <Card className={cn('rounded-3xl border border-border/80 bg-card/90 shadow-sm', className)}>

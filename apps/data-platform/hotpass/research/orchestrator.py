@@ -6,11 +6,11 @@ import json
 import logging
 import os
 import time
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal, Mapping, cast
+from typing import TYPE_CHECKING, Any, Literal, cast
 
 import pandas as pd
 
@@ -458,9 +458,7 @@ class ResearchOrchestrator:
     def _build_crawl_schedule(self, plan: ResearchPlan, *, backend: str) -> CrawlSchedule:
         base_hints = list(self._normalise_site_hints(plan))
         authority_urls = [
-            self._ensure_protocol(source.url)
-            for source in plan.authority_sources
-            if source.url
+            self._ensure_protocol(source.url) for source in plan.authority_sources if source.url
         ]
         seeds = list(dict.fromkeys(base_hints + authority_urls))
 
@@ -1088,9 +1086,7 @@ class ResearchOrchestrator:
             attempts=attempts,
         )
 
-    def _record_crawl_retry(
-        self, url: str, attempt: int, exc: Exception, duration: float
-    ) -> None:
+    def _record_crawl_retry(self, url: str, attempt: int, exc: Exception, duration: float) -> None:
         if not self._searx_settings.metrics_enabled:
             return
         metrics = self._get_metrics()

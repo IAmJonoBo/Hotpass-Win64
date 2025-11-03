@@ -134,9 +134,7 @@ def test_intelligent_search_and_crawl_schedule(tmp_path):
         {
             "name": "aviation",
             "display_name": "Aviation",
-            "authority_sources": [
-                {"name": "Civil Aviation Authority", "url": "caa.example"}
-            ],
+            "authority_sources": [{"name": "Civil Aviation Authority", "url": "caa.example"}],
             "research_rate_limit": {"min_interval_seconds": 2.0, "burst": 3},
         }
     )
@@ -282,9 +280,7 @@ def test_searx_search_enriches_plan(tmp_path, monkeypatch):
             return _StubResponse(url)
 
     stub_requests = _StubRequests()
-    monkeypatch.setattr(
-        "hotpass.research.orchestrator.requests", stub_requests, raising=False
-    )
+    monkeypatch.setattr("hotpass.research.orchestrator.requests", stub_requests, raising=False)
 
     stub_service = _StubSearxService()
     orchestrator = ResearchOrchestrator(
@@ -332,9 +328,7 @@ def test_requests_crawl_retries_on_failure(tmp_path, monkeypatch):
             self.content = b"ok"
 
     flaky = _FlakyRequests()
-    monkeypatch.setattr(
-        "hotpass.research.orchestrator.requests", flaky, raising=False
-    )
+    monkeypatch.setattr("hotpass.research.orchestrator.requests", flaky, raising=False)
 
     settings = SearxServiceSettings(
         enabled=False,

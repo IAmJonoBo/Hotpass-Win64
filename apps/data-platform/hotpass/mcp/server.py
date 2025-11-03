@@ -164,9 +164,7 @@ class HotpassMCPServer:
     ) -> None:
         """Register a tool and optionally constrain the roles that may call it."""
 
-        permitted_roles = tuple(
-            role for role in (roles or ()) if role in self.role_policy.roles
-        )
+        permitted_roles = tuple(role for role in (roles or ()) if role in self.role_policy.roles)
         registered = RegisteredTool(
             tool,
             handler,
@@ -200,7 +198,9 @@ class HotpassMCPServer:
                     "properties": {
                         "input_path": {
                             "type": "string",
-                            "description": "Path to input directory or file containing data to refine",
+                            "description": (
+                                "Path to input directory or file containing data to refine"
+                            ),
                         },
                         "output_path": {
                             "type": "string",
@@ -738,7 +738,9 @@ class HotpassMCPServer:
                 try:
                     plugin = entry_point.load()
                 except Exception:
-                    logger.warning("Failed to load MCP plugin entry point %s", entry_point.name, exc_info=True)
+                    logger.warning(
+                        "Failed to load MCP plugin entry point %s", entry_point.name, exc_info=True
+                    )
                     continue
                 self._register_plugin(plugin)
         except Exception:
@@ -785,7 +787,8 @@ class HotpassMCPServer:
                         error={
                             "code": 403,
                             "message": (
-                                f"Role '{role or self.role_policy.default_role}' is not permitted to call {tool_name}"
+                                f"Role '{role or self.role_policy.default_role}' "
+                                f"is not permitted to call {tool_name}"
                             ),
                         },
                         id=request.id,

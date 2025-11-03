@@ -130,9 +130,7 @@ class SearxServiceSettings:
                 searx_data.get("crawl_retry_attempts", cls.crawl_retry_attempts)
             ),
             crawl_retry_backoff_seconds=float(
-                searx_data.get(
-                    "crawl_retry_backoff_seconds", cls.crawl_retry_backoff_seconds
-                )
+                searx_data.get("crawl_retry_backoff_seconds", cls.crawl_retry_backoff_seconds)
             ),
             auto_crawl=bool(searx_data.get("auto_crawl", cls.auto_crawl)),
         )
@@ -384,18 +382,22 @@ class SearxService:
         start = self._clock()
         status = "success"
         try:
-            with trace_operation(
-                "research.searx.query",
-                {
-                    "hotpass.research.query": query.term,
-                    "hotpass.research.categories": ",".join(query.categories)
-                    if query.categories
-                    else "",
-                    "hotpass.research.engines": ",".join(query.engines)
-                    if query.engines
-                    else "",
-                },
-            ) if self.settings.trace_queries else _null_context():
+            with (
+                trace_operation(
+                    "research.searx.query",
+                    {
+                        "hotpass.research.query": query.term,
+                        "hotpass.research.categories": (
+                            ",".join(query.categories) if query.categories else ""
+                        ),
+                        "hotpass.research.engines": (
+                            ",".join(query.engines) if query.engines else ""
+                        ),
+                    },
+                )
+                if self.settings.trace_queries
+                else _null_context()
+            ):
                 response = session.get(
                     _build_endpoint(self.settings.base_url),
                     params=params,

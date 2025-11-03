@@ -6,7 +6,7 @@ import type { LLMConfig, LLMProvider } from '@/types/llm'
 const CONFIG_URL = '/config/llm-providers.yaml'
 const STORAGE_KEY = 'hotpass_llm_provider'
 
-async function fetchLLMConfig(): Promise<LLMConfig> {
+export async function fetchLLMConfig(): Promise<LLMConfig> {
   const response = await fetch(CONFIG_URL, { cache: 'no-store' })
   if (!response.ok) {
     throw new Error(`Failed to load LLM provider configuration (${response.status})`)

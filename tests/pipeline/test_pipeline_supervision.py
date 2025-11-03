@@ -41,12 +41,10 @@ def test_pipeline_supervision_identifies_unhealthy_tasks():
     notify_details = next(task for task in report.unhealthy_tasks if task.name == "notify")
     assert notify_details.details.get("note") == "High retry count"
     assert any(
-        "Requeue failed tasks" in recommendation
-        for recommendation in report.recommendations
+        "Requeue failed tasks" in recommendation for recommendation in report.recommendations
     )
     assert any(
-        "Pipeline latency exceeds" in recommendation
-        for recommendation in report.recommendations
+        "Pipeline latency exceeds" in recommendation for recommendation in report.recommendations
     )
 
 

@@ -1,18 +1,19 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Any, Mapping
+from typing import Any
 
 from hotpass.pipeline_supervision import (
     PipelineSnapshot,
-    PipelineSupervisor,
     PipelineSupervisionReport,
+    PipelineSupervisor,
 )
 from hotpass.research.orchestrator import (
+    CrawlSchedule,
     ResearchContext,
     ResearchOrchestrator,
     SearchStrategy,
-    CrawlSchedule,
 )
 
 
@@ -53,9 +54,7 @@ class AgentWorkflowHarness:
         """Execute the harness across search, crawl coordination, and supervision."""
 
         search_strategy = self._orchestrator.intelligent_search(context)
-        crawl_schedule = self._orchestrator.coordinate_crawl(
-            context, backend=crawl_backend
-        )
+        crawl_schedule = self._orchestrator.coordinate_crawl(context, backend=crawl_backend)
 
         snapshot = self._coerce_snapshot(pipeline_snapshot)
         supervision_report = self._pipeline_supervisor.inspect(snapshot)

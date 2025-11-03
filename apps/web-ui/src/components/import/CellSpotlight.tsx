@@ -1,4 +1,3 @@
-import { useMemo } from 'react'
 import { Sparkles, ArrowUpRight, MessageSquare } from 'lucide-react'
 import type { ImportProfile } from '@/types'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -32,45 +31,48 @@ const RULE_PATTERN = /(rule|validator|check)[:\s]+(?<rule>[A-Za-z0-9_.-]+)/i
 const normaliseSheetName = (value?: string | null) =>
   value ? value.trim().replace(/\s+/g, ' ') : undefined
 
-export function CellSpotlight({ logs, profile, onOpenAssistant, onOpenHelp, className }: CellSpotlightProps) {
-  const spotlight = useMemo<SpotlightInfo | null>(() => {
-    if (!Array.isArray(logs) || logs.length === 0) return null
-    for (let index = logs.length - 1; index >= 0; index -= 1) {
-      const entry = logs[index]
-      if (typeof entry !== 'string' || entry.trim().length === 0) continue
+const findLatestSpotlight = (logs: readonly unknown[]): SpotlightInfo | null => {
+  if (!Array.isArray(logs) || logs.length === 0) return null
+  for (let index = logs.length - 1; index >= 0; index -= 1) {
+    const entry = logs[index]
+    if (typeof entry !== 'string' || entry.trim().length === 0) continue
 
-      let matchSheet: string | null | undefined
-      let matchCell: string | null | undefined
+    let matchSheet: string | null | undefined
+    let matchCell: string | null | undefined
 
-      for (const pattern of CELL_PATTERNS) {
-        const match = pattern.exec(entry)
-        if (match?.groups) {
-          matchSheet = match.groups.sheet ? normaliseSheetName(match.groups.sheet) : matchSheet
-          matchCell = match.groups.cell ? match.groups.cell.toUpperCase() : matchCell
-        }
-        if (matchSheet || matchCell) break
+    for (const pattern of CELL_PATTERNS) {
+      const match = pattern.exec(entry)
+      if (match?.groups) {
+        matchSheet = match.groups.sheet ? normaliseSheetName(match.groups.sheet) : matchSheet
+        matchCell = match.groups.cell ? match.groups.cell.toUpperCase() : matchCell
       }
-
-      if (!matchSheet && !matchCell) continue
-
-      const ruleMatch = RULE_PATTERN.exec(entry)
-      const rule = ruleMatch?.groups?.rule ? ruleMatch.groups.rule : null
-
-      return {
-        sheet: matchSheet ?? null,
-        cell: matchCell ?? null,
-        rule,
-        message: entry.trim(),
-      }
+      if (matchSheet || matchCell) break
     }
-    return null
-  }, [logs])
 
-  const sheetProfile = useMemo(() => {
-    if (!spotlight?.sheet || !profile) return null
+    if (!matchSheet && !matchCell) continue
+
+    const ruleMatch = RULE_PATTERN.exec(entry)
+    const rule = ruleMatch?.groups?.rule ? ruleMatch.groups.rule : null
+
+    return {
+      sheet: matchSheet ?? null,
+      cell: matchCell ?? null,
+      rule,
+      message: entry.trim(),
+    }
+  }
+  return null
+}
+
+export function CellSpotlight({ logs, profile, onOpenAssistant, onOpenHelp, className }: CellSpotlightProps) {
+  const spotlight = findLatestSpotlight(logs)
+
+  let sheetProfile: ImportProfile['sheets'][number] | null = null
+  if (spotlight?.sheet && profile) {
     const targetSheet = spotlight.sheet.toLowerCase()
-    return profile.sheets.find(sheet => (sheet.name ?? '').toLowerCase() === targetSheet) ?? null
-  }, [profile, spotlight?.sheet])
+    sheetProfile =
+      profile.sheets.find(sheet => (sheet.name ?? '').toLowerCase() === targetSheet) ?? null
+  }
 
   return (
     <Card className={cn('rounded-2xl border border-border/70 bg-card/90 shadow-sm', className)}>

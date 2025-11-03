@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from typing import Any, Mapping, Sequence
+from typing import Any
 
 
 @dataclass(slots=True)
@@ -55,17 +56,13 @@ class PipelineSnapshot:
     metrics: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
-    def from_payload(cls, payload: Mapping[str, Any]) -> "PipelineSnapshot":
+    def from_payload(cls, payload: Mapping[str, Any]) -> PipelineSnapshot:
         name = str(payload.get("name", "unknown"))
         runs = tuple(
-            _coerce_run(run)
-            for run in payload.get("runs", ())
-            if isinstance(run, Mapping)
+            _coerce_run(run) for run in payload.get("runs", ()) if isinstance(run, Mapping)
         )
         tasks = tuple(
-            _coerce_task(task)
-            for task in payload.get("tasks", ())
-            if isinstance(task, Mapping)
+            _coerce_task(task) for task in payload.get("tasks", ()) if isinstance(task, Mapping)
         )
         metrics_source = payload.get("metrics")
         metrics = dict(metrics_source) if isinstance(metrics_source, Mapping) else {}
@@ -163,7 +160,9 @@ class PipelineSupervisor:
         advice: list[str] = []
         lower_state = latest_state.lower()
         if lower_state not in self.HEALTHY_STATES:
-            advice.append("Review the latest run logs and re-run the pipeline once issues are resolved")
+            advice.append(
+                "Review the latest run logs and re-run the pipeline once issues are resolved"
+            )
         if any(task.state.lower() == "failed" for task in unhealthy):
             advice.append("Requeue failed tasks with `hotpass qa rerun --from-failed`")
         if any("note" in task.details for task in unhealthy):

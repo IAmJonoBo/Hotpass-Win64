@@ -28,6 +28,7 @@ def _run_command(
         check=False,
     )
 
+
 VersionType = Literal["major", "minor", "patch"]
 
 

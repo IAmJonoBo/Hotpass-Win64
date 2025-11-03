@@ -22,8 +22,8 @@ def test_inventory_list_json(capsys: pytest.CaptureFixture[str]) -> None:
     captured = capsys.readouterr()
 
     expect(exit_code == 0, "inventory list --json should succeed")
-    expect("\"manifest\"" in captured.out, "JSON output should include manifest metadata")
-    expect("\"assets\"" in captured.out, "JSON output should include asset list")
+    expect('"manifest"' in captured.out, "JSON output should include manifest metadata")
+    expect('"assets"' in captured.out, "JSON output should include asset list")
 
 
 def test_inventory_list_table_output(capsys: pytest.CaptureFixture[str]) -> None:
@@ -40,4 +40,4 @@ def test_inventory_status_json(capsys: pytest.CaptureFixture[str]) -> None:
     captured = capsys.readouterr()
 
     expect(exit_code == 0, "inventory status --json should succeed")
-    expect("\"requirements\"" in captured.out, "JSON output should include requirements")
+    expect('"requirements"' in captured.out, "JSON output should include requirements")

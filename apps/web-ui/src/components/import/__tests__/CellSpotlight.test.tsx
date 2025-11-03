@@ -28,10 +28,10 @@ describe('CellSpotlight', () => {
       />,
     )
 
-    expect(screen.getByText(/Master/i)).toBeInTheDocument()
-    expect(screen.getByText(/Cell B14/i)).toBeInTheDocument()
+    expect(screen.getAllByText(/Master/i).length).toBeGreaterThan(0)
+    expect(screen.getAllByText(/Cell B14/i).length).toBeGreaterThan(0)
     expect(screen.getByText(/auto-fix applied/i)).toBeInTheDocument()
-    expect(screen.getByText(/rename_company/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Rule rename_company/i })).toBeInTheDocument()
   })
 
   it('shows fallback message when no matches found', () => {
