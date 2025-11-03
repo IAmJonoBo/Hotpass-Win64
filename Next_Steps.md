@@ -165,6 +165,190 @@ Quick gaps we should close next 1. Ship the workbook tools (describe/read_cell/s
 
 ⸻
 
+Copilot/Codex execution plan (authoritative)
+
+Goal: Enable GitHub Copilot / OpenAI Codex to implement, integrate, and keep all artefacts current with minimal human supervision. This section is intentionally explicit so an AI assistant can execute it step-by-step.
+
+Create or update the following repository files
+
+1) .github/workflows/docs-refresh.yml
+```yaml
+name: Docs Refresh
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+  schedule:
+    - cron: '0 21 * * *'  # nightly (21:00 UTC)
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt || true
+          pip install great_expectations phonenumbers requests graphviz
+      - name: Run docs refresh script
+        env:
+          MARQUEZ_URL: ${{ secrets.MARQUEZ_URL }}
+          MARQUEZ_API_KEY: ${{ secrets.MARQUEZ_API_KEY }}
+        run: |
+          python scripts/docs_refresh.py
+      - name: Commit artefacts
+        run: |
+          git config user.name "hotpass-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add docs/ README.md Next_Steps.md AGENTS.md || true
+          git commit -m "chore(docs): refresh Data Docs & lineage snapshots [skip ci]" || echo "No changes to commit"
+          git push || true
+```
+
+2) scripts/docs_refresh.py
+```python
+"""
+Refresh Great Expectations Data Docs, export Marquez lineage subgraphs, and persist research manifests.
+Idempotent & safe to re-run.
+Required env: MARQUEZ_URL, optional MARQUEZ_API_KEY.
+"""
+from pathlib import Path
+import os, json, subprocess, time
+import requests
+
+# --- GE Data Docs ---
+# Prefer CLI to avoid importing project context; fallback to Python if needed.
+try:
+    # Expect a checkpoint named `contacts_checkpoint` (adjust if different)
+    subprocess.run(["great_expectations", "checkpoint", "run", "contacts_checkpoint"], check=False)
+except Exception:
+    pass
+
+# --- Marquez lineage export (PNG + JSON) ---
+MARQUEZ_URL = os.environ.get("MARQUEZ_URL", "")
+API_KEY = os.environ.get("MARQUEZ_API_KEY", "")
+HEADERS = {"Authorization": f"Bearer {API_KEY}"} if API_KEY else {}
+OUTPUT_DIR = Path("docs/lineage/")
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+def fetch_datasets(limit=50):
+    if not MARQUEZ_URL:
+        return []
+    r = requests.get(f"{MARQUEZ_URL}/api/v1/namespaces/default/datasets?limit={limit}", headers=HEADERS, timeout=30)
+    r.raise_for_status()
+    return r.json().get("datasets", [])
+
+def write_json(name, data):
+    (OUTPUT_DIR / f"{name}.json").write_text(json.dumps(data, indent=2))
+
+# dump first N datasets as a simple snapshot (extend to subgraph export if needed)
+try:
+    ds = fetch_datasets()
+    write_json("datasets", ds)
+except Exception as e:
+    print("Marquez export skipped:", e)
+
+# --- Research manifests cache directory (metadata only) ---
+Path("docs/research/").mkdir(parents=True, exist_ok=True)
+
+# touch a marker file so CI always has a deterministic artefact
+(Path("docs/lineage/LAST_REFRESH.txt")).write_text(time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()))
+
+print("Docs refresh complete.")
+```
+
+3) .github/pull_request_template.md
+```markdown
+## Docs refresh checklist
+- [ ] Ran **Docs Refresh** workflow or `python scripts/docs_refresh.py`
+- [ ] GE Data Docs updated and linked in Next_Steps.md / README
+- [ ] Marquez lineage snapshots updated in `docs/lineage/`
+- [ ] Research plans & site manifests (metadata only) under `docs/research/`
+```
+
+4) AGENTS.md — append a section titled **MCP endpoints (authoritative)** summarising the following tools with examples: `workbook.describe`, `workbook.read_cell`, `workbook.search`, `workbook.explain_cell`, `research.resolve_company`, `research.plan`, `research.site_manifest`, `research.fetch_contacts`, `contact.normalise`, `qa.latest`, `qa.coverage_report`, `lineage.graph`.
+
+Great Expectations: checkpoint action snippet (to ensure Data Docs regenerate)
+```yaml
+# great_expectations/checkpoints/contacts_checkpoint.yml
+name: contacts_checkpoint
+config_version: 1.0
+class_name: Checkpoint
+validations:
+  - batch_request: { datasource_name: contacts, data_asset_name: contacts_refined }
+    expectation_suite_name: contacts_suite
+action_list:
+  - name: store_validation_result
+    action:
+      class_name: StoreValidationResultAction
+  - name: update_data_docs
+    action:
+      class_name: UpdateDataDocsAction
+```
+
+SearXNG dry‑run plan (used by `research.plan`)
+```python
+# pseudocode
+params = {"q": company_query, "format": "json", "safesearch": 1}
+# Do not request pages; only query result counts per engine if available
+# Summarise: engines[], calls_est, cache_hits, rate_limits
+```
+
+Robots + sitemap site manifest (used by `research.site_manifest`)
+```python
+import requests
+from urllib.parse import urljoin
+
+def site_manifest(base_url: str) -> dict:
+    robots_url = urljoin(base_url, "/robots.txt")
+    r = requests.get(robots_url, timeout=10)
+    robots_ok = r.status_code == 200
+    disallows = []
+    if robots_ok:
+        for line in r.text.splitlines():
+            if line.strip().lower().startswith("disallow:"):
+                disallows.append(line.split(":",1)[1].strip())
+    sitemap_urls = []
+    for line in r.text.splitlines() if robots_ok else []:
+        if line.lower().startswith("sitemap:"):
+            sitemap_urls.append(line.split(":",1)[1].strip())
+    candidates = ["/about","/team","/contact"]
+    return {"robots_ok": robots_ok, "disallows": disallows, "sitemap_urls": sitemap_urls, "candidate_urls": candidates}
+```
+
+Contact normalisation example (E.164 + email syntax)
+```python
+import phonenumbers, re
+
+def normalise(phone: str, email: str, region: str = "ZA"):
+    parsed = phonenumbers.parse(phone, region)
+    e164 = phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.E164) if phonenumbers.is_possible_number(parsed) else None
+    email_ok = re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email) is not None
+    return {"phone_e164": e164, "phone_valid": phonenumbers.is_valid_number(parsed), "email_format_ok": email_ok}
+```
+
+Marquez lineage subgraph (outline)
+```python
+# Extend the docs_refresh.py script later:
+# 1) enumerate datasets matching pattern e.g., contacts_*
+# 2) call Marquez lineage endpoints to gather upstream/downstream
+# 3) (optional) render a PNG via graphviz
+```
+
+Operational notes for Copilot/Codex
+- Always perform **jurisdiction confirmation** before research; prefer official registries and schema.org JSON‑LD where available.
+- Respect **robots.txt** (RFC 9309) and use **sitemaps** to prioritise About/Team/Contact.
+- Include a **provenance bundle** with each research answer: `{url, title, timestamp, robots_ok, sitemap_hit}`.
+- Use **`workbook.explain_cell`** for cell queries; include GE expectation result + Marquez lineage link.
+- Run **Docs Refresh** at the end of each merged PR or nightly; ensure artefacts are committed.
+
+⸻
+
 Implementation notes (how to wire this fast)
 • MCP servers & tools: Follow the official spec for tool definitions, JSON-RPC shapes, and resource attachments so UIs can render inline HTML (useful for small table previews). ￼
 • Search: Point research._ tools at your private SearXNG instance with throttling + caching enabled; never hit public engines directly from the agent. ￼
