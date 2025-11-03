@@ -62,3 +62,10 @@ _Updated: 2025-11-03_
   - Client module `importsApi` now exposes `profileWorkbook`, stored profile CRUD, and template CRUD plus React Query hooks (`useImportProfileMutation`, `useStoredImportProfiles`, `useImportTemplates`, `useImportTemplateUpsert`, `useImportTemplateDelete`).  
   - Express server stubs `/api/imports/profiles` (GET/POST/DELETE) and `/api/imports/templates` (GET/POST/PUT/DELETE) backed by new storage helpers in `server/storage.js`.  
   - Stored assets live under `.hotpass/ui/imports/{profiles,templates}/<id>.json`; templates enforce name + payload validation and dedupe tags.
+
+- **Recommended execution order**  
+  1. ✅ Wire `DatasetImportPanel` to `useImportProfileMutation`, render an `ImportProfilePreview`, and expose download/attach actions (2025-11-03).  
+  2. When an import run starts, persist the chosen profile metadata alongside the job (`dist/import/<job-id>/profile.json`) and surface the artifact link in job events.  
+  3. Stand up the `/imports/wizard` route with step components (Upload → Profile → Mapping → Rules → Summary) reusing stored profiles/templates.  
+  4. Layer on template UI (`TemplatePicker`, `TemplateManagerDrawer`) plus CLI export support.  
+  5. Finish consolidation preview + assistant surfacing once wizard + template flows are stable.

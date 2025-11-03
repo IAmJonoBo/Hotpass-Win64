@@ -12,12 +12,13 @@ import {
   Users,
   XCircle,
 } from 'lucide-react'
-import type { PrefectFlowRun, HILApproval } from '@/types'
+import type { PrefectFlowRun, HILApproval, ImportIssueSeverity, ImportProfile } from '@/types'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { cn, formatBytes, formatDuration, getStatusColor } from '@/lib/utils'
+import { useImportProfileMutation } from '@/api/imports'
 
 type JobStatus = 'queued' | 'running' | 'succeeded' | 'failed'
 type ImportStage = 'queued' | 'upload-complete' | 'refine-started' | 'completed' | 'failed'
@@ -206,6 +207,12 @@ const resolveStageVisualState = (currentStage: ImportStage, stageId: ImportStage
   return 'pending'
 }
 
+const ISSUE_SEVERITY_STYLES: Record<ImportIssueSeverity, string> = {
+  info: 'border-blue-500/40 text-blue-600 dark:text-blue-400',
+  warning: 'border-yellow-500/50 text-yellow-700 dark:text-yellow-400',
+  error: 'border-red-500/50 text-red-600 dark:text-red-400',
+}
+
 export function DatasetImportPanel({ flowRuns, hilApprovals, isLoadingRuns, onOpenAssistant }: DatasetImportPanelProps) {
   const [pendingUploads, setPendingUploads] = useState<PendingUpload[]>([])
   const [activeProfile, setActiveProfile] = useState(PROFILE_OPTIONS[0].value)
@@ -217,10 +224,15 @@ export function DatasetImportPanel({ flowRuns, hilApprovals, isLoadingRuns, onOp
   const [importJob, setImportJob] = useState<ImportJobState | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [csrfToken, setCsrfToken] = useState<string | null>(null)
+  const [profilePreview, setProfilePreview] = useState<ImportProfile | null>(null)
+  const [profileError, setProfileError] = useState<string | null>(null)
+  const [shouldAttachProfile, setShouldAttachProfile] = useState(true)
+  const [previewSourceName, setPreviewSourceName] = useState<string | null>(null)
 
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const eventSourceRef = useRef<EventSource | null>(null)
   const jobStateRef = useRef<ImportJobState | null>(null)
+  const profileKeyRef = useRef<string | null>(null)
 
   const totalUploadSize = useMemo(
     () => pendingUploads.reduce((acc, upload) => acc + upload.file.size, 0),
@@ -228,6 +240,9 @@ export function DatasetImportPanel({ flowRuns, hilApprovals, isLoadingRuns, onOp
   )
 
   const recentRuns = useMemo(() => flowRuns.slice(0, 6), [flowRuns])
+  const primaryUpload = pendingUploads[0] ?? null
+
+  const { mutateAsync: runProfile, reset: resetProfile, isPending: isProfiling } = useImportProfileMutation()
 
   const jobStatus = importJob?.job.status ?? null
   const jobInFlight = jobStatus === 'running' || jobStatus === 'queued'
@@ -244,6 +259,47 @@ export function DatasetImportPanel({ flowRuns, hilApprovals, isLoadingRuns, onOp
       eventSourceRef.current = null
     }
   }, [])
+
+  useEffect(() => {
+    if (pendingUploads.length === 0) {
+      profileKeyRef.current = null
+      setProfilePreview(null)
+      setProfileError(null)
+      setPreviewSourceName(null)
+      resetProfile()
+      return
+    }
+
+    const primary = pendingUploads[0]
+    const key = `${primary.file.name}-${primary.file.size}-${primary.file.lastModified}`
+    if (profileKeyRef.current === key && profilePreview) {
+      return
+    }
+
+    profileKeyRef.current = key
+    setShouldAttachProfile(true)
+    setProfilePreview(null)
+    setProfileError(null)
+    setPreviewSourceName(primary.file.name)
+
+    let cancelled = false
+
+    runProfile({ file: primary.file })
+      .then((profile) => {
+        if (!cancelled) {
+          setProfilePreview(profile)
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setProfileError(error instanceof Error ? error.message : 'Failed to profile workbook')
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [pendingUploads, profilePreview, resetProfile, runProfile])
 
   const updateImportJob = useCallback((updater: (prev: ImportJobState | null) => ImportJobState | null) => {
     setImportJob(prev => {
@@ -537,7 +593,51 @@ export function DatasetImportPanel({ flowRuns, hilApprovals, isLoadingRuns, onOp
 
   const clearPendingUploads = useCallback(() => {
     setPendingUploads([])
-  }, [])
+    setProfilePreview(null)
+    setProfileError(null)
+    setPreviewSourceName(null)
+    setShouldAttachProfile(true)
+    profileKeyRef.current = null
+    resetProfile()
+  }, [resetProfile])
+
+  const handleDownloadProfile = useCallback(() => {
+    if (!profilePreview) return
+    const baseName = (previewSourceName ?? profilePreview.workbook ?? 'import-profile')
+      .toString()
+      .replace(/[^a-z0-9-_]+/gi, '_')
+      .replace(/_{2,}/g, '_')
+      .replace(/^_+|_+$/g, '')
+      .slice(0, 64) || 'import-profile'
+    const blob = new Blob([JSON.stringify(profilePreview, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `${baseName}-profile.json`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }, [previewSourceName, profilePreview])
+
+  const handleReprofile = useCallback(() => {
+    if (!pendingUploads.length || isProfiling) {
+      return
+    }
+    const primary = pendingUploads[0]
+    const key = `${primary.file.name}-${primary.file.size}-${primary.file.lastModified}`
+    profileKeyRef.current = key
+    setProfilePreview(null)
+    setProfileError(null)
+    setPreviewSourceName(primary.file.name)
+    runProfile({ file: primary.file })
+      .then((profile) => {
+        setProfilePreview(profile)
+      })
+      .catch((error) => {
+        setProfileError(error instanceof Error ? error.message : 'Failed to profile workbook')
+      })
+  }, [isProfiling, pendingUploads, runProfile])
 
   const startImport = useCallback(async () => {
     if (pendingUploads.length === 0) {
@@ -568,6 +668,13 @@ export function DatasetImportPanel({ flowRuns, hilApprovals, isLoadingRuns, onOp
       formData.append('profile', activeProfile)
       if (notes.trim().length > 0) {
         formData.append('notes', notes.trim())
+      }
+      formData.append('attachProfile', shouldAttachProfile ? 'true' : 'false')
+      if (shouldAttachProfile && profilePreview) {
+        formData.append('profilePayload', JSON.stringify(profilePreview))
+        if (previewSourceName) {
+          formData.append('profileSourceName', previewSourceName)
+        }
       }
 
       const response = await fetch('/api/import', {
@@ -615,6 +722,11 @@ export function DatasetImportPanel({ flowRuns, hilApprovals, isLoadingRuns, onOp
       updateImportJob(() => nextJobState)
       setPendingUploads([])
       setNotes('')
+      setProfilePreview(null)
+      setProfileError(null)
+      setPreviewSourceName(null)
+      setShouldAttachProfile(true)
+      profileKeyRef.current = null
       connectToJob(job.id)
     } catch (startError) {
       console.error('[import] request failed', startError)
@@ -622,7 +734,19 @@ export function DatasetImportPanel({ flowRuns, hilApprovals, isLoadingRuns, onOp
     } finally {
       setIsSubmitting(false)
     }
-  }, [pendingUploads, activeProfile, notes, disableInputs, jobInFlight, getCsrfToken, updateImportJob, connectToJob])
+  }, [
+    pendingUploads,
+    activeProfile,
+    notes,
+    shouldAttachProfile,
+    profilePreview,
+    previewSourceName,
+    disableInputs,
+    jobInFlight,
+    getCsrfToken,
+    updateImportJob,
+    connectToJob,
+  ])
 
   useEffect(() => {
     return () => {
@@ -808,6 +932,156 @@ export function DatasetImportPanel({ flowRuns, hilApprovals, isLoadingRuns, onOp
                   </li>
                 ))}
               </ul>
+            )}
+
+            {pendingUploads.length > 0 && (
+              <div className="space-y-3 rounded-2xl border border-dashed border-border/70 bg-muted/25 p-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold">Profiling preview</p>
+                    <p className="text-xs text-muted-foreground">
+                      {primaryUpload
+                        ? `Based on ${primaryUpload.file.name} (${formatBytes(primaryUpload.file.size)})`
+                        : 'Drop a workbook to generate a profile.'}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground/80">
+                      Preview covers the first file in the queue; additional files profile during the guided wizard.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {isProfiling && (
+                      <span className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        Profiling…
+                      </span>
+                    )}
+                    <Button variant="ghost" size="sm" onClick={handleReprofile} disabled={!primaryUpload || isProfiling}>
+                      Re-run
+                    </Button>
+                  </div>
+                </div>
+                {profileError ? (
+                  <div className="flex items-start gap-3 rounded-xl border border-red-500/40 bg-red-500/10 p-3 text-xs text-red-700 dark:text-red-400">
+                    <ShieldAlert className="mt-0.5 h-4 w-4" />
+                    <div>
+                      <p className="font-medium">Profiling failed</p>
+                      <p>{profileError}</p>
+                    </div>
+                  </div>
+                ) : profilePreview ? (
+                  <>
+                    {profilePreview.issues && profilePreview.issues.length > 0 && (
+                      <div className="space-y-1 text-xs">
+                        {profilePreview.issues.slice(0, 3).map((issue, index) => (
+                          <div
+                            key={`${issue.code ?? issue.message}-${index}`}
+                            className="flex items-center gap-2 rounded-xl border border-border/60 bg-card/90 px-3 py-2"
+                          >
+                            <span
+                              className={cn(
+                                'rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide',
+                                ISSUE_SEVERITY_STYLES[issue.severity],
+                              )}
+                            >
+                              {issue.severity}
+                            </span>
+                            <span className="flex-1">{issue.message}</span>
+                          </div>
+                        ))}
+                        {profilePreview.issues.length > 3 && (
+                          <p className="text-[11px] text-muted-foreground">
+                            +{profilePreview.issues.length - 3} additional workbook issues
+                          </p>
+                        )}
+                      </div>
+                    )}
+                    <div className="grid gap-3 md:grid-cols-2">
+                      {profilePreview.sheets.map((sheet) => {
+                        const columnSample = sheet.columns.slice(0, 3)
+                        return (
+                          <div key={sheet.name} className="rounded-2xl border border-border/70 bg-card/80 p-4">
+                            <div className="flex flex-wrap items-start justify-between gap-2">
+                              <div>
+                                <p className="text-sm font-semibold">{sheet.name}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {sheet.rows.toLocaleString()} rows · {sheet.columns.length} columns
+                                </p>
+                              </div>
+                              <Badge variant="outline" className="text-xs capitalize">
+                                {sheet.role || 'unknown'}
+                              </Badge>
+                            </div>
+                            {sheet.joinKeys.length > 0 && (
+                              <p className="mt-3 text-[11px] text-muted-foreground">
+                                <span className="font-medium text-foreground">Join keys:</span>{' '}
+                                {sheet.joinKeys.join(', ')}
+                              </p>
+                            )}
+                            <div className="mt-3 space-y-1 text-xs">
+                              {columnSample.map(column => (
+                                <div
+                                  key={column.name}
+                                  className="flex items-center justify-between gap-2 rounded-lg border border-border/60 bg-background/80 px-2 py-1"
+                                >
+                                  <span className="truncate font-medium" title={column.name}>{column.name}</span>
+                                  <span className="text-muted-foreground">{column.inferredType}</span>
+                                </div>
+                              ))}
+                              {sheet.columns.length > columnSample.length && (
+                                <p className="text-[11px] text-muted-foreground">
+                                  +{sheet.columns.length - columnSample.length} more columns
+                                </p>
+                              )}
+                              {sheet.issues.length > 0 && (
+                                <div className="pt-2 text-[11px] text-muted-foreground">
+                                  {sheet.issues.slice(0, 2).map((issue, index) => (
+                                    <div key={`${sheet.name}-issue-${index}`} className="flex items-start gap-2">
+                                      <span
+                                        className={cn(
+                                          'mt-0.5 h-2 w-2 rounded-full',
+                                          issue.severity === 'error'
+                                            ? 'bg-red-500'
+                                            : issue.severity === 'warning'
+                                              ? 'bg-yellow-500'
+                                              : 'bg-blue-500',
+                                        )}
+                                      />
+                                      <span>{issue.message}</span>
+                                    </div>
+                                  ))}
+                                  {sheet.issues.length > 2 && (
+                                    <p>+{sheet.issues.length - 2} more sheet issues</p>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    Drop a workbook to preview inferred schema, join keys, and quality signals before running refinement.
+                  </p>
+                )}
+                <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/60 pt-3">
+                  <label className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 rounded border border-border/70 bg-background text-primary focus:ring-2 focus:ring-primary focus:ring-offset-1"
+                      checked={shouldAttachProfile}
+                      onChange={(event) => setShouldAttachProfile(event.target.checked)}
+                    />
+                    Attach profiling JSON to import job artifacts
+                  </label>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={handleDownloadProfile} disabled={!profilePreview}>
+                      Download JSON
+                    </Button>
+                  </div>
+                </div>
+              </div>
             )}
 
             <div className="space-y-3">

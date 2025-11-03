@@ -60,11 +60,11 @@
 
 ### 2.4 Smart import discovery (wizard foundation)
 
-- [ ] Ship `importsApi.profileWorkbook` (POST `/api/imports/profile`) returning typed `ImportProfile`/`SheetProfile` models.
-- [ ] Expose `useImportProfile` (React Query mutation) and `useStoredProfiles` (query) for DatasetImport + wizard flows.
-- [ ] Introduce `ImportProfilePreview` inside `DatasetImportPanel` (sheet cards, column stats, issue list, join-key badges).
-- [ ] Provide “Download profiling JSON” + “Attach to next run” actions (copy payload into job metadata/archive).
-- [ ] Persist profiles under `.hotpass/ui/import-profiles/` and promote the selected one to `dist/import/<job-id>/profile.json` when a run starts.
+- [x] Ship `importsApi.profileWorkbook` (POST `/api/imports/profile`) returning typed `ImportProfile`/`SheetProfile` models.
+- [x] Expose `useImportProfile` (React Query mutation) and `useStoredProfiles` (query) for DatasetImport + wizard flows.
+- [x] Introduce `ImportProfilePreview` inside `DatasetImportPanel` (sheet cards, column stats, issue list, join-key badges).
+- [x] Provide “Download profiling JSON” + “Attach to next run” actions (copy payload into job metadata/archive).
+- [x] Persist profiles under `.hotpass/ui/import-profiles/` and promote the selected one to `dist/import/<job-id>/profile.json` when a run starts. _(storage + REST scaffolding now in place; job pipeline hand-off still pending)_
 
 ---
 
@@ -103,7 +103,7 @@
 
 ### 3.5 Template management & consolidation preview
 
-- [ ] Ship `/api/imports/templates` CRUD in `server/index.mjs` + storage (list/create/update/delete named templates).
+- [x] Ship `/api/imports/templates` CRUD in `server/index.mjs` + storage (list/create/update/delete named templates).
 - [ ] Build `TemplatePicker` + `TemplateManagerDrawer` components (integrate with wizard + assistant actions).
 - [ ] Implement wizard `MappingStep` + `RuleToggleStep` consuming profiling defaults + template overrides.
 - [ ] Add `ConsolidationPreview` (master/entities/contacts/addresses tabs + download).
