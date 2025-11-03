@@ -34,10 +34,13 @@ WORKDIR /app
 COPY package*.json pnpm-lock.yaml ./
 RUN npm install -g pnpm && pnpm install --frozen-lockfile --prod
 
-USER appuser
-
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/server ./server
+
+RUN mkdir -p ./dist/import ./dist/contracts \
+  && chown -R appuser:appgroup ./dist ./server ./package*.json ./pnpm-lock.yaml
+
+USER appuser
 
 EXPOSE 3000
 
