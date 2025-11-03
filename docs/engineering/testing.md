@@ -1,6 +1,6 @@
 # Hotpass Testing & Coverage Strategy
 
-_Last updated: 2025-11-01_
+_Last updated: 2025-11-18_
 
 **Audience:** release managers, QA contributors, Copilot/Codex agents, and engineers who need to validate Hotpass before shipping changes.
 **Purpose:** explain how to run, extend, and troubleshoot the Hotpass automated test suites so that fast smoke checks and deeper gates stay reliable.
@@ -9,7 +9,7 @@ _Last updated: 2025-11-01_
 
 Hotpass uses a layered test model that keeps local feedback fast while reserving heavier validation for scheduled workflows.
 
-```mermaid
+```{mermaid}
 graph TD
     A[Local edit] --> B{Smoke tier<br/>scripts/testing/smoke.sh<br/>make qa}
     B --> C{Full tier<br/>scripts/testing/full.sh<br/>make qa-full}
@@ -70,6 +70,7 @@ If any command fails, the script exits immediately with a non-zero code so CI ca
 **Result:** comprehensive validation (~40 minutes on hosted runners) mirroring `.github/workflows/quality-gates.yml`.
 
 > **Update (2025-11-01):** `scripts/testing/full.sh` now invokes `mypy`, `bandit`, `detect-secrets`, and `pre-commit` through `uv run` so local shells no longer need globally-installed tooling. If your branch carries large, pre-existing diffs that you do not intend to reformat, call the script with `TRUNK_SKIP_TRUNK=1` to bypass the trunk auto-format bootstrap while still running the rest of the gate.
+
 ### Run UI unit tests in isolation
 
 **Use when:** iterating on web components without touching the Python stack.

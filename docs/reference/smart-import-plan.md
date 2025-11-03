@@ -1,87 +1,111 @@
-## Smart Import Implementation Tracker
+---
+title: Reference — Smart Import plan
+summary: Delivery tracker, data flow, and dependency map for the Smart Import experience across API, CLI, and UI surfaces.
+last_updated: 2025-11-18
+---
 
-| Stage                                                                  | Status           | Notes                                                         |
-| ---------------------------------------------------------------------- | ---------------- | ------------------------------------------------------------- |
-| Profiling service (`hotpass imports profile`, `/api/imports/profile`)  | ✅               | Sheet summaries, column heuristics, role/keys, issue catalog  |
-| Preprocessing engine (`import_mappings`, `import_rules`)               | ✅ (phase 1)     | Rename/normalise/date/drop rules wired into pipeline          |
-| Sheet role classification & join hints                                 | ✅               | Profiler now emits `role` and `join_keys` per sheet           |
-| Default import templates                                               | ✅               | `profiles/generic/imports/default.json` seeds base rules      |
-| Advanced rule library (rename, normalize_date, drop_layout rows, etc.) | ✅ (initial set) | Additional rules ready for per-profile layering               |
-| Consolidation / relational export                                      | ⏳               | TODO: entity/contact/address joins + multi-tab/Parquet export |
-| Wizard UI (mapping editor, rule toggles, preview)                      | ⏳               | Backend-ready; FE implementation pending                      |
-| Template service (list/save/delete)                                    | ✅               | REST endpoints + storage for named templates (`/api/imports/templates`) |
-| Assistant integration (reuse templates, surface issues)                | ✅ (phase 1)     | Assistant tools cover template summary/contract/telemetry     |
-| QA/HIL alignment                                                       | ⏳               | Surface auto-fixes & unresolved issues in HIL panel           |
+# Smart Import plan
 
-### Next Actions
+## Delivery status
 
-**Backend**
+| Stage                                                                 | Status           | Notes                                                                                                     |
+| --------------------------------------------------------------------- | ---------------- | --------------------------------------------------------------------------------------------------------- |
+| Profiling service (`hotpass imports profile`, `/api/imports/profile`) | ✅               | Emits sheet summaries, column heuristics, role/join key hints, and issue catalogues.                      |
+| Preprocessing engine (`import_mappings`, `import_rules`)              | ✅ (phase 1)     | Rename/normalise/date/drop rules wired into the pipeline with profile overlays.                           |
+| Sheet role classification & join hints                                | ✅               | Profiler exposes `role` and `join_keys` per sheet for auto-mapping.                                       |
+| Default import templates                                              | ✅               | `profiles/generic/imports/default.json` seeds base rules and plays nicely with profile-specific overlays. |
+| Advanced rule library                                                 | ✅ (initial set) | Layout pruning, canonical date parsing, and standard normalisers available for reuse.                     |
+| Consolidation / relational export                                     | ⏳               | Outstanding entity/contact/address joins and Parquet bundle exports.                                      |
+| Wizard UI (mapping editor, rule toggles, preview)                     | ⏳               | Backend ready; front-end polish and consolidation preview finishing.                                      |
+| Template service (list/save/delete)                                   | ✅               | REST endpoints (`/api/imports/templates`) and storage helpers ship with CLI + assistant support.          |
+| Assistant integration                                                 | ✅ (phase 1)     | Assistant tools cover template summary, contract export, and telemetry.                                   |
+| QA/HIL alignment                                                      | ⏳               | Need surfaced auto-fixes & unresolved issues in HIL and observability dashboards.                         |
 
-1. Implement relational consolidation helpers so entity + contact + address sheets can emit tidy linked tables (preserving multi-location/contact data) and export complementary Parquet/JSON bundles.
-2. Extend the rule library with fuzzy matching, geocoding backfill, duplicate resolution, and provenance tagging; keep rules white-label by default.
-3. Emit structured import issue logs via SSE/telemetry for dashboards & HIL.
-4. Add batch contract generation support (per-profile suites) and persist manifest metadata alongside `dist/contracts`.
+## End-to-end data flow
 
-**Wizard / UI**
+```{mermaid}
+flowchart LR
+    subgraph Sources
+        Workbook[Spreadsheet workbook]
+        Template[Template selection]
+    end
 
-5. Surface profiler sheet roles + join hints in the wizard to drive default mapping selections.
-6. Implement run submission + queue trigger from the wizard, including job status hand-off and notifications.
-7. Provide result summaries (autofixes, blockers, recommendations) and allow template diff export directly from the wizard UI.
+    subgraph Profiling
+        ProfileSvc[Profile service\n`/api/imports/profile`]
+        RulesStore[Template storage\n`.hotpass/ui/imports/templates/`]
+    end
 
-**Assistant / CLI**
+    subgraph Pipeline
+        Mapper[Mapping engine\n`import_mappings`]
+        RuleEngine[Rule library\n`import_rules`]
+        Consolidator[Consolidation helpers]
+    end
 
-8. Enable assistants/CLI to trigger refinement with `--import-template` arguments and expose contract artifacts in chat responses.
-9. Add assistant actions that preview suggested fixes before applying them, keeping a human-in-the-loop confirmation.
+    subgraph Outputs
+        JobArtifacts[`dist/import/<job-id>/`]
+        Contracts[`dist/contracts/`]
+        Dashboard[Streamlit dashboard]
+    end
 
-**Quality & Governance**
+    Workbook --> ProfileSvc
+    Template --> RulesStore
+    ProfileSvc --> Mapper
+    RulesStore --> Mapper
+    Mapper --> RuleEngine
+    RuleEngine --> Consolidator
+    Consolidator --> JobArtifacts
+    Consolidator --> Dashboard
+    JobArtifacts --> Contracts
+```
 
-10. Surface import issues in pipeline telemetry/HIL workflows so operators can approve/reject critical fixes with context.
-11. Keep all defaults industry-agnostic; profile-specific templates remain optional overlays.
-12. Wire consolidation telemetry into governance dashboards (QA/HIL review tooling).
+The flow shows how operators choose a template, run profiling, review rule impacts, and persist a consolidated dataset alongside
+contracts and dashboards.
 
-_Updated: 2025-11-03_
+## Dependency map
 
-### Implementation Notes (2025-11-03)
+| Layer                | Components                                                                                          | Notes                                                                                                                     |
+| -------------------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| **Backend**          | `apps/data-platform/hotpass/imports/`, `/api/imports/profile`, `/api/imports/templates`             | Python services expose profiling, rule evaluation, and template persistence; results stored under `.hotpass/ui/imports/`. |
+| **CLI & assistants** | `hotpass refine --import-template`, `hotpass plan import`, MCP tools `hotpass.imports.*`            | Consumers can trigger runs with a template, preview issues, and surface contracts inside chat-based workflows.            |
+| **Web UI**           | `apps/web-ui/src/api/imports.ts`, `SmartImportWizard`, `TemplateManagerDrawer`                      | React Query hooks and wizard screens orchestrate uploads, mapping tweaks, and result summaries.                           |
+| **Persistence**      | `.hotpass/ui/imports/{profiles,templates}/`, `dist/import/<job-id>/profile.json`, `dist/contracts/` | Profiles and templates cached locally; job artefacts stored alongside run metadata for download and auditing.             |
+| **Telemetry**        | `ops/telemetry`, dashboards, SSE streams                                                            | Import issue logs and status updates feed the Streamlit dashboard and HIL tooling.                                        |
 
-- **Client architecture**
+## Pipeline narrative
 
-  - Create `apps/web-ui/src/api/imports.ts` exposing `profileWorkbook({ file?, workbookPath?, sampleRows, maxRows })` → `ImportProfile`.
-  - Provide React Query helpers: `useImportProfile` (mutation for ad-hoc profiling) and `useStoredProfiles` (query pulling cached results once persistence lands).
-  - Extend `@/types` with `ImportProfile`, `SheetProfile`, `ColumnProfile`, `ImportIssue` to keep UI/server payloads aligned.
+1. **Profile** — operator uploads a workbook (or points to a stored file). The profiling service analyses sheet structure,
+   generates role/join key hints, and records issues.
+2. **Review mappings** — default templates plus profile overlays populate the wizard. Operators confirm or adjust column mapping,
+   rename rules, and layout filters.
+3. **Queue run** — the wizard or CLI submits a pipeline run with the selected template, optionally attaching the profiling payload
+   for provenance.
+4. **Execute rules** — the pipeline applies mapping/rule stages, tracking autofixes, drops, and outstanding manual work.
+5. **Consolidate & export** — once consolidation helpers land, the pipeline will emit tidy entity/contact/address tables alongside
+   Parquet bundles while maintaining the Excel outputs.
+6. **Surface results** — dashboards render live SSE logs, issue summaries, and download links (`dist/import/<job-id>/profile.json`).
+7. **Governance** — contracts and manifests drop into `dist/contracts/` so data governance tooling can track import provenance.
 
-- **Dataset import UI**
+## Operational readiness checklist
 
-- Embed an `ImportProfilePreview` panel inside `DatasetImportPanel` prior to pipeline submission (sheet cards, column stats, join-key badges, issue list, download button).
-- Promote a dedicated `/imports/wizard` route with `SmartImportWizard`, editable Mapping/Rules steps, consolidation preview, and summary actions so operators can adjust mappings before running `refine`.
-- Reuse the new hooks above for both the quick preview and the multi-step wizard; surface “Attach profile to run”, manage templates, and export wizard payloads.
+### Backend
 
-- **Persistence strategy**
+- [x] DatasetImportPanel wired to `useImportProfileMutation` with download and attach actions.
+- [x] Import runs persist profile metadata alongside job outputs.
+- [x] `/imports/wizard` route delivers Upload → Profile → Mapping → Rules → Summary steps.
+- [x] Template management UI exposes CRUD flows, matching CLI and assistant tooling.
+- [ ] Batch contract automation, diff manifests, and governance dashboards consuming consolidation telemetry.
 
-  - Persist profiling payloads under `.hotpass/ui/import-profiles/` via `server/storage.js` helpers for quick recall.
-  - When an import job kicks off, copy the selected payload into `dist/import/<job-id>/profile.json` and include a download link in job metadata.
-  - Optional future enhancement: add `GET /api/imports/profile/:id` to retrieve archived payloads without hitting disk directly.
+### Assistant & CLI
 
-- **Template/API status**
+- [x] CLI and assistants share template CRUD helpers (see `apps/web-ui/src/agent/tools.ts`).
+- [ ] Add assistant pre-flight checks that preview suggested fixes and require explicit confirmation before applying.
+- [ ] Extend `hotpass refine` with richer `--import-template` ergonomics once consolidation ships.
 
-  - `/api/imports/templates` CRUD endpoints (list/create/update/delete) with storage helpers live under `.hotpass/ui/imports/templates/*.json`.
-  - Assistant + CLI tooling consumes the same endpoints for summary, contract publishing, and telemetry.
-  - Remaining work: batch contract automation, diff manifest export, and governance dashboards that consume consolidation telemetry.
+### QA & governance
 
-- **Current scaffolding (2025-11-03)**
+- [ ] Emit structured import issue logs via SSE/telemetry for dashboards & HIL.
+- [ ] Surface auto-fixes and unresolved issues within the HIL panel for approvals.
+- [ ] Keep defaults industry-agnostic; ensure profile-specific overlays remain optional.
 
-  - Client module `importsApi` now exposes `profileWorkbook`, stored profile CRUD, and template CRUD plus React Query hooks (`useImportProfileMutation`, `useStoredImportProfiles`, `useImportTemplates`, `useImportTemplateUpsert`, `useImportTemplateDelete`).
-  - Express server stubs `/api/imports/profiles` (GET/POST/DELETE) and `/api/imports/templates` (GET/POST/PUT/DELETE) backed by new storage helpers in `server/storage.js`.
-  - Stored assets live under `.hotpass/ui/imports/{profiles,templates}/<id>.json`; templates enforce name + payload validation and dedupe tags.
-  - UI includes DatasetImport profiling preview, Smart Import wizard with editable mapping/rule steps, consolidation preview, template export, and TemplateManager drawer for CRUD operations.
-  - Assistant tooling (`apps/web-ui/src/agent/tools.ts`) exposes list/get/save/delete helpers for import templates, aligning CLI/assistant behaviour with the REST API.
-  - Dashboard surfaces the latest refined workbook card and data quality chip so operators can see recent QA performance alongside import activity.
-  - Dataset import panel embeds a live processing widget (timer, throughput, autofix/error counts) refreshed every ~300 ms for in-flight jobs.
-  - Cell spotlight card highlights the most recent sheet/cell fix detected in import logs, with assistant handoff for rapid follow-up.
-  - Run Details streams live job logs via SSE, enabling real-time monitoring and lightweight glow states for new entries.
-
-- **Recommended execution order**
-  1. ✅ Wire `DatasetImportPanel` to `useImportProfileMutation`, render an `ImportProfilePreview`, and expose download/attach actions (2025-11-03).
-  2. ✅ When an import run starts, persist the chosen profile metadata alongside the job (`dist/import/<job-id>/profile.json`) and surface the artifact link in job events (2025-11-03).
-  3. ✅ Stand up the `/imports/wizard` route with step components (Upload → Profile → Mapping → Rules → Summary) reusing stored profiles/templates (editable mapping/rule forms + consolidation preview live 2025-11-03).
-  4. ✅ Layer on template management UI (`TemplatePicker`, `TemplateManagerDrawer`) plus CLI/assistant template tools (2025-11-03).
-  5. 🔭 Next: batch contract automation + diff manifests, assistant-driven run orchestration, and governance dashboards with consolidation telemetry.
+Track these backlog items in the operations board; once checked off, promote the Smart Import wizard from beta to general
+availability.
