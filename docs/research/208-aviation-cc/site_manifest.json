@@ -1,0 +1,26 @@
+{
+    "entity_name": "208 Aviation CC",
+    "entity_slug": "208-aviation-cc",
+    "generated_at": "2025-11-03T22:38:48Z",
+    "base_url": "https://santam.co.za",
+    "robots_txt": {
+        "url": "https://santam.co.za/robots.txt",
+        "status": "not_fetched",
+        "allow_contact_pages": null
+    },
+    "sitemaps": [],
+    "candidate_pages": [
+        {
+            "url": "https://www.santam.co.za/about-us/contact-us/",
+            "category": "contact",
+            "method": "GET",
+            "notes": "Primary contact channel listed on the parent site."
+        },
+        {
+            "url": "https://www.santam.co.za/insurance/for-specialised-risks/aviation",
+            "category": "about",
+            "method": "GET",
+            "notes": "Product page referenced by the workbook."
+        }
+    ]
+}

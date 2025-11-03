@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import importlib
 import json
 import os
 import time
@@ -11,16 +10,39 @@ from typing import Any
 
 import requests  # type: ignore[import-untyped]
 
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+import sys
 
-# --- GE Data Docs ---
-# Run the checkpoint via the Python API so we avoid shelling out on hardened runners.
-def run_ge_checkpoint() -> None:
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+
+# --- Great Expectations Data Docs ---
+def run_data_contract_checks() -> None:
+    """
+    Generate Data Docs by reusing the ops/validation/refresh_data_docs helper.
+
+    The helper loads sample workbooks from data/ and writes HTML outputs to
+    dist/data-docs/. We treat failures as non-fatal so docs refresh remains
+    best-effort on environments without optional dependencies.
+    """
+
     try:
-        gx_module: Any = importlib.import_module("great_expectations")
-        context = gx_module.get_context()
-        context.run_checkpoint(checkpoint_name="contacts_checkpoint")
-    except Exception as exc:  # noqa: BLE001 - log but keep pipeline green
-        print(f"Great Expectations checkpoint skipped: {exc}")
+        from ops.validation.refresh_data_docs import main as refresh_data_docs_main
+    except Exception as exc:  # noqa: BLE001 - optional dependency
+        print(f"Great Expectations refresh skipped: unable to import helper ({exc}).")
+        return
+
+    try:
+        exit_code = refresh_data_docs_main()
+    except Exception as exc:  # noqa: BLE001 - keep doc refresh best-effort
+        print(f"Great Expectations refresh skipped: {exc}")
+        return
+
+    if exit_code != 0:
+        print(f"Great Expectations refresh completed with exit code {exit_code}.")
+    else:
+        print("Great Expectations refresh completed successfully.")
 
 
 # --- Marquez lineage export (PNG + JSON) ---
@@ -65,7 +87,7 @@ def ensure_research_manifests() -> None:
 
 
 def main() -> None:
-    run_ge_checkpoint()
+    run_data_contract_checks()
     marquez_lineage_snapshot()
     ensure_research_manifests()
     print("Docs refresh complete.")

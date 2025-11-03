@@ -1,0 +1,178 @@
+{
+  "plan": {
+    "entity_name": "208 Aviation CC",
+    "entity_slug": "208-aviation-cc",
+    "query": null,
+    "target_urls": [
+      "https://santam.co.za/insurance/for-specialised-risks/aviation"
+    ],
+    "allow_network": false,
+    "authority_sources": [],
+    "backfill_fields": [
+      "contact_primary_email",
+      "contact_primary_phone",
+      "website",
+      "province",
+      "address_primary"
+    ],
+    "rate_limit": null
+  },
+  "steps": [
+    {
+      "name": "local_snapshot",
+      "status": "skipped",
+      "message": "No cached snapshot available",
+      "artifacts": {
+        "path": ".hotpass/snapshots/208-aviation-cc.json"
+      }
+    },
+    {
+      "name": "authority_sources",
+      "status": "skipped",
+      "message": "No authority snapshots found for entity",
+      "artifacts": {
+        "authority_sources": []
+      }
+    },
+    {
+      "name": "deterministic_enrichment",
+      "status": "skipped",
+      "message": "Deterministic enrichment executed without updates",
+      "artifacts": {
+        "updated_fields": {},
+        "enriched_row": {
+          "organization_name": "208 Aviation CC",
+          "organization_slug": "208-aviation-cc",
+          "province": null,
+          "country": "South Africa",
+          "area": null,
+          "address_primary": null,
+          "organization_category": null,
+          "organization_type": null,
+          "status": "Investigate",
+          "website": "https://santam.co.za/insurance/for-specialised-risks/aviation",
+          "planes": null,
+          "description": null,
+          "notes": null,
+          "source_datasets": "Contact Database",
+          "source_record_ids": "contact:1",
+          "contact_primary_name": null,
+          "contact_primary_role": null,
+          "contact_primary_email": null,
+          "contact_primary_phone": null,
+          "contact_secondary_emails": null,
+          "contact_secondary_phones": null,
+          "data_quality_score": 0.2,
+          "data_quality_flags": "missing_contact_email;missing_contact_phone;missing_province;missing_address",
+          "selection_provenance": "{\"status\": {\"field\": \"status\", \"last_interaction_date\": null, \"quality_score\": 1, \"source_dataset\": \"Contact Database\", \"source_priority\": 1, \"source_record_id\": \"contact:1\", \"value\": \"Investigate\"}, \"website\": {\"field\": \"website\", \"last_interaction_date\": null, \"quality_score\": 1, \"source_dataset\": \"Contact Database\", \"source_priority\": 1, \"source_record_id\": \"contact:1\", \"value\": \"https://santam.co.za/insurance/for-specialised-risks/aviation\"}}",
+          "last_interaction_date": null,
+          "priority": null,
+          "privacy_basis": "Legitimate Interest"
+        },
+        "provenance": {
+          "sources_tried": [],
+          "network_allowed": false,
+          "applied_source": null
+        }
+      }
+    },
+    {
+      "name": "searx_search",
+      "status": "skipped",
+      "message": "SearXNG integration disabled",
+      "artifacts": {}
+    },
+    {
+      "name": "network_enrichment",
+      "status": "skipped",
+      "message": "Network enrichment disabled via flags",
+      "artifacts": {}
+    },
+    {
+      "name": "native_crawl",
+      "status": "skipped",
+      "message": "Network disabled; crawler not executed",
+      "artifacts": {}
+    },
+    {
+      "name": "backfill",
+      "status": "success",
+      "message": "Identified 4 fields for backfill attempts",
+      "artifacts": {
+        "fields": [
+          "address_primary",
+          "contact_primary_email",
+          "contact_primary_phone",
+          "province"
+        ],
+        "allow_network": false,
+        "enriched_row": {
+          "organization_name": "208 Aviation CC",
+          "organization_slug": "208-aviation-cc",
+          "province": null,
+          "country": "South Africa",
+          "area": null,
+          "address_primary": null,
+          "organization_category": null,
+          "organization_type": null,
+          "status": "Investigate",
+          "website": "https://santam.co.za/insurance/for-specialised-risks/aviation",
+          "planes": null,
+          "description": null,
+          "notes": null,
+          "source_datasets": "Contact Database",
+          "source_record_ids": "contact:1",
+          "contact_primary_name": null,
+          "contact_primary_role": null,
+          "contact_primary_email": null,
+          "contact_primary_phone": null,
+          "contact_secondary_emails": null,
+          "contact_secondary_phones": null,
+          "data_quality_score": 0.2,
+          "data_quality_flags": "missing_contact_email;missing_contact_phone;missing_province;missing_address",
+          "selection_provenance": "{\"status\": {\"field\": \"status\", \"last_interaction_date\": null, \"quality_score\": 1, \"source_dataset\": \"Contact Database\", \"source_priority\": 1, \"source_record_id\": \"contact:1\", \"value\": \"Investigate\"}, \"website\": {\"field\": \"website\", \"last_interaction_date\": null, \"quality_score\": 1, \"source_dataset\": \"Contact Database\", \"source_priority\": 1, \"source_record_id\": \"contact:1\", \"value\": \"https://santam.co.za/insurance/for-specialised-risks/aviation\"}}",
+          "last_interaction_date": null,
+          "priority": null,
+          "privacy_basis": "Legitimate Interest"
+        }
+      }
+    }
+  ],
+  "enriched_row": {
+    "organization_name": "208 Aviation CC",
+    "organization_slug": "208-aviation-cc",
+    "province": null,
+    "country": "South Africa",
+    "area": null,
+    "address_primary": null,
+    "organization_category": null,
+    "organization_type": null,
+    "status": "Investigate",
+    "website": "https://santam.co.za/insurance/for-specialised-risks/aviation",
+    "planes": null,
+    "description": null,
+    "notes": null,
+    "source_datasets": "Contact Database",
+    "source_record_ids": "contact:1",
+    "contact_primary_name": null,
+    "contact_primary_role": null,
+    "contact_primary_email": null,
+    "contact_primary_phone": null,
+    "contact_secondary_emails": null,
+    "contact_secondary_phones": null,
+    "data_quality_score": 0.2,
+    "data_quality_flags": "missing_contact_email;missing_contact_phone;missing_province;missing_address",
+    "selection_provenance": "{\"status\": {\"field\": \"status\", \"last_interaction_date\": null, \"quality_score\": 1, \"source_dataset\": \"Contact Database\", \"source_priority\": 1, \"source_record_id\": \"contact:1\", \"value\": \"Investigate\"}, \"website\": {\"field\": \"website\", \"last_interaction_date\": null, \"quality_score\": 1, \"source_dataset\": \"Contact Database\", \"source_priority\": 1, \"source_record_id\": \"contact:1\", \"value\": \"https://santam.co.za/insurance/for-specialised-risks/aviation\"}}",
+    "last_interaction_date": null,
+    "priority": null,
+    "privacy_basis": "Legitimate Interest"
+  },
+  "provenance": {
+    "sources_tried": [],
+    "network_allowed": false,
+    "applied_source": null
+  },
+  "elapsed_seconds": 0.001229957997566089,
+  "success": true,
+  "artifact_path": ".hotpass/research_runs/208-aviation-cc-20251103T223746Z.json"
+}

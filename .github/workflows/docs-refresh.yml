@@ -30,6 +30,14 @@ jobs:
           MARQUEZ_API_KEY: ${{ secrets.MARQUEZ_API_KEY }}
         run: |
           python scripts/docs_refresh.py
+      - name: Upload Data Docs artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: data-docs-${{ github.run_id }}
+          path: dist/data-docs
+          if-no-files-found: warn
+          retention-days: 7
       - name: Commit artefacts
         run: |
           git config user.name "hotpass-bot"

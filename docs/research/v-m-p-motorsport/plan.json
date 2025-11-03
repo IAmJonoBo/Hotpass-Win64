@@ -1,0 +1,177 @@
+{
+  "plan": {
+    "entity_name": "V M P Motorsport",
+    "entity_slug": "v-m-p-motorsport",
+    "query": null,
+    "target_urls": [],
+    "allow_network": false,
+    "authority_sources": [],
+    "backfill_fields": [
+      "contact_primary_email",
+      "contact_primary_phone",
+      "website",
+      "province",
+      "address_primary"
+    ],
+    "rate_limit": null
+  },
+  "steps": [
+    {
+      "name": "local_snapshot",
+      "status": "skipped",
+      "message": "No cached snapshot available",
+      "artifacts": {
+        "path": ".hotpass/snapshots/v-m-p-motorsport.json"
+      }
+    },
+    {
+      "name": "authority_sources",
+      "status": "skipped",
+      "message": "No authority snapshots found for entity",
+      "artifacts": {
+        "authority_sources": []
+      }
+    },
+    {
+      "name": "deterministic_enrichment",
+      "status": "skipped",
+      "message": "Deterministic enrichment executed without updates",
+      "artifacts": {
+        "updated_fields": {},
+        "enriched_row": {
+          "organization_name": "V M P Motorsport",
+          "organization_slug": "v-m-p-motorsport",
+          "province": null,
+          "country": "South Africa",
+          "area": null,
+          "address_primary": null,
+          "organization_category": "Motorsport",
+          "organization_type": "Motorsport",
+          "status": "NTC",
+          "website": null,
+          "planes": null,
+          "description": null,
+          "notes": null,
+          "source_datasets": "Contact Database",
+          "source_record_ids": "contact:418",
+          "contact_primary_name": null,
+          "contact_primary_role": null,
+          "contact_primary_email": null,
+          "contact_primary_phone": null,
+          "contact_secondary_emails": null,
+          "contact_secondary_phones": null,
+          "data_quality_score": 0.0,
+          "data_quality_flags": "missing_contact_email;missing_contact_phone;missing_website;missing_province;missing_address",
+          "selection_provenance": "{\"organization_category\": {\"field\": \"organization_category\", \"last_interaction_date\": \"2025-07-26\", \"quality_score\": 0, \"source_dataset\": \"Contact Database\", \"source_priority\": 1, \"source_record_id\": \"contact:418\", \"value\": \"Motorsport\"}, \"organization_type\": {\"field\": \"organization_type\", \"last_interaction_date\": \"2025-07-26\", \"quality_score\": 0, \"source_dataset\": \"Contact Database\", \"source_priority\": 1, \"source_record_id\": \"contact:418\", \"value\": \"Motorsport\"}, \"priority\": {\"field\": \"priority\", \"last_interaction_date\": \"2025-07-26\", \"quality_score\": 0, \"source_dataset\": \"Contact Database\", \"source_priority\": 1, \"source_record_id\": \"contact:418\", \"value\": \"Imminent\"}, \"status\": {\"field\": \"status\", \"last_interaction_date\": \"2025-07-26\", \"quality_score\": 0, \"source_dataset\": \"Contact Database\", \"source_priority\": 1, \"source_record_id\": \"contact:418\", \"value\": \"NTC\"}}",
+          "last_interaction_date": "2025-07-26",
+          "priority": "Imminent",
+          "privacy_basis": "Legitimate Interest"
+        },
+        "provenance": {
+          "sources_tried": [],
+          "network_allowed": false,
+          "applied_source": null
+        }
+      }
+    },
+    {
+      "name": "searx_search",
+      "status": "skipped",
+      "message": "SearXNG integration disabled",
+      "artifacts": {}
+    },
+    {
+      "name": "network_enrichment",
+      "status": "skipped",
+      "message": "Network enrichment disabled via flags",
+      "artifacts": {}
+    },
+    {
+      "name": "native_crawl",
+      "status": "skipped",
+      "message": "Network disabled; crawler not executed",
+      "artifacts": {}
+    },
+    {
+      "name": "backfill",
+      "status": "success",
+      "message": "Identified 5 fields for backfill attempts",
+      "artifacts": {
+        "fields": [
+          "address_primary",
+          "contact_primary_email",
+          "contact_primary_phone",
+          "province",
+          "website"
+        ],
+        "allow_network": false,
+        "enriched_row": {
+          "organization_name": "V M P Motorsport",
+          "organization_slug": "v-m-p-motorsport",
+          "province": null,
+          "country": "South Africa",
+          "area": null,
+          "address_primary": null,
+          "organization_category": "Motorsport",
+          "organization_type": "Motorsport",
+          "status": "NTC",
+          "website": null,
+          "planes": null,
+          "description": null,
+          "notes": null,
+          "source_datasets": "Contact Database",
+          "source_record_ids": "contact:418",
+          "contact_primary_name": null,
+          "contact_primary_role": null,
+          "contact_primary_email": null,
+          "contact_primary_phone": null,
+          "contact_secondary_emails": null,
+          "contact_secondary_phones": null,
+          "data_quality_score": 0.0,
+          "data_quality_flags": "missing_contact_email;missing_contact_phone;missing_website;missing_province;missing_address",
+          "selection_provenance": "{\"organization_category\": {\"field\": \"organization_category\", \"last_interaction_date\": \"2025-07-26\", \"quality_score\": 0, \"source_dataset\": \"Contact Database\", \"source_priority\": 1, \"source_record_id\": \"contact:418\", \"value\": \"Motorsport\"}, \"organization_type\": {\"field\": \"organization_type\", \"last_interaction_date\": \"2025-07-26\", \"quality_score\": 0, \"source_dataset\": \"Contact Database\", \"source_priority\": 1, \"source_record_id\": \"contact:418\", \"value\": \"Motorsport\"}, \"priority\": {\"field\": \"priority\", \"last_interaction_date\": \"2025-07-26\", \"quality_score\": 0, \"source_dataset\": \"Contact Database\", \"source_priority\": 1, \"source_record_id\": \"contact:418\", \"value\": \"Imminent\"}, \"status\": {\"field\": \"status\", \"last_interaction_date\": \"2025-07-26\", \"quality_score\": 0, \"source_dataset\": \"Contact Database\", \"source_priority\": 1, \"source_record_id\": \"contact:418\", \"value\": \"NTC\"}}",
+          "last_interaction_date": "2025-07-26",
+          "priority": "Imminent",
+          "privacy_basis": "Legitimate Interest"
+        }
+      }
+    }
+  ],
+  "enriched_row": {
+    "organization_name": "V M P Motorsport",
+    "organization_slug": "v-m-p-motorsport",
+    "province": null,
+    "country": "South Africa",
+    "area": null,
+    "address_primary": null,
+    "organization_category": "Motorsport",
+    "organization_type": "Motorsport",
+    "status": "NTC",
+    "website": null,
+    "planes": null,
+    "description": null,
+    "notes": null,
+    "source_datasets": "Contact Database",
+    "source_record_ids": "contact:418",
+    "contact_primary_name": null,
+    "contact_primary_role": null,
+    "contact_primary_email": null,
+    "contact_primary_phone": null,
+    "contact_secondary_emails": null,
+    "contact_secondary_phones": null,
+    "data_quality_score": 0.0,
+    "data_quality_flags": "missing_contact_email;missing_contact_phone;missing_website;missing_province;missing_address",
+    "selection_provenance": "{\"organization_category\": {\"field\": \"organization_category\", \"last_interaction_date\": \"2025-07-26\", \"quality_score\": 0, \"source_dataset\": \"Contact Database\", \"source_priority\": 1, \"source_record_id\": \"contact:418\", \"value\": \"Motorsport\"}, \"organization_type\": {\"field\": \"organization_type\", \"last_interaction_date\": \"2025-07-26\", \"quality_score\": 0, \"source_dataset\": \"Contact Database\", \"source_priority\": 1, \"source_record_id\": \"contact:418\", \"value\": \"Motorsport\"}, \"priority\": {\"field\": \"priority\", \"last_interaction_date\": \"2025-07-26\", \"quality_score\": 0, \"source_dataset\": \"Contact Database\", \"source_priority\": 1, \"source_record_id\": \"contact:418\", \"value\": \"Imminent\"}, \"status\": {\"field\": \"status\", \"last_interaction_date\": \"2025-07-26\", \"quality_score\": 0, \"source_dataset\": \"Contact Database\", \"source_priority\": 1, \"source_record_id\": \"contact:418\", \"value\": \"NTC\"}}",
+    "last_interaction_date": "2025-07-26",
+    "priority": "Imminent",
+    "privacy_basis": "Legitimate Interest"
+  },
+  "provenance": {
+    "sources_tried": [],
+    "network_allowed": false,
+    "applied_source": null
+  },
+  "elapsed_seconds": 0.0003621659998316318,
+  "success": true,
+  "artifact_path": ".hotpass/research_runs/v-m-p-motorsport-20251103T224727Z.json"
+}

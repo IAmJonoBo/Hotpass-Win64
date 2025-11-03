@@ -1,0 +1,21 @@
+{
+  "entity_name": "V M P Motorsport",
+  "entity_slug": "v-m-p-motorsport",
+  "generated_at": "2025-11-03T22:48:08Z",
+  "priority": "Imminent",
+  "base_url": null,
+  "discovery_status": "pending_confirmation",
+  "country": "South Africa",
+  "indicative_industry": "Motorsport",
+  "robots_txt": {
+    "url": null,
+    "status": "not_fetched",
+    "allow_contact_pages": null
+  },
+  "sitemaps": [],
+  "candidate_pages": [],
+  "notes": [
+    "Website not recorded in refined workbook; capture during next research run.",
+    "Populate candidate_pages once authoritative sources are confirmed."
+  ]
+}

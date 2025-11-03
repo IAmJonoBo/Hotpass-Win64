@@ -324,10 +324,20 @@ def _handle_show(...):
 ```markdown
 ## Docs refresh checklist
 
-- [ ] Ran **Docs Refresh** workflow or `python scripts/docs_refresh.py`
-- [ ] GE Data Docs updated and linked in Next_Steps.md / README
-- [ ] Marquez lineage snapshots updated in `docs/lineage/`
-- [ ] Research plans & site manifests (metadata only) under `docs/research/`
+- [x] Ran **Docs Refresh** workflow or `python scripts/docs_refresh.py`
+- [x] GE Data Docs updated and linked in Next_Steps.md / README
+- [x] Marquez lineage snapshots updated in `docs/lineage/`
+- [x] Research plans & site manifests (metadata only) under `docs/research/`
+
+Latest artefacts
+- Data Docs index: `dist/data-docs/index.html` (refreshed 2025-11-03T22:34Z)
+- Lineage snapshot marker: `docs/lineage/LAST_REFRESH.txt`
+- Research metadata:
+  - `docs/research/208-aviation-cc/` (plan + site manifest)
+  - `docs/research/flightsure/` (plan + site manifest)
+  - `docs/research/lady-lori-kenya-limited/` (plan + site manifest)
+  - `docs/research/mcc-aviation-pty-ltd/` (plan + site manifest)
+  - `docs/research/v-m-p-motorsport/` (plan + site manifest)
 ```
 
 4. AGENTS.md — append a section titled **MCP endpoints (authoritative)** summarising the following tools with examples: `workbook.describe`, `workbook.read_cell`, `workbook.search`, `workbook.explain_cell`, `research.resolve_company`, `research.plan`, `research.site_manifest`, `research.fetch_contacts`, `contact.normalise`, `qa.latest`, `qa.coverage_report`, `lineage.graph`.
