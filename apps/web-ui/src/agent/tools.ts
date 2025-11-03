@@ -5,48 +5,66 @@
  * and to trigger long-running CLI jobs through the command runner.
  */
 
-import { prefectApi } from '@/api/prefect'
-import { marquezApi } from '@/api/marquez'
-import { importsApi } from '@/api/imports'
-import { runCommandJob, buildCommandJobLinks, type CommandJobLinks } from '@/api/commands'
-import type { CommandJob, ImportTemplatePayload } from '@/types'
-import { buildTemplateContract, summariseTemplate } from '@/lib/importTemplates'
-import { getCachedToolContract, loadToolContract, type ToolDefinition } from './contract'
+import { prefectApi } from "@/api/prefect";
+import { marquezApi } from "@/api/marquez";
+import { importsApi } from "@/api/imports";
+import {
+  runCommandJob,
+  buildCommandJobLinks,
+  type CommandJobLinks,
+} from "@/api/commands";
+import type { CommandJob, ImportTemplatePayload } from "@/types";
+import {
+  buildTemplateContract,
+  summariseTemplate,
+} from "@/lib/importTemplates";
+import {
+  getCachedToolContract,
+  loadToolContract,
+  type ToolDefinition,
+} from "./contract";
 
 export interface ToolResult {
-  success: boolean
-  data?: unknown
-  error?: string
-  message: string
+  success: boolean;
+  data?: unknown;
+  error?: string;
+  message: string;
 }
 
 export interface ToolCall {
-  id: string
-  tool: string
-  timestamp: Date
-  result?: ToolResult
+  id: string;
+  tool: string;
+  timestamp: Date;
+  result?: ToolResult;
 }
 
 export interface CommandToolResultData extends CommandJobLinks {
-  job: CommandJob
-  label?: string
+  job: CommandJob;
+  label?: string;
 }
 
-const DEFAULT_PROFILE = 'generic'
-const DEFAULT_REFINED_PATH = './dist/refined.xlsx'
-const PROFILE_SEARCH_PATH = './apps/data-platform/hotpass/profiles'
+const DEFAULT_PROFILE = "generic";
+const DEFAULT_REFINED_PATH = "./dist/refined.xlsx";
+const PROFILE_SEARCH_PATH = "./apps/data-platform/hotpass/profiles";
+const DEFAULT_TUNNEL_HOST =
+  import.meta.env.HOTPASS_BASTION_HOST ??
+  import.meta.env.VITE_HOTPASS_BASTION_HOST ??
+  "bastion.staging.internal";
+const DEFAULT_TUNNEL_VIA = (import.meta.env.HOTPASS_TUNNEL_VIA ??
+  import.meta.env.VITE_HOTPASS_TUNNEL_VIA ??
+  "ssh-bastion") as "ssh-bastion" | "ssm";
 
-export const toolContract: ToolDefinition[] = getCachedToolContract()
+export const toolContract: ToolDefinition[] = getCachedToolContract();
 
 export async function refreshToolContract(): Promise<ToolDefinition[]> {
-  return loadToolContract()
+  return loadToolContract();
 }
 
 /**
  * Shared helper to normalise command job responses for assistant UI.
  */
 function formatCommandResult(job: CommandJob, label: string): ToolResult {
-  const links = buildCommandJobLinks(job.id)
+  const links = buildCommandJobLinks(job.id);
   return {
     success: true,
     data: {
@@ -55,7 +73,7 @@ function formatCommandResult(job: CommandJob, label: string): ToolResult {
       ...links,
     } satisfies CommandToolResultData,
     message: `${label} dispatched. Job ${job.id} queued.`,
-  }
+  };
 }
 
 async function triggerCommandTool(
@@ -70,14 +88,14 @@ async function triggerCommandTool(
       label,
       metadata,
       env,
-    })
-    return formatCommandResult(job, label)
+    });
+    return formatCommandResult(job, label);
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? error.message : "Unknown error",
       message: `Failed to start "${label}"`,
-    }
+    };
   }
 }
 
@@ -86,38 +104,40 @@ async function triggerCommandTool(
  */
 export async function listFlows(): Promise<ToolResult> {
   try {
-    const flows = await prefectApi.getFlows(50)
+    const flows = await prefectApi.getFlows(50);
     return {
       success: true,
       data: flows,
       message: `Found ${flows.length} flows`,
-    }
+    };
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-      message: 'Failed to list flows',
-    }
+      error: error instanceof Error ? error.message : "Unknown error",
+      message: "Failed to list flows",
+    };
   }
 }
 
 /**
  * List lineage for a given namespace from Marquez.
  */
-export async function listLineage(namespace: string = 'hotpass'): Promise<ToolResult> {
+export async function listLineage(
+  namespace: string = "hotpass",
+): Promise<ToolResult> {
   try {
-    const jobs = await marquezApi.getJobs(namespace)
+    const jobs = await marquezApi.getJobs(namespace);
     return {
       success: true,
       data: jobs,
       message: `Found ${jobs.length} jobs in namespace '${namespace}'`,
-    }
+    };
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? error.message : "Unknown error",
       message: `Failed to list lineage for namespace '${namespace}'`,
-    }
+    };
   }
 }
 
@@ -129,7 +149,7 @@ export function openRun(runId: string): ToolResult {
     success: true,
     data: { runId, path: `/runs/${runId}` },
     message: `Navigate to run ${runId}`,
-  }
+  };
 }
 
 /**
@@ -137,119 +157,125 @@ export function openRun(runId: string): ToolResult {
  */
 export async function getFlowRuns(limit: number = 50): Promise<ToolResult> {
   try {
-    const runs = await prefectApi.getFlowRuns({ limit })
+    const runs = await prefectApi.getFlowRuns({ limit });
     return {
       success: true,
       data: runs,
       message: `Retrieved ${runs.length} flow runs`,
-    }
+    };
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-      message: 'Failed to get flow runs',
-    }
+      error: error instanceof Error ? error.message : "Unknown error",
+      message: "Failed to get flow runs",
+    };
   }
 }
 
 export interface RunRefineOptions {
-  profile?: string
-  inputDir?: string
-  outputPath?: string
-  archive?: boolean
+  profile?: string;
+  inputDir?: string;
+  outputPath?: string;
+  archive?: boolean;
 }
 
-export async function runRefine(options: RunRefineOptions = {}): Promise<ToolResult> {
+export async function runRefine(
+  options: RunRefineOptions = {},
+): Promise<ToolResult> {
   const {
     profile = DEFAULT_PROFILE,
-    inputDir = './data',
+    inputDir = "./data",
     outputPath = DEFAULT_REFINED_PATH,
     archive = true,
-  } = options
+  } = options;
 
   const command = [
-    'uv',
-    'run',
-    'hotpass',
-    'refine',
-    '--input-dir',
+    "uv",
+    "run",
+    "hotpass",
+    "refine",
+    "--input-dir",
     inputDir,
-    '--output-path',
+    "--output-path",
     outputPath,
-    '--profile',
+    "--profile",
     profile,
-  ]
-  command.push('--profile-search-path', PROFILE_SEARCH_PATH)
+  ];
+  command.push("--profile-search-path", PROFILE_SEARCH_PATH);
   if (archive) {
-    command.push('--archive')
+    command.push("--archive");
   }
 
   return triggerCommandTool(command, `Refine (${profile})`, {
-    tool: 'runRefine',
+    tool: "runRefine",
     profile,
     inputDir,
     outputPath,
     archive,
-  })
+  });
 }
 
 export async function listImportTemplatesTool(): Promise<ToolResult> {
   try {
-    const templates = await importsApi.listTemplates()
+    const templates = await importsApi.listTemplates();
     return {
       success: true,
       data: templates,
       message: `Found ${templates.length} import template(s)`,
-    }
+    };
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-      message: 'Failed to list import templates',
-    }
+      error: error instanceof Error ? error.message : "Unknown error",
+      message: "Failed to list import templates",
+    };
   }
 }
 
-export async function getImportTemplateTool(templateId: string): Promise<ToolResult> {
+export async function getImportTemplateTool(
+  templateId: string,
+): Promise<ToolResult> {
   if (!templateId) {
     return {
       success: false,
-      error: 'Template ID is required',
-      message: 'Template ID missing',
-    }
+      error: "Template ID is required",
+      message: "Template ID missing",
+    };
   }
   try {
-    const template = await importsApi.getTemplate(templateId)
+    const template = await importsApi.getTemplate(templateId);
     return {
       success: true,
       data: template,
       message: `Retrieved template "${template.name}"`,
-    }
+    };
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? error.message : "Unknown error",
       message: `Failed to fetch template ${templateId}`,
-    }
+    };
   }
 }
 
 export interface SaveImportTemplateOptions {
-  id?: string
-  name: string
-  description?: string
-  profile?: string
-  tags?: string[]
-  payload: ImportTemplatePayload
+  id?: string;
+  name: string;
+  description?: string;
+  profile?: string;
+  tags?: string[];
+  payload: ImportTemplatePayload;
 }
 
-export async function saveImportTemplateTool(options: SaveImportTemplateOptions): Promise<ToolResult> {
+export async function saveImportTemplateTool(
+  options: SaveImportTemplateOptions,
+): Promise<ToolResult> {
   if (!options?.name || !options.payload) {
     return {
       success: false,
-      error: 'Template name and payload are required',
-      message: 'Invalid template payload',
-    }
+      error: "Template name and payload are required",
+      message: "Invalid template payload",
+    };
   }
   try {
     const template = await importsApi.upsertTemplate({
@@ -259,127 +285,141 @@ export async function saveImportTemplateTool(options: SaveImportTemplateOptions)
       profile: options.profile,
       tags: options.tags,
       payload: options.payload,
-    })
+    });
     return {
       success: true,
       data: template,
       message: `Template "${template.name}" saved`,
-    }
+    };
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-      message: 'Failed to save template',
-    }
+      error: error instanceof Error ? error.message : "Unknown error",
+      message: "Failed to save template",
+    };
   }
 }
 
-export async function deleteImportTemplateTool(templateId: string): Promise<ToolResult> {
+export async function deleteImportTemplateTool(
+  templateId: string,
+): Promise<ToolResult> {
   if (!templateId) {
     return {
       success: false,
-      error: 'Template ID is required',
-      message: 'Template ID missing',
-    }
+      error: "Template ID is required",
+      message: "Template ID missing",
+    };
   }
   try {
-    await importsApi.deleteTemplate(templateId)
+    await importsApi.deleteTemplate(templateId);
     return {
       success: true,
       data: { templateId },
       message: `Template ${templateId} deleted`,
-    }
+    };
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? error.message : "Unknown error",
       message: `Failed to delete template ${templateId}`,
-    }
+    };
   }
 }
 
-export async function publishTemplateContractTool(templateId: string, format: 'yaml' | 'json' = 'yaml'): Promise<ToolResult> {
+export async function publishTemplateContractTool(
+  templateId: string,
+  format: "yaml" | "json" = "yaml",
+): Promise<ToolResult> {
   if (!templateId) {
     return {
       success: false,
-      error: 'Template ID is required',
-      message: 'Template ID missing',
-    }
+      error: "Template ID is required",
+      message: "Template ID missing",
+    };
   }
   try {
-    const result = await importsApi.publishTemplateContract(templateId, { format })
+    const result = await importsApi.publishTemplateContract(templateId, {
+      format,
+    });
     return {
       success: true,
       data: result,
       message: `Contract job ${result.job.id} queued for template ${templateId}`,
-    }
+    };
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? error.message : "Unknown error",
       message: `Failed to publish contract for template ${templateId}`,
-    }
+    };
   }
 }
 
-export async function summarizeImportTemplateTool(templateId: string): Promise<ToolResult> {
+export async function summarizeImportTemplateTool(
+  templateId: string,
+): Promise<ToolResult> {
   if (!templateId) {
     return {
       success: false,
-      error: 'Template ID is required',
-      message: 'Template ID missing',
-    }
+      error: "Template ID is required",
+      message: "Template ID missing",
+    };
   }
   try {
-    const response = await importsApi.getTemplateSummary(templateId)
+    const response = await importsApi.getTemplateSummary(templateId);
     return {
       success: true,
       data: response,
       message: `Template "${response.template.name}" summary ready`,
-    }
+    };
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? error.message : "Unknown error",
       message: `Failed to summarise template ${templateId}`,
-    }
+    };
   }
 }
 
-export async function previewConsolidationTool(templateId: string): Promise<ToolResult> {
+export async function previewConsolidationTool(
+  templateId: string,
+): Promise<ToolResult> {
   if (!templateId) {
     return {
       success: false,
-      error: 'Template ID is required',
-      message: 'Template ID missing',
-    }
+      error: "Template ID is required",
+      message: "Template ID missing",
+    };
   }
   try {
-    const response = await importsApi.getTemplateSummary(templateId)
+    const response = await importsApi.getTemplateSummary(templateId);
     return {
       success: true,
       data: response.consolidation,
       message: `Consolidation preview generated for template "${response.template.name}"`,
-    }
+    };
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? error.message : "Unknown error",
       message: `Failed to generate consolidation preview for template ${templateId}`,
-    }
+    };
   }
 }
 
-export async function exportTemplateContractTool(templateId: string, format: 'yaml' | 'json' = 'yaml'): Promise<ToolResult> {
+export async function exportTemplateContractTool(
+  templateId: string,
+  format: "yaml" | "json" = "yaml",
+): Promise<ToolResult> {
   if (!templateId) {
     return {
       success: false,
-      error: 'Template ID is required',
-      message: 'Template ID missing',
-    }
+      error: "Template ID is required",
+      message: "Template ID missing",
+    };
   }
   try {
-    const response = await importsApi.getTemplateSummary(templateId)
+    const response = await importsApi.getTemplateSummary(templateId);
     const contract = buildTemplateContract({
       template: {
         name: response.template.name,
@@ -387,191 +427,402 @@ export async function exportTemplateContractTool(templateId: string, format: 'ya
         description: response.template.description,
         tags: response.template.tags,
       },
-      payload: response.template.payload ?? { import_mappings: [], import_rules: [] },
-      origin: 'assistant-tool',
-    })
+      payload: response.template.payload ?? {
+        import_mappings: [],
+        import_rules: [],
+      },
+      origin: "assistant-tool",
+    });
     return {
       success: true,
       data: { format, contract },
       message: `Contract materialised for template "${response.template.name}"`,
-    }
+    };
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? error.message : "Unknown error",
       message: `Failed to export contract for template ${templateId}`,
-    }
+    };
   }
 }
 
-export async function planImportRefinementTool(profile?: string): Promise<ToolResult> {
+export async function planImportRefinementTool(
+  profile?: string,
+): Promise<ToolResult> {
   try {
     const [templatesPayload, profilesPayload, telemetry] = await Promise.all([
       importsApi.listTemplates(),
       importsApi.listStoredProfiles(),
       importsApi.getConsolidationTelemetry(),
-    ])
-    const templates = templatesPayload.map(template => ({
+    ]);
+    const templates = templatesPayload.map((template) => ({
       template,
       summary: summariseTemplate(template, template.payload),
-    }))
+    }));
     const matchingTemplates = profile
-      ? templates.filter(item => (item.summary.profile ?? 'generic') === profile)
-      : templates
-    const nextTemplate = matchingTemplates[0]?.template ?? null
-    const latestProfile = profilesPayload[0]?.profile ?? null
+      ? templates.filter(
+          (item) => (item.summary.profile ?? "generic") === profile,
+        )
+      : templates;
+    const nextTemplate = matchingTemplates[0]?.template ?? null;
+    const latestProfile = profilesPayload[0]?.profile ?? null;
 
     return {
       success: true,
       data: {
-        profile: profile ?? nextTemplate?.profile ?? latestProfile?.sheets?.[0]?.role ?? 'generic',
+        profile:
+          profile ??
+          nextTemplate?.profile ??
+          latestProfile?.sheets?.[0]?.role ??
+          "generic",
         nextTemplate,
         latestProfile,
         telemetry,
       },
-      message: 'Generated refinement plan recommendations',
-    }
+      message: "Generated refinement plan recommendations",
+    };
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-      message: 'Failed to build refinement plan',
-    }
+      error: error instanceof Error ? error.message : "Unknown error",
+      message: "Failed to build refinement plan",
+    };
   }
 }
 
 export interface RunEnrichOptions {
-  profile?: string
-  input?: string
-  output?: string
-  allowNetwork?: boolean
+  profile?: string;
+  input?: string;
+  output?: string;
+  allowNetwork?: boolean;
 }
 
-export async function runEnrich(options: RunEnrichOptions = {}): Promise<ToolResult> {
+export async function runEnrich(
+  options: RunEnrichOptions = {},
+): Promise<ToolResult> {
   const {
     profile = DEFAULT_PROFILE,
     input = DEFAULT_REFINED_PATH,
-    output = './dist/enriched.xlsx',
+    output = "./dist/enriched.xlsx",
     allowNetwork = false,
-  } = options
+  } = options;
 
   const command = [
-    'uv',
-    'run',
-    'hotpass',
-    'enrich',
-    '--input',
+    "uv",
+    "run",
+    "hotpass",
+    "enrich",
+    "--input",
     input,
-    '--output',
+    "--output",
     output,
-    '--profile',
+    "--profile",
     profile,
-  ]
-  command.push('--profile-search-path', PROFILE_SEARCH_PATH)
+  ];
+  command.push("--profile-search-path", PROFILE_SEARCH_PATH);
   if (allowNetwork) {
-    command.push('--allow-network', 'true')
+    command.push("--allow-network", "true");
   }
 
   return triggerCommandTool(command, `Enrich (${profile})`, {
-    tool: 'runEnrich',
+    tool: "runEnrich",
     profile,
     input,
     output,
     allowNetwork,
-  })
+  });
 }
 
 export interface RunQaOptions {
-  target?: string
+  target?: string;
 }
 
 export async function runQa(options: RunQaOptions = {}): Promise<ToolResult> {
-  const target = options.target ?? 'all'
+  const target = options.target ?? "all";
   const command = [
-    'uv',
-    'run',
-    'hotpass',
-    'qa',
+    "uv",
+    "run",
+    "hotpass",
+    "qa",
     target,
-    '--profile-search-path',
+    "--profile-search-path",
     PROFILE_SEARCH_PATH,
-  ]
+  ];
 
   return triggerCommandTool(command, `QA – ${target}`, {
-    tool: 'runQa',
+    tool: "runQa",
     target,
-  })
+  });
 }
 
 export interface RunPlanResearchOptions {
-  dataset?: string
-  rowId?: number
-  allowNetwork?: boolean
+  dataset?: string;
+  rowId?: number;
+  allowNetwork?: boolean;
 }
 
-export async function runPlanResearch(options: RunPlanResearchOptions = {}): Promise<ToolResult> {
+export async function runPlanResearch(
+  options: RunPlanResearchOptions = {},
+): Promise<ToolResult> {
   const {
     dataset = DEFAULT_REFINED_PATH,
     rowId = 0,
     allowNetwork = false,
-  } = options
+  } = options;
 
   const command = [
-    'uv',
-    'run',
-    'hotpass',
-    'plan',
-    'research',
-    '--dataset',
+    "uv",
+    "run",
+    "hotpass",
+    "plan",
+    "research",
+    "--dataset",
     dataset,
-    '--row-id',
+    "--row-id",
     rowId.toString(),
-  ]
+  ];
   if (allowNetwork) {
-    command.push('--allow-network', 'true')
+    command.push("--allow-network", "true");
   }
 
-  return triggerCommandTool(command, 'Plan research', {
-    tool: 'runPlanResearch',
+  return triggerCommandTool(command, "Plan research", {
+    tool: "runPlanResearch",
     dataset,
     rowId,
     allowNetwork,
-  })
+  });
 }
 
 export interface RunContractsOptions {
-  profile?: string
-  format?: 'yaml' | 'json'
-  output?: string
+  profile?: string;
+  format?: "yaml" | "json";
+  output?: string;
 }
 
-export async function runContracts(options: RunContractsOptions = {}): Promise<ToolResult> {
-  const profile = options.profile ?? DEFAULT_PROFILE
-  const format = options.format ?? 'yaml'
-  const output = options.output ?? `./contracts/${profile}.${format}`
+export async function runContracts(
+  options: RunContractsOptions = {},
+): Promise<ToolResult> {
+  const profile = options.profile ?? DEFAULT_PROFILE;
+  const format = options.format ?? "yaml";
+  const output = options.output ?? `./contracts/${profile}.${format}`;
 
   const command = [
-    'uv',
-    'run',
-    'hotpass',
-    'contracts',
-    'emit',
-    '--profile',
+    "uv",
+    "run",
+    "hotpass",
+    "contracts",
+    "emit",
+    "--profile",
     profile,
-    '--format',
+    "--format",
     format,
-    '--output',
+    "--output",
     output,
-    '--profile-search-path',
+    "--profile-search-path",
     PROFILE_SEARCH_PATH,
-  ]
+  ];
 
   return triggerCommandTool(command, `Contracts (${profile})`, {
-    tool: 'runContracts',
+    tool: "runContracts",
     profile,
     format,
     output,
-  })
+  });
+}
+
+export interface OperatorWizardOptions {
+  host?: string;
+  via?: "ssh-bastion" | "ssm";
+  preset?: string;
+  skipCredentials?: boolean;
+  skipSetup?: boolean;
+  skipEnv?: boolean;
+  envTarget?: string;
+  includeCredentials?: boolean;
+  allowNetwork?: boolean;
+  dryRun?: boolean;
+}
+
+export async function runOperatorWizard(
+  options: OperatorWizardOptions = {},
+): Promise<ToolResult> {
+  const command: string[] = [
+    "uv",
+    "run",
+    "hotpass-operator",
+    "wizard",
+    "--assume-yes",
+  ];
+  const {
+    host,
+    via = DEFAULT_TUNNEL_VIA as "ssh-bastion" | "ssm",
+    preset = "staging",
+    skipCredentials,
+    skipSetup,
+    skipEnv,
+    envTarget = "staging",
+    includeCredentials = true,
+    allowNetwork = false,
+    dryRun = false,
+  } = options;
+
+  command.push("--preset", preset);
+  const resolvedHost = host ?? DEFAULT_TUNNEL_HOST;
+  if (resolvedHost) {
+    command.push("--host", resolvedHost);
+  }
+  if (via) {
+    command.push("--via", via);
+  }
+  if (skipCredentials) {
+    command.push("--skip-credentials");
+  }
+  if (skipSetup) {
+    command.push("--skip-setup");
+  }
+  if (skipEnv) {
+    command.push("--skip-env");
+  } else {
+    command.push("--env-target", envTarget);
+    if (!includeCredentials) {
+      command.push("--no-include-credentials");
+    } else {
+      command.push("--include-credentials");
+    }
+    if (allowNetwork) {
+      command.push("--allow-network");
+    }
+  }
+  if (dryRun) {
+    command.push("--dry-run");
+  }
+
+  return triggerCommandTool(command, "Operator wizard", {
+    tool: "runOperatorWizard",
+    host: resolvedHost,
+    via,
+    preset,
+    skipCredentials,
+    skipSetup,
+    skipEnv,
+    envTarget,
+    includeCredentials,
+    allowNetwork,
+    dryRun,
+  });
+}
+
+export interface OperatorConnectOptions {
+  host?: string;
+  via?: "ssh-bastion" | "ssm";
+  detach?: boolean;
+  label?: string;
+  includeMarquez?: boolean;
+  dryRun?: boolean;
+}
+
+export async function runOperatorConnect(
+  options: OperatorConnectOptions = {},
+): Promise<ToolResult> {
+  const {
+    host = DEFAULT_TUNNEL_HOST,
+    via = DEFAULT_TUNNEL_VIA as "ssh-bastion" | "ssm",
+    detach = false,
+    label,
+    includeMarquez = true,
+    dryRun = false,
+  } = options;
+
+  const command: string[] = [
+    "uv",
+    "run",
+    "hotpass-operator",
+    "connect",
+    "--via",
+    via,
+    "--host",
+    host,
+  ];
+  if (detach) {
+    command.push("--detach");
+  }
+  if (label) {
+    command.push("--label", label);
+  }
+  if (!includeMarquez) {
+    command.push("--no-marquez");
+  }
+  if (dryRun) {
+    command.push("--dry-run");
+  }
+
+  return triggerCommandTool(command, "Operator connect", {
+    tool: "runOperatorConnect",
+    host,
+    via,
+    detach,
+    label,
+    includeMarquez,
+    dryRun,
+  });
+}
+
+export interface GenerateEnvOptions {
+  target?: string;
+  prefectUrl?: string;
+  openlineageUrl?: string;
+  allowNetwork?: boolean;
+  includeCredentials?: boolean;
+  force?: boolean;
+  dryRun?: boolean;
+}
+
+export async function generateEnvFile(
+  options: GenerateEnvOptions = {},
+): Promise<ToolResult> {
+  const {
+    target = "staging",
+    prefectUrl,
+    openlineageUrl,
+    allowNetwork = false,
+    includeCredentials = true,
+    force = true,
+    dryRun = false,
+  } = options;
+
+  const command: string[] = ["uv", "run", "hotpass", "env", "--target", target];
+  if (prefectUrl) {
+    command.push("--prefect-url", prefectUrl);
+  }
+  if (openlineageUrl) {
+    command.push("--openlineage-url", openlineageUrl);
+  }
+  if (allowNetwork) {
+    command.push("--allow-network");
+  }
+  if (force) {
+    command.push("--force");
+  }
+  if (includeCredentials) {
+    command.push("--include-credentials");
+  } else {
+    command.push("--no-include-credentials");
+  }
+  if (dryRun) {
+    command.push("--dry-run");
+  }
+
+  return triggerCommandTool(command, `Env file (${target})`, {
+    tool: "generateEnvFile",
+    target,
+    prefectUrl,
+    openlineageUrl,
+    allowNetwork,
+    includeCredentials,
+    force,
+    dryRun,
+  });
 }
 
 /**
@@ -582,29 +833,35 @@ export async function executeTool(
   args: Record<string, unknown> = {},
 ): Promise<ToolResult> {
   switch (toolName) {
-    case 'listFlows':
-      return listFlows()
-    case 'listLineage':
-      return listLineage(args.namespace as string)
-    case 'openRun':
-      return openRun(args.runId as string)
-    case 'getFlowRuns':
-      return getFlowRuns(args.limit as number)
-    case 'runRefine':
-      return runRefine(args as RunRefineOptions)
-    case 'runEnrich':
-      return runEnrich(args as RunEnrichOptions)
-    case 'runQa':
-      return runQa(args as RunQaOptions)
-    case 'runPlanResearch':
-      return runPlanResearch(args as RunPlanResearchOptions)
-    case 'runContracts':
-      return runContracts(args as RunContractsOptions)
+    case "listFlows":
+      return listFlows();
+    case "listLineage":
+      return listLineage(args.namespace as string);
+    case "openRun":
+      return openRun(args.runId as string);
+    case "getFlowRuns":
+      return getFlowRuns(args.limit as number);
+    case "runRefine":
+      return runRefine(args as RunRefineOptions);
+    case "runEnrich":
+      return runEnrich(args as RunEnrichOptions);
+    case "runQa":
+      return runQa(args as RunQaOptions);
+    case "runPlanResearch":
+      return runPlanResearch(args as RunPlanResearchOptions);
+    case "runContracts":
+      return runContracts(args as RunContractsOptions);
+    case "runOperatorWizard":
+      return runOperatorWizard(args as OperatorWizardOptions);
+    case "runOperatorConnect":
+      return runOperatorConnect(args as OperatorConnectOptions);
+    case "generateEnvFile":
+      return generateEnvFile(args as GenerateEnvOptions);
     default:
       return {
         success: false,
         error: `Unknown tool: ${toolName}`,
-        message: 'Tool not found',
-      }
+        message: "Tool not found",
+      };
   }
 }
