@@ -7,8 +7,9 @@
 
 import { prefectApi } from '@/api/prefect'
 import { marquezApi } from '@/api/marquez'
+import { importsApi } from '@/api/imports'
 import { runCommandJob, buildCommandJobLinks, type CommandJobLinks } from '@/api/commands'
-import type { CommandJob } from '@/types'
+import type { CommandJob, ImportTemplatePayload } from '@/types'
 import { getCachedToolContract, loadToolContract, type ToolDefinition } from './contract'
 
 export interface ToolResult {
@@ -189,6 +190,111 @@ export async function runRefine(options: RunRefineOptions = {}): Promise<ToolRes
     outputPath,
     archive,
   })
+}
+
+export async function listImportTemplatesTool(): Promise<ToolResult> {
+  try {
+    const templates = await importsApi.listTemplates()
+    return {
+      success: true,
+      data: templates,
+      message: `Found ${templates.length} import template(s)`,
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      message: 'Failed to list import templates',
+    }
+  }
+}
+
+export async function getImportTemplateTool(templateId: string): Promise<ToolResult> {
+  if (!templateId) {
+    return {
+      success: false,
+      error: 'Template ID is required',
+      message: 'Template ID missing',
+    }
+  }
+  try {
+    const template = await importsApi.getTemplate(templateId)
+    return {
+      success: true,
+      data: template,
+      message: `Retrieved template "${template.name}"`,
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      message: `Failed to fetch template ${templateId}`,
+    }
+  }
+}
+
+export interface SaveImportTemplateOptions {
+  id?: string
+  name: string
+  description?: string
+  profile?: string
+  tags?: string[]
+  payload: ImportTemplatePayload
+}
+
+export async function saveImportTemplateTool(options: SaveImportTemplateOptions): Promise<ToolResult> {
+  if (!options?.name || !options.payload) {
+    return {
+      success: false,
+      error: 'Template name and payload are required',
+      message: 'Invalid template payload',
+    }
+  }
+  try {
+    const template = await importsApi.upsertTemplate({
+      id: options.id,
+      name: options.name,
+      description: options.description,
+      profile: options.profile,
+      tags: options.tags,
+      payload: options.payload,
+    })
+    return {
+      success: true,
+      data: template,
+      message: `Template "${template.name}" saved`,
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      message: 'Failed to save template',
+    }
+  }
+}
+
+export async function deleteImportTemplateTool(templateId: string): Promise<ToolResult> {
+  if (!templateId) {
+    return {
+      success: false,
+      error: 'Template ID is required',
+      message: 'Template ID missing',
+    }
+  }
+  try {
+    await importsApi.deleteTemplate(templateId)
+    return {
+      success: true,
+      data: { templateId },
+      message: `Template ${templateId} deleted`,
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      message: `Failed to delete template ${templateId}`,
+    }
+  }
 }
 
 export interface RunEnrichOptions {

@@ -105,9 +105,9 @@
 
 - [x] Ship `/api/imports/templates` CRUD in `server/index.mjs` + storage (list/create/update/delete named templates).
 - [x] Build `TemplatePicker` component (integrated with wizard scaffold) + `TemplateManagerDrawer` (create/update/delete flows).
-- [ ] Implement wizard `MappingStep` + `RuleToggleStep` consuming profiling defaults + template overrides.
-- [ ] Add `ConsolidationPreview` (master/entities/contacts/addresses tabs + download).
-- [ ] Provide “Export template JSON” action (writes into `dist/import/templates/<name>.json`).
+- [x] Implement wizard `MappingStep` + `RuleToggleStep` consuming profiling defaults + template overrides.
+- [x] Add `ConsolidationPreview` (master/entities/contacts/addresses tabs + download).
+- [x] Provide “Export template JSON” action (writes into `dist/import/templates/<name>.json`).
 
 ---
 

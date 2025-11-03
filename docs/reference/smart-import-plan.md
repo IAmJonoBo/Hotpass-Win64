@@ -44,9 +44,9 @@ _Updated: 2025-11-03_
 
 - **Dataset import UI**
 
-  - Embed an `ImportProfilePreview` panel inside `DatasetImportPanel` prior to pipeline submission (sheet cards, column stats, join-key badges, issue list, download button).
-  - Promote a dedicated `/imports/wizard` route with `SmartImportWizard`, `MappingStep`, `RuleToggleStep`, and `SummaryStep` components so operators can adjust mappings before running `refine`.
-  - Reuse the new hooks above for both the quick preview and the multi-step wizard; surface “Attach profile to run” + “Save as template” affordances.
+- Embed an `ImportProfilePreview` panel inside `DatasetImportPanel` prior to pipeline submission (sheet cards, column stats, join-key badges, issue list, download button).
+- Promote a dedicated `/imports/wizard` route with `SmartImportWizard`, editable Mapping/Rules steps, consolidation preview, and summary actions so operators can adjust mappings before running `refine`.
+- Reuse the new hooks above for both the quick preview and the multi-step wizard; surface “Attach profile to run”, manage templates, and export wizard payloads.
 
 - **Persistence strategy**
 
@@ -58,18 +58,19 @@ _Updated: 2025-11-03_
 
   - Server needs `/api/imports/templates` CRUD endpoints (list, create/update, delete) plus storage helpers (likely `.hotpass/ui/templates/`).
   - Assistant + CLI tooling should consume the same endpoints to keep template discovery consistent.
-  - Remaining UI work: ConsolidationPreview, template diff/export, assistant integration.
+  - Remaining UI work: template diff previews, CLI contract export, and assistant surface for consolidation reports.
 
 - **Current scaffolding (2025-11-03)**
 
   - Client module `importsApi` now exposes `profileWorkbook`, stored profile CRUD, and template CRUD plus React Query hooks (`useImportProfileMutation`, `useStoredImportProfiles`, `useImportTemplates`, `useImportTemplateUpsert`, `useImportTemplateDelete`).
   - Express server stubs `/api/imports/profiles` (GET/POST/DELETE) and `/api/imports/templates` (GET/POST/PUT/DELETE) backed by new storage helpers in `server/storage.js`.
   - Stored assets live under `.hotpass/ui/imports/{profiles,templates}/<id>.json`; templates enforce name + payload validation and dedupe tags.
-  - UI includes DatasetImport profiling preview, Smart Import wizard scaffold, TemplatePicker, and TemplateManager drawer for CRUD operations.
+  - UI includes DatasetImport profiling preview, Smart Import wizard with editable mapping/rule steps, consolidation preview, template export, and TemplateManager drawer for CRUD operations.
+  - Assistant tooling (`apps/web-ui/src/agent/tools.ts`) exposes list/get/save/delete helpers for import templates, aligning CLI/assistant behaviour with the REST API.
 
 - **Recommended execution order**
   1. ✅ Wire `DatasetImportPanel` to `useImportProfileMutation`, render an `ImportProfilePreview`, and expose download/attach actions (2025-11-03).
   2. ✅ When an import run starts, persist the chosen profile metadata alongside the job (`dist/import/<job-id>/profile.json`) and surface the artifact link in job events (2025-11-03).
-  3. 🚧 Stand up the `/imports/wizard` route with step components (Upload → Profile → Mapping → Rules → Summary) reusing stored profiles/templates (initial scaffold + TemplatePicker shipped; mapping/rules UI pending).
-  4. Layer on template management UI (`TemplateManagerDrawer`) plus CLI export support.
-  5. Finish consolidation preview + assistant surfacing once wizard + template flows are stable.
+  3. ✅ Stand up the `/imports/wizard` route with step components (Upload → Profile → Mapping → Rules → Summary) reusing stored profiles/templates (editable mapping/rule forms + consolidation preview live 2025-11-03).
+  4. ✅ Layer on template management UI (`TemplatePicker`, `TemplateManagerDrawer`) plus CLI/assistant template tools (2025-11-03).
+  5. 🔭 Next: template diff preview + contract export automation, deeper assistant surfacing, consolidation telemetry integration.
