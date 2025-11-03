@@ -199,7 +199,7 @@ class SearxServiceSettings:
             except ValueError:  # pragma: no cover - defensive guard
                 LOGGER.warning("Invalid HOTPASS_SEARX_BURST value: %s", burst)
         if crawl_attempts:
-            settings.crawl_retry_attempts = max(1, int(float(crawl_attempts)))
+            settings.crawl_retry_attempts = max(1, int(crawl_attempts))
         if crawl_backoff:
             settings.crawl_retry_backoff_seconds = float(crawl_backoff)
         if auto_crawl is not None:
