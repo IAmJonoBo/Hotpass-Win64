@@ -58,7 +58,7 @@ _Updated: 2025-11-03_
 
   - Server needs `/api/imports/templates` CRUD endpoints (list, create/update, delete) plus storage helpers (likely `.hotpass/ui/templates/`).
   - Assistant + CLI tooling should consume the same endpoints to keep template discovery consistent.
-  - Remaining UI work: template diff previews, CLI contract export, and assistant surface for consolidation reports.
+  - Remaining UI work: automate contract publishing via CLI, add assistant-powered run orchestration, and expose consolidation telemetry in dashboards.
 
 - **Current scaffolding (2025-11-03)**
 
@@ -73,4 +73,4 @@ _Updated: 2025-11-03_
   2. ✅ When an import run starts, persist the chosen profile metadata alongside the job (`dist/import/<job-id>/profile.json`) and surface the artifact link in job events (2025-11-03).
   3. ✅ Stand up the `/imports/wizard` route with step components (Upload → Profile → Mapping → Rules → Summary) reusing stored profiles/templates (editable mapping/rule forms + consolidation preview live 2025-11-03).
   4. ✅ Layer on template management UI (`TemplatePicker`, `TemplateManagerDrawer`) plus CLI/assistant template tools (2025-11-03).
-  5. 🔭 Next: template diff preview + contract export automation, deeper assistant surfacing, consolidation telemetry integration.
+  5. 🔭 Next: automate contract publishing via CLI, deepen assistant orchestration, and pipe consolidation telemetry into dashboards.

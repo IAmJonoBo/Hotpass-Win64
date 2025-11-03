@@ -10,6 +10,7 @@ import { marquezApi } from '@/api/marquez'
 import { importsApi } from '@/api/imports'
 import { runCommandJob, buildCommandJobLinks, type CommandJobLinks } from '@/api/commands'
 import type { CommandJob, ImportTemplatePayload } from '@/types'
+import { buildTemplateContract, summariseConsolidation, summariseTemplate } from '@/lib/importTemplates'
 import { getCachedToolContract, loadToolContract, type ToolDefinition } from './contract'
 
 export interface ToolResult {
@@ -293,6 +294,100 @@ export async function deleteImportTemplateTool(templateId: string): Promise<Tool
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
       message: `Failed to delete template ${templateId}`,
+    }
+  }
+}
+
+export async function summarizeImportTemplateTool(templateId: string): Promise<ToolResult> {
+  if (!templateId) {
+    return {
+      success: false,
+      error: 'Template ID is required',
+      message: 'Template ID missing',
+    }
+  }
+  try {
+    const template = await importsApi.getTemplate(templateId)
+    const summary = summariseTemplate(template, template.payload)
+    const consolidation = summariseConsolidation(template.payload)
+    return {
+      success: true,
+      data: {
+        template,
+        summary,
+        consolidation,
+      },
+      message: `Template "${template.name}" has ${summary.mappingCount} mapping(s) and ${summary.ruleCount} rule(s).`,
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      message: `Failed to summarise template ${templateId}`,
+    }
+  }
+}
+
+export async function exportTemplateContractTool(templateId: string): Promise<ToolResult> {
+  if (!templateId) {
+    return {
+      success: false,
+      error: 'Template ID is required',
+      message: 'Template ID missing',
+    }
+  }
+  try {
+    const template = await importsApi.getTemplate(templateId)
+    const payload: ImportTemplatePayload = template.payload ?? { import_mappings: [], import_rules: [] }
+    const contract = buildTemplateContract({
+      template: {
+        name: template.name,
+        profile: template.profile,
+        description: template.description,
+        tags: template.tags,
+      },
+      payload,
+      origin: 'assistant-tool',
+    })
+    return {
+      success: true,
+      data: contract,
+      message: `Generated contract for template "${template.name}"`,
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      message: `Failed to generate contract for template ${templateId}`,
+    }
+  }
+}
+
+export async function previewConsolidationTool(templateId: string): Promise<ToolResult> {
+  if (!templateId) {
+    return {
+      success: false,
+      error: 'Template ID is required',
+      message: 'Template ID missing',
+    }
+  }
+  try {
+    const template = await importsApi.getTemplate(templateId)
+    const consolidation = summariseConsolidation(template.payload)
+    return {
+      success: true,
+      data: {
+        template: template.name,
+        profile: template.profile ?? 'generic',
+        consolidation,
+      },
+      message: `Consolidation preview generated for template "${template.name}"`,
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      message: `Failed to generate consolidation preview for template ${templateId}`,
     }
   }
 }

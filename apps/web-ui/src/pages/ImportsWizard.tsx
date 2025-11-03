@@ -13,6 +13,7 @@ import {
   Copy,
   ArrowRight,
   Download,
+  ShieldAlert,
 } from 'lucide-react'
 import { useStoredImportProfiles } from '@/api/imports'
 import type { ImportTemplate, ImportTemplatePayload } from '@/types'
@@ -24,6 +25,7 @@ import { TemplatePicker } from '@/components/import/TemplatePicker'
 import { TemplateManagerDrawer } from '@/components/import/TemplateManagerDrawer'
 import { ConsolidationPreview } from '@/components/import/ConsolidationPreview'
 import { cn } from '@/lib/utils'
+import { buildTemplateContract, buildTemplateDiff, summariseTemplate } from '@/lib/importTemplates'
 
 const wizardSteps = [
   { id: 'upload', title: 'Upload', description: 'Queue files and review profiling summary', icon: CloudUpload },
@@ -115,6 +117,8 @@ export function ImportsWizard() {
   const [ruleErrors, setRuleErrors] = useState<Record<string, string | null>>({})
   const [exportMessage, setExportMessage] = useState<string | null>(null)
   const [exportError, setExportError] = useState<string | null>(null)
+  const [contractMessage, setContractMessage] = useState<string | null>(null)
+  const [contractError, setContractError] = useState<string | null>(null)
 
   const { data: storedProfiles = [], isLoading: profilesLoading } = useStoredImportProfiles()
 
@@ -131,6 +135,8 @@ export function ImportsWizard() {
     setRuleErrors({})
     setExportMessage(null)
     setExportError(null)
+    setContractMessage(null)
+    setContractError(null)
   }, [selectedTemplatePayload])
 
   const updateMappingRow = useCallback((id: string, patch: Partial<MappingRow>) => {
@@ -227,10 +233,9 @@ export function ImportsWizard() {
     }
   }, [updateRuleRow])
 
-  const buildDraftTemplatePayload = useCallback(() => {
-    if (Object.values(ruleErrors).some(Boolean)) {
-      throw new Error('Fix rule JSON errors before exporting.')
-    }
+  const hasRuleErrors = useMemo(() => Object.values(ruleErrors).some(Boolean), [ruleErrors])
+
+  const createPayloadFromRows = useCallback((): ImportTemplatePayload => {
     const mappings = mappingRows
       .filter(row => row.source || row.target)
       .map(row => {
@@ -243,54 +248,125 @@ export function ImportsWizard() {
         if (row.drop) spec.drop = true
         return spec
       })
-    const rules = ruleRows
-      .filter(row => row.type)
-      .map(row => {
-        const spec: Record<string, unknown> = { type: row.type }
-        const columns = row.columns
-          .split(',')
-          .map(column => column.trim())
-          .filter(Boolean)
-        if (columns.length) spec.columns = columns
-        if (row.config.trim()) {
-          Object.assign(spec, JSON.parse(row.config))
-        }
-        return spec
-      })
+    const rules: Record<string, unknown>[] = []
+    ruleRows.forEach(row => {
+      if (!row.type) return
+      const spec: Record<string, unknown> = { type: row.type }
+      const columns = row.columns
+        .split(',')
+        .map(column => column.trim())
+        .filter(Boolean)
+      if (columns.length) spec.columns = columns
+      if (row.config.trim()) {
+        spec.config = JSON.parse(row.config)
+      }
+      rules.push(spec)
+    })
     return {
       import_mappings: mappings,
       import_rules: rules,
     }
-  }, [mappingRows, ruleRows, ruleErrors])
+  }, [mappingRows, ruleRows])
+
+  const draftPayload = useMemo<ImportTemplatePayload | null>(() => {
+    if (hasRuleErrors) return null
+    try {
+      return createPayloadFromRows()
+    } catch {
+      return null
+    }
+  }, [createPayloadFromRows, hasRuleErrors])
+
+  const templateDiff = useMemo(
+    () => (selectedTemplatePayload && draftPayload ? buildTemplateDiff(selectedTemplatePayload, draftPayload) : null),
+    [selectedTemplatePayload, draftPayload],
+  )
+
+  const selectedTemplateSummary = useMemo(
+    () => summariseTemplate(selectedTemplate ?? null, selectedTemplatePayload ?? null),
+    [selectedTemplate, selectedTemplatePayload],
+  )
+
+  const validationIssues = useMemo(() => {
+    const issues: string[] = []
+    const seenSources = new Map<string, number>()
+    mappingRows.forEach(row => {
+      const key = row.source.trim().toLowerCase()
+      if (!key) return
+      seenSources.set(key, (seenSources.get(key) ?? 0) + 1)
+    })
+    if (Array.from(seenSources.values()).some(count => count > 1)) {
+      issues.push('Duplicate source columns detected across mappings.')
+    }
+    if (!mappingRows.some(row => row.source && row.target)) {
+      issues.push('Add at least one mapping with both source and target columns.')
+    }
+    if (ruleRows.some(row => !row.type && (row.columns || row.config))) {
+      issues.push('One or more rule rows are missing a type.')
+    }
+    if (hasRuleErrors) {
+      issues.push('Resolve rule configuration JSON errors.')
+    }
+    return issues
+  }, [mappingRows, ruleRows, hasRuleErrors])
 
   const handleExportTemplate = useCallback(() => {
-    try {
-      const payload = buildDraftTemplatePayload()
-      const metadata = {
-        name: selectedTemplate?.name ?? 'wizard-template',
-        description: selectedTemplate?.description ?? '',
-        profile: selectedTemplate?.profile ?? 'generic',
-        tags: selectedTemplate?.tags ?? [],
-        payload,
-        exportedAt: new Date().toISOString(),
-      }
-      const blob = new Blob([`${JSON.stringify(metadata, null, 2)}\n`], { type: 'application/json' })
-      const filename = `${slugify(metadata.name)}-template.json`
-      const url = URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = filename
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      URL.revokeObjectURL(url)
-      setExportMessage(`Template exported as ${filename}`)
-      setExportError(null)
-    } catch (error) {
+    if (!draftPayload || validationIssues.length > 0) {
       setExportMessage(null)
-      setExportError(error instanceof Error ? error.message : 'Failed to export template')
+      setExportError('Resolve validation issues before exporting the template.')
+      return
     }
-  }, [buildDraftTemplatePayload, selectedTemplate])
+    const metadata = {
+      name: selectedTemplate?.name ?? 'wizard-template',
+      description: selectedTemplate?.description ?? '',
+      profile: selectedTemplate?.profile ?? 'generic',
+      tags: selectedTemplate?.tags ?? [],
+      payload: draftPayload,
+      exportedAt: new Date().toISOString(),
+    }
+    const blob = new Blob([`${JSON.stringify(metadata, null, 2)}\n`], { type: 'application/json' })
+    const filename = `${slugify(metadata.name)}-template.json`
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+    setExportMessage(`Template exported as ${filename}`)
+    setExportError(null)
+  }, [draftPayload, selectedTemplate, validationIssues])
+
+  const handleExportContract = useCallback(() => {
+    if (!draftPayload || validationIssues.length > 0) {
+      setContractMessage(null)
+      setContractError('Resolve validation issues before exporting the contract.')
+      return
+    }
+    const contract = buildTemplateContract({
+      template: {
+        name: selectedTemplate?.name ?? 'wizard-template',
+        profile: selectedTemplate?.profile,
+        description: selectedTemplate?.description,
+        tags: selectedTemplate?.tags,
+      },
+      payload: draftPayload,
+      origin: 'wizard-ui',
+    })
+    const filename = `${slugify(contract.template.name)}-contract.json`
+    const blob = new Blob([`${JSON.stringify(contract, null, 2)}\n`], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+    setContractMessage(`Contract exported as ${filename}`)
+    setContractError(null)
+  }, [draftPayload, selectedTemplate, validationIssues])
 
   const handleDownloadPreview = useCallback(() => {
     const summary = {
@@ -527,27 +603,60 @@ export function ImportsWizard() {
     </div>
   )
 
-  const renderSummaryStep = () => (
-    <div className="space-y-3">
-      <p className="text-xs text-muted-foreground">
-        Quick checklist before triggering the pipeline. Full QA + diff tooling will integrate here during Stage 4.
-      </p>
-      <ul className="space-y-2 text-xs">
-        <li className="flex items-center gap-2 rounded-xl border border-border/60 bg-card/80 px-3 py-2">
-          <ArrowRight className="h-3 w-3 text-primary" />
-          {mappingRows.length} mapping rule(s) ready.
-        </li>
-        <li className="flex items-center gap-2 rounded-xl border border-border/60 bg-card/80 px-3 py-2">
-          <ArrowRight className="h-3 w-3 text-primary" />
-          {ruleRows.length} preprocessing rule(s) configured.
-        </li>
-        <li className="flex items-center gap-2 rounded-xl border border-border/60 bg-card/80 px-3 py-2">
-          <ArrowRight className="h-3 w-3 text-primary" />
-          Template: {selectedTemplate?.name ?? 'Not selected'} ({selectedTemplate?.profile ?? 'generic'} profile)
-        </li>
-      </ul>
-    </div>
-  )
+  const renderSummaryStep = () => {
+    const hasIssues = validationIssues.length > 0
+    return (
+      <div className="space-y-3">
+        <div
+          className={cn(
+            'rounded-2xl border px-3 py-3 text-xs',
+            hasIssues
+              ? 'border-yellow-500/50 bg-yellow-500/10 text-yellow-800 dark:text-yellow-300'
+              : 'border-green-500/50 bg-green-500/10 text-green-700 dark:text-green-300',
+          )}
+        >
+          <div className="flex items-center gap-2">
+            {hasIssues ? (
+              <ShieldAlert className="h-4 w-4" />
+            ) : (
+              <CheckCircle2 className="h-4 w-4" />
+            )}
+            <span className="font-semibold text-foreground">
+              {hasIssues ? 'Validation checks need attention' : 'All validation checks passed'}
+            </span>
+          </div>
+          {hasIssues ? (
+            <ul className="mt-2 space-y-1 text-muted-foreground">
+              {validationIssues.map((issue, index) => (
+                <li key={index} className="flex items-center gap-2">
+                  <ShieldAlert className="h-3 w-3 text-yellow-600 dark:text-yellow-300" />
+                  <span>{issue}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-2 text-muted-foreground">
+              No blocking issues detected. You can proceed to run the pipeline or export the configuration.
+            </p>
+          )}
+        </div>
+        <ul className="space-y-2 text-xs">
+          <li className="flex items-center gap-2 rounded-xl border border-border/60 bg-card/80 px-3 py-2">
+            <ArrowRight className="h-3 w-3 text-primary" />
+            {mappingRows.length} mapping rule(s) ready.
+          </li>
+          <li className="flex items-center gap-2 rounded-xl border border-border/60 bg-card/80 px-3 py-2">
+            <ArrowRight className="h-3 w-3 text-primary" />
+            {ruleRows.length} preprocessing rule(s) configured.
+          </li>
+          <li className="flex items-center gap-2 rounded-xl border border-border/60 bg-card/80 px-3 py-2">
+            <ArrowRight className="h-3 w-3 text-primary" />
+            Template: {selectedTemplate?.name ?? 'Not selected'} ({selectedTemplate?.profile ?? 'generic'} profile)
+          </li>
+        </ul>
+      </div>
+    )
+  }
 
   const renderStepContent = () => {
     const stepId = activeStepDetails.id
@@ -711,12 +820,50 @@ export function ImportsWizard() {
             </CardHeader>
             <CardContent className="space-y-3">
               <p className="text-xs text-muted-foreground">
-                Export the current wizard configuration as JSON for CLI reuse or versioning. Assistant + CLI tooling can also consume the template APIs directly.
+                Export the current wizard configuration as JSON for CLI reuse or versioning, compare against the stored template, or download a contract snapshot.
               </p>
-              <Button size="sm" onClick={handleExportTemplate}>
-                <Download className="mr-2 h-4 w-4" />
-                Export template JSON
-              </Button>
+              {selectedTemplate && selectedTemplateSummary ? (
+                <div className="space-y-1 rounded-2xl border border-border/60 bg-card/70 px-3 py-2 text-xs">
+                  <p className="font-semibold text-foreground">Selected template summary</p>
+                  <p>{selectedTemplateSummary.mappingCount} mapping(s) · {selectedTemplateSummary.ruleCount} rule(s)</p>
+                  {selectedTemplateSummary.transforms.length > 0 && (
+                    <p className="text-muted-foreground">Transforms: {selectedTemplateSummary.transforms.join(', ')}</p>
+                  )}
+                  {selectedTemplateSummary.ruleTypes.length > 0 && (
+                    <p className="text-muted-foreground">Rule types: {selectedTemplateSummary.ruleTypes.join(', ')}</p>
+                  )}
+                </div>
+              ) : (
+                <div className="rounded-2xl border border-dashed border-border/60 bg-muted/25 px-3 py-2 text-xs text-muted-foreground">
+                  Select or create a template to enable diff and contract tooling.
+                </div>
+              )}
+              {selectedTemplate && templateDiff && (
+                <div className="space-y-1 rounded-2xl border border-border/60 bg-background/80 px-3 py-2 text-xs">
+                  <p className="font-semibold text-foreground">Diff vs stored template</p>
+                  <p>
+                    Mappings: +{templateDiff.addedMappings.length} / -{templateDiff.removedMappings.length} / Δ{templateDiff.changedMappings.length}
+                  </p>
+                  <p>
+                    Rules: +{templateDiff.addedRules.length} / -{templateDiff.removedRules.length} / Δ{templateDiff.changedRules.length}
+                  </p>
+                </div>
+              )}
+              {hasRuleErrors && (
+                <div className="rounded-xl border border-yellow-500/40 bg-yellow-500/10 px-3 py-2 text-xs text-yellow-700 dark:text-yellow-400">
+                  Resolve rule configuration JSON errors before exporting.
+                </div>
+              )}
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+                <Button size="sm" onClick={handleExportTemplate}>
+                  <Download className="mr-2 h-4 w-4" />
+                  Export template JSON
+                </Button>
+                <Button size="sm" variant="outline" onClick={handleExportContract}>
+                  <Download className="mr-2 h-4 w-4" />
+                  Download contract JSON
+                </Button>
+              </div>
               {exportMessage && (
                 <div className="rounded-xl border border-green-500/40 bg-green-500/10 px-3 py-2 text-xs text-green-600 dark:text-green-400">
                   {exportMessage}
@@ -725,6 +872,16 @@ export function ImportsWizard() {
               {exportError && (
                 <div className="rounded-xl border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-600 dark:text-red-400">
                   {exportError}
+                </div>
+              )}
+              {contractMessage && (
+                <div className="rounded-xl border border-green-500/40 bg-green-500/10 px-3 py-2 text-xs text-green-600 dark:text-green-400">
+                  {contractMessage}
+                </div>
+              )}
+              {contractError && (
+                <div className="rounded-xl border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-600 dark:text-red-400">
+                  {contractError}
                 </div>
               )}
             </CardContent>
