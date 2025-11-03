@@ -19,6 +19,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { cn, formatBytes, formatDuration, getStatusColor } from '@/lib/utils'
 import { useImportProfileMutation } from '@/api/imports'
+import { LiveProcessingWidget, type LiveProcessingSnapshot } from '@/components/import/LiveProcessingWidget'
 
 type JobStatus = 'queued' | 'running' | 'succeeded' | 'failed'
 type ImportStage = 'queued' | 'upload-complete' | 'refine-started' | 'completed' | 'failed'
@@ -798,9 +799,43 @@ export function DatasetImportPanel({ flowRuns, hilApprovals, isLoadingRuns, onOp
 
   const refinedArtifact = importJob?.artifacts.find(artifact => artifact.kind === 'refined') ?? null
   const profileArtifact = importJob?.artifacts.find(artifact => artifact.kind === 'profile') ?? null
-  const jobNotes = isRecord(importJob?.job.metadata) && typeof importJob?.job.metadata?.notes === 'string'
-    ? (importJob?.job.metadata?.notes as string)
+  const jobMetadata = isRecord(importJob?.job.metadata) ? (importJob.job.metadata as Record<string, unknown>) : null
+  const jobNotes = jobMetadata && typeof jobMetadata['notes'] === 'string'
+    ? (jobMetadata['notes'] as string)
     : null
+
+  const profileSheetCount = useMemo(() => {
+    if (!profilePreview) return undefined
+    return profilePreview.sheets.length
+  }, [profilePreview])
+
+  const profileTotalRows = useMemo(() => {
+    if (!profilePreview) return undefined
+    return profilePreview.sheets.reduce((acc, sheet) => acc + (typeof sheet.rows === 'number' ? sheet.rows : 0), 0)
+  }, [profilePreview])
+
+  const fallbackWorkbookName = useMemo(() => {
+    if (profilePreview?.workbook) return String(profilePreview.workbook)
+    if (primaryUpload) return primaryUpload.file.name
+    if (jobMetadata && typeof jobMetadata['workbook'] === 'string') return jobMetadata['workbook'] as string
+    return importJob?.job.label ?? null
+  }, [jobMetadata, importJob?.job.label, primaryUpload, profilePreview?.workbook])
+
+  const liveProcessingSnapshot: LiveProcessingSnapshot | null = useMemo(() => {
+    if (!importJob) return null
+    return {
+      id: importJob.job.id,
+      label: importJob.job.label ?? undefined,
+      status: importJob.job.status,
+      stage: importJob.stage,
+      startedAt: importJob.job.startedAt,
+      updatedAt: importJob.job.updatedAt,
+      completedAt: importJob.job.completedAt,
+      logs: importJob.logs,
+      error: importJob.error ?? null,
+      metadata: jobMetadata ?? undefined,
+    }
+  }, [importJob, jobMetadata])
 
   const statusBadgeStyle =
     jobStatus === 'succeeded'
@@ -1175,6 +1210,16 @@ export function DatasetImportPanel({ flowRuns, hilApprovals, isLoadingRuns, onOp
                           ? 'Failed'
                           : 'In progress'}
                     </Badge>
+                  </div>
+                  <div className="mt-4">
+                    <LiveProcessingWidget
+                      job={liveProcessingSnapshot}
+                      profile={profilePreview}
+                      workbookName={fallbackWorkbookName}
+                      sheetCount={profileSheetCount}
+                      totalRows={profileTotalRows}
+                      refreshIntervalMs={300}
+                    />
                   </div>
                   <div className="mt-4 grid gap-3 sm:grid-cols-4">
                     {IMPORT_STAGES.map(stage => {

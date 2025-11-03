@@ -75,6 +75,7 @@ _Updated: 2025-11-03_
   - UI includes DatasetImport profiling preview, Smart Import wizard with editable mapping/rule steps, consolidation preview, template export, and TemplateManager drawer for CRUD operations.
   - Assistant tooling (`apps/web-ui/src/agent/tools.ts`) exposes list/get/save/delete helpers for import templates, aligning CLI/assistant behaviour with the REST API.
   - Dashboard surfaces the latest refined workbook card and data quality chip so operators can see recent QA performance alongside import activity.
+  - Dataset import panel embeds a live processing widget (timer, throughput, autofix/error counts) refreshed every ~300 ms for in-flight jobs.
 
 - **Recommended execution order**
   1. ✅ Wire `DatasetImportPanel` to `useImportProfileMutation`, render an `ImportProfilePreview`, and expose download/attach actions (2025-11-03).

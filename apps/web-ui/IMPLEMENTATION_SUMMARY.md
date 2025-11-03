@@ -67,9 +67,11 @@ This document summarizes the implementation of all 8 stages from DESIGN_REVIEW.m
 - `src/components/refinement/LiveRefinementPanel.tsx` - Live refinement table
 - `src/components/import/LatestRefinedWorkbookCard.tsx` - Highlights most recent refine run
 - `src/components/import/DataQualityChip.tsx` - Reusable QA status badge
+- `src/components/import/LiveProcessingWidget.tsx` - Real-time import telemetry widget
 
 **Modified Files:**
 - `src/pages/Dashboard.tsx` - Integrated live refinement panel and latest-refine summary card
+- `src/components/import/DatasetImportPanel.tsx` - Live import runner UI
 
 **Features:**
 - Table showing last 50 refined rows with status badges
@@ -80,6 +82,7 @@ This document summarizes the implementation of all 8 stages from DESIGN_REVIEW.m
 - Responsive status indicators (completed/pending/error)
 - Latest refined workbook card with QA pass rate trend
 - Data quality chip summarising recent refine success rate
+- Live processing widget with timer, throughput, autofix/error tallies, and health trend
 
 ### Stage 5 - Telemetry Strip ✅
 **New Files:**

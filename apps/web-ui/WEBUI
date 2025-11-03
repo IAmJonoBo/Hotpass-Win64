@@ -74,7 +74,7 @@
 
 - [x] Create `SmartImportWizard` route (`/imports/wizard`) with stepper (Upload → Profile review → Mapping → Rule toggles → Summary).
 - [x] Add `LatestRefinedWorkbookCard` + `DataQualityChip` components sourced from recent run summaries.
-- [ ] Implement `LiveProcessingWidget` (current workbook, sheet count, rows processed, autofixes, errors, session timer; 200–500 ms refresh).
+- [x] Implement `LiveProcessingWidget` (current workbook, sheet count, rows processed, autofixes, errors, session timer; 200–500 ms refresh).
 - [ ] Build optional `CellSpotlight` panel highlighting most recent fix (e.g. Sheet2!D14 + rule).
 - [ ] Surface `PendingApprovalsPanel` (links to `RunDetails` with HIL context).
 - [ ] Wire inline help anchors into HelpCenter (`helpContent.ts`).
