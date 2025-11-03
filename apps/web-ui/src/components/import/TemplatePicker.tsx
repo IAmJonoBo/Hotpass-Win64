@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { Loader2, RefreshCw, Layers } from 'lucide-react'
+import { Loader2, RefreshCw, Layers, Settings } from 'lucide-react'
 import type { ImportTemplate } from '@/types'
 import { useImportTemplates } from '@/api/imports'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -10,9 +10,10 @@ import { cn } from '@/lib/utils'
 interface TemplatePickerProps {
   selectedTemplateId: string | null
   onSelect: (template: ImportTemplate | null) => void
+  onManage?: () => void
 }
 
-export function TemplatePicker({ selectedTemplateId, onSelect }: TemplatePickerProps) {
+export function TemplatePicker({ selectedTemplateId, onSelect, onManage }: TemplatePickerProps) {
   const {
     data: templates = [],
     isLoading,
@@ -43,6 +44,12 @@ export function TemplatePicker({ selectedTemplateId, onSelect }: TemplatePickerP
             <RefreshCw className={cn('mr-2 h-3 w-3', isLoading && 'animate-spin')} />
             Refresh
           </Button>
+          {onManage && (
+            <Button variant="outline" size="sm" onClick={onManage}>
+              <Settings className="mr-2 h-3 w-3" />
+              Manage
+            </Button>
+          )}
           {selected && (
             <Button variant="ghost" size="sm" onClick={() => onSelect(null)}>
               Clear

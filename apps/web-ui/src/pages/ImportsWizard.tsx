@@ -1,11 +1,12 @@
-import { useState } from 'react'
-import { Loader2, Map, SlidersHorizontal, CheckCircle2, BookOpen, CloudUpload } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { Loader2, Map, SlidersHorizontal, CheckCircle2, BookOpen, CloudUpload, PencilRuler, ListChecks } from 'lucide-react'
 import { useStoredImportProfiles } from '@/api/imports'
-import type { ImportTemplate } from '@/types'
+import type { ImportTemplate, ImportTemplatePayload } from '@/types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { TemplatePicker } from '@/components/import/TemplatePicker'
+import { TemplateManagerDrawer } from '@/components/import/TemplateManagerDrawer'
 import { cn } from '@/lib/utils'
 
 const wizardSteps = [
@@ -19,9 +20,98 @@ const wizardSteps = [
 export function ImportsWizard() {
   const [activeStep, setActiveStep] = useState(0)
   const [selectedTemplate, setSelectedTemplate] = useState<ImportTemplate | null>(null)
+  const [isTemplateManagerOpen, setTemplateManagerOpen] = useState(false)
   const { data: storedProfiles = [], isLoading: profilesLoading } = useStoredImportProfiles()
 
   const activeStepDetails = wizardSteps[activeStep]
+  const selectedTemplatePayload = useMemo<ImportTemplatePayload | null>(
+    () => (selectedTemplate ? selectedTemplate.payload ?? null : null),
+    [selectedTemplate],
+  )
+
+  const renderStepContent = () => {
+    const stepId = activeStepDetails.id
+    switch (stepId) {
+      case 'mapping':
+        return (
+          <div className="space-y-3">
+            <p className="text-xs text-muted-foreground">
+              Preview of column mappings coming soon. Your selected template will seed the default rename/normalisation rules.
+            </p>
+            {selectedTemplatePayload?.import_mappings && Array.isArray(selectedTemplatePayload.import_mappings) && selectedTemplatePayload.import_mappings.length > 0 ? (
+              <div className="space-y-2 rounded-2xl border border-border/60 bg-background/80 px-3 py-3 text-xs">
+                <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                  <PencilRuler className="h-4 w-4" />
+                  Sample mappings
+                </div>
+                <ul className="space-y-1">
+                  {selectedTemplatePayload.import_mappings.slice(0, 4).map((mapping, index) => (
+                    <li key={index} className="flex items-center justify-between gap-2 rounded-xl border border-border/50 bg-card/70 px-2 py-1">
+                      <span className="truncate font-medium" title={String(mapping.source ?? '')}>
+                        {String(mapping.source ?? '') || '(source)'}
+                      </span>
+                      <span className="text-muted-foreground">→</span>
+                      <span className="truncate text-muted-foreground" title={String(mapping.target ?? '')}>
+                        {String(mapping.target ?? '') || '(target)'}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                {selectedTemplatePayload.import_mappings.length > 4 && (
+                  <p className="text-[11px] text-muted-foreground">
+                    +{selectedTemplatePayload.import_mappings.length - 4} additional mappings
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-border/60 bg-muted/25 px-3 py-3 text-xs text-muted-foreground">
+                No mappings defined yet. Once implemented, you&rsquo;ll be able to rename columns and define defaults here.
+              </div>
+            )}
+          </div>
+        )
+      case 'rules':
+        return (
+          <div className="space-y-3">
+            <p className="text-xs text-muted-foreground">
+              Rule toggles will surface here to control normalisation, dedupe, geocoding, and compliance safeguards per profile.
+            </p>
+            {selectedTemplatePayload?.import_rules && Array.isArray(selectedTemplatePayload.import_rules) && selectedTemplatePayload.import_rules.length > 0 ? (
+              <div className="space-y-2 rounded-2xl border border-border/60 bg-background/80 px-3 py-3 text-xs">
+                <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                  <ListChecks className="h-4 w-4" />
+                  Active rules
+                </div>
+                <ul className="space-y-1">
+                  {selectedTemplatePayload.import_rules.slice(0, 5).map((rule, index) => (
+                    <li key={index} className="rounded-xl border border-border/50 bg-card/70 px-2 py-1">
+                      <span className="font-medium text-foreground">{String(rule.type ?? 'rule')}</span>
+                      {Array.isArray(rule.columns) && rule.columns.length > 0 && (
+                        <span className="ml-2 text-muted-foreground">
+                          ({rule.columns.slice(0, 3).join(', ')}
+                          {rule.columns.length > 3 ? `, +${rule.columns.length - 3}` : ''})
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-border/60 bg-muted/25 px-3 py-3 text-xs text-muted-foreground">
+                Add rules such as `normalize_date`, `fill_missing`, or compliance checks to see them listed here.
+              </div>
+            )}
+          </div>
+        )
+      default:
+        return (
+          <p className="text-xs text-muted-foreground">
+            Placeholder surface for {activeStepDetails.title.toLowerCase()} controls. Upcoming iterations will embed upload widgets,
+            mapping editors, rule toggles, and validation summaries here.
+          </p>
+        )
+    }
+  }
 
   return (
     <div className="space-y-8">
@@ -79,19 +169,18 @@ export function ImportsWizard() {
 
             <div className="rounded-2xl border border-dashed border-border/60 bg-muted/30 p-4 text-sm text-muted-foreground">
               <p className="font-semibold text-foreground">{activeStepDetails.title}</p>
-              <p className="mt-1 text-xs">
-                Placeholder surface for {activeStepDetails.title.toLowerCase()} step controls. Upcoming iterations will
-                embed upload widgets, mapping editors, rule toggles, and validation summaries here.
-              </p>
-              {selectedTemplate ? (
-                <p className="mt-2 text-xs">
-                  Selected template <span className="font-semibold text-foreground">{selectedTemplate.name}</span> will prefill mapping and rule defaults.
-                </p>
-              ) : (
-                <p className="mt-2 text-xs">
-                  Select a template to prepopulate mapping/rule steps or continue with the generic profile defaults.
-                </p>
-              )}
+              <div className="mt-1 space-y-2">
+                {renderStepContent()}
+                {selectedTemplate ? (
+                  <p className="text-[11px] text-muted-foreground">
+                    Selected template <span className="font-semibold text-foreground">{selectedTemplate.name}</span> will prefill defaults during run execution.
+                  </p>
+                ) : (
+                  <p className="text-[11px] text-muted-foreground">
+                    Select a template to prepopulate mapping/rule steps or continue with the generic profile defaults.
+                  </p>
+                )}
+              </div>
             </div>
 
             <div className="flex justify-end gap-2">
@@ -113,6 +202,7 @@ export function ImportsWizard() {
           <TemplatePicker
             selectedTemplateId={selectedTemplate?.id ?? null}
             onSelect={(template) => setSelectedTemplate(template)}
+            onManage={() => setTemplateManagerOpen(true)}
           />
 
           <Card>
@@ -159,6 +249,15 @@ export function ImportsWizard() {
           </Card>
         </div>
       </div>
+
+      <TemplateManagerDrawer
+        open={isTemplateManagerOpen}
+        onOpenChange={setTemplateManagerOpen}
+        onSelect={(template) => {
+          setSelectedTemplate(template)
+          setTemplateManagerOpen(false)
+        }}
+      />
     </div>
   )
 }

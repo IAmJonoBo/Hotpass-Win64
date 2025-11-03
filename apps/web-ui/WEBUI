@@ -104,8 +104,7 @@
 ### 3.5 Template management & consolidation preview
 
 - [x] Ship `/api/imports/templates` CRUD in `server/index.mjs` + storage (list/create/update/delete named templates).
-- [x] Build `TemplatePicker` component (integrated with wizard scaffold); `TemplateManagerDrawer` pending.
-- [ ] Ship `TemplateManagerDrawer` component (management drawer with create/update/delete flows).
+- [x] Build `TemplatePicker` component (integrated with wizard scaffold) + `TemplateManagerDrawer` (create/update/delete flows).
 - [ ] Implement wizard `MappingStep` + `RuleToggleStep` consuming profiling defaults + template overrides.
 - [ ] Add `ConsolidationPreview` (master/entities/contacts/addresses tabs + download).
 - [ ] Provide “Export template JSON” action (writes into `dist/import/templates/<name>.json`).

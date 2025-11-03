@@ -58,13 +58,14 @@ _Updated: 2025-11-03_
 
   - Server needs `/api/imports/templates` CRUD endpoints (list, create/update, delete) plus storage helpers (likely `.hotpass/ui/templates/`).
   - Assistant + CLI tooling should consume the same endpoints to keep template discovery consistent.
-  - UI work (TemplatePicker, TemplateManagerDrawer, ConsolidationPreview) is blocked on these APIs; sequence backend before the wizard steps.
+  - Remaining UI work: ConsolidationPreview, template diff/export, assistant integration.
 
 - **Current scaffolding (2025-11-03)**
 
   - Client module `importsApi` now exposes `profileWorkbook`, stored profile CRUD, and template CRUD plus React Query hooks (`useImportProfileMutation`, `useStoredImportProfiles`, `useImportTemplates`, `useImportTemplateUpsert`, `useImportTemplateDelete`).
   - Express server stubs `/api/imports/profiles` (GET/POST/DELETE) and `/api/imports/templates` (GET/POST/PUT/DELETE) backed by new storage helpers in `server/storage.js`.
   - Stored assets live under `.hotpass/ui/imports/{profiles,templates}/<id>.json`; templates enforce name + payload validation and dedupe tags.
+  - UI includes DatasetImport profiling preview, Smart Import wizard scaffold, TemplatePicker, and TemplateManager drawer for CRUD operations.
 
 - **Recommended execution order**
   1. ✅ Wire `DatasetImportPanel` to `useImportProfileMutation`, render an `ImportProfilePreview`, and expose download/attach actions (2025-11-03).
