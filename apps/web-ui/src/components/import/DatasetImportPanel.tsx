@@ -13,7 +13,7 @@ import {
   XCircle,
 } from 'lucide-react'
 import type { PrefectFlowRun, HILApproval, ImportIssueSeverity, ImportProfile } from '@/types'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -105,8 +105,8 @@ const STAGE_STYLES: Record<StageVisualState, { container: string; icon: string }
     icon: 'text-primary',
   },
   complete: {
-    container: 'border-green-500/40 bg-green-500/10 text-green-600 dark:text-green-400',
-    icon: 'text-green-600 dark:text-green-400',
+    container: 'border-emerald-600/50 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300',
+    icon: 'text-emerald-700 dark:text-emerald-300',
   },
   failed: {
     container: 'border-red-500/40 bg-red-500/10 text-red-600 dark:text-red-400',
@@ -904,15 +904,29 @@ export function DatasetImportPanel({ flowRuns, hilApprovals, isLoadingRuns, onOp
             onDrop={handleDrop}
             onClick={handleBrowse}
             aria-label="Drop CSV, XLSX, or ZIP files here or press Enter to browse"
+            onKeyDown={(event) => {
+              if (disableInputs) return
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault()
+                handleBrowse()
+              }
+            }}
           >
             <CloudUpload className="h-10 w-10 text-primary" aria-hidden="true" />
             <div>
               <p className="text-sm font-medium">{disableInputs ? 'Import in progress' : 'Drop files to queue them'}</p>
               <p className="text-xs text-muted-foreground">.csv, .xlsx, and zipped workbooks up to 1GB. Multiple files supported.</p>
             </div>
-            <Button variant="secondary" size="sm" className="mt-2" disabled={disableInputs}>
+            <span
+              className={cn(
+                buttonVariants({ variant: 'secondary', size: 'sm' }),
+                'mt-2',
+                disableInputs ? 'cursor-not-allowed opacity-60' : 'cursor-pointer',
+              )}
+              aria-hidden="true"
+            >
               Browse
-            </Button>
+            </span>
             <Input
               ref={fileInputRef}
               type="file"

@@ -499,10 +499,14 @@ export function Lineage() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              <label
+                className="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                htmlFor="lineage-upstream-depth"
+              >
                 Upstream Depth
               </label>
               <Input
+                id="lineage-upstream-depth"
                 type="number"
                 min={0}
                 max={20}
@@ -521,10 +525,14 @@ export function Lineage() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              <label
+                className="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                htmlFor="lineage-downstream-depth"
+              >
                 Downstream Depth
               </label>
               <Input
+                id="lineage-downstream-depth"
                 type="number"
                 min={0}
                 max={20}
@@ -584,11 +592,11 @@ export function Lineage() {
       </Card>
 
       {(lineageErrorMessage || subscriptionError || jobsError || datasetsError) && (
-        <div className="rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-600 dark:text-red-400 flex items-start gap-2">
+        <div className="rounded-2xl border border-red-600/50 bg-red-100 px-4 py-3 text-sm text-red-800 dark:border-red-500/60 dark:bg-red-500/20 dark:text-red-200 flex items-start gap-2">
           <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0" />
           <div>
             <div className="font-semibold">Lineage fetch issue</div>
-            <p className="text-xs text-red-600/80 dark:text-red-300/80">
+            <p className="text-xs text-red-700/90 dark:text-red-200/90">
               {lineageErrorMessage ||
                 subscriptionError ||
                 (jobsError instanceof Error ? jobsError.message : null) ||

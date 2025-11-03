@@ -444,6 +444,7 @@ export function Dashboard() {
                   size="icon"
                   className="h-8 w-8"
                   title="Learn about lineage telemetry"
+                  aria-label="Open lineage telemetry documentation"
                   onClick={() => openHelp({ topicId: 'live-process-tracking' })}
                 >
                   <HelpCircle className="h-4 w-4" />

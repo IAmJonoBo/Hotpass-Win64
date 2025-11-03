@@ -69,6 +69,7 @@ export function SheetHeader({ children, onClose }: SheetHeaderProps) {
           variant="ghost"
           size="icon"
           onClick={onClose}
+          aria-label="Close panel"
           className="h-8 w-8"
         >
           <X className="h-4 w-4" />

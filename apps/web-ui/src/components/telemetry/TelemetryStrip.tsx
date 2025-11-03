@@ -183,14 +183,14 @@ export function TelemetryStrip({ className }: TelemetryStripProps) {
           {prefectLoading ? (
             <Clock className="h-3 w-3 text-muted-foreground animate-spin" />
           ) : prefectHealth?.status === 'healthy' ? (
-            <CheckCircle className="h-3 w-3 text-green-600 dark:text-green-400" />
+            <CheckCircle className="h-3 w-3 text-emerald-700 dark:text-emerald-300" />
           ) : (
             <AlertTriangle className="h-3 w-3 text-red-600 dark:text-red-400" />
           )}
           <span className="text-muted-foreground">Prefect:</span>
           <span className={cn(
             prefectHealth?.status === 'healthy'
-              ? 'text-green-600 dark:text-green-400'
+              ? 'text-emerald-700 dark:text-emerald-300'
               : 'text-red-600 dark:text-red-400'
           )}>
             {prefectHealth?.status || 'checking...'}
@@ -202,14 +202,14 @@ export function TelemetryStrip({ className }: TelemetryStripProps) {
           {marquezLoading ? (
             <Clock className="h-3 w-3 text-muted-foreground animate-spin" />
           ) : marquezHealth?.status === 'healthy' ? (
-            <CheckCircle className="h-3 w-3 text-green-600 dark:text-green-400" />
+            <CheckCircle className="h-3 w-3 text-emerald-700 dark:text-emerald-300" />
           ) : (
             <AlertTriangle className="h-3 w-3 text-red-600 dark:text-red-400" />
           )}
           <span className="text-muted-foreground">Marquez:</span>
           <span className={cn(
             marquezHealth?.status === 'healthy'
-              ? 'text-green-600 dark:text-green-400'
+              ? 'text-emerald-700 dark:text-emerald-300'
               : 'text-red-600 dark:text-red-400'
           )}>
             {marquezHealth?.status || 'checking...'}
@@ -221,14 +221,14 @@ export function TelemetryStrip({ className }: TelemetryStripProps) {
           {recentJobFailures.length > 0 ? (
             <AlertTriangle className="h-3 w-3 text-red-600 dark:text-red-400" />
           ) : (
-            <CheckCircle className="h-3 w-3 text-green-600 dark:text-green-400" />
+            <CheckCircle className="h-3 w-3 text-emerald-700 dark:text-emerald-300" />
           )}
           <span className="text-muted-foreground">Job runner:</span>
           <span
             className={cn(
               recentJobFailures.length > 0
                 ? 'text-red-600 dark:text-red-400 font-medium'
-                : 'text-green-600 dark:text-green-400',
+                : 'text-emerald-700 dark:text-emerald-300',
             )}
           >
             {recentJobFailures.length > 0
@@ -243,8 +243,8 @@ export function TelemetryStrip({ className }: TelemetryStripProps) {
         {/* Failed Runs */}
         {recentFailedRuns > 0 && (
           <div className="flex items-center gap-2">
-            <AlertTriangle className="h-3 w-3 text-yellow-600 dark:text-yellow-400" />
-            <span className="text-yellow-600 dark:text-yellow-400 font-medium">
+            <AlertTriangle className="h-3 w-3 text-amber-700 dark:text-amber-300" />
+            <span className="text-amber-700 dark:text-amber-300 font-medium">
               {recentFailedRuns} failed run{recentFailedRuns > 1 ? 's' : ''} (30m)
             </span>
           </div>
@@ -258,7 +258,7 @@ export function TelemetryStrip({ className }: TelemetryStripProps) {
         </span>
         <div className="flex items-center gap-2">
           {hasIssues && (
-            <Badge variant="outline" className="text-xs bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/20">
+            <Badge variant="outline" className="text-xs bg-amber-200 text-amber-800 dark:bg-amber-500/30 dark:text-amber-200 border-amber-500/40">
               <Activity className="h-3 w-3 mr-1" />
               Action Required
             </Badge>

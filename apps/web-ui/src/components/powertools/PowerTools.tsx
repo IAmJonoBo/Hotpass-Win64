@@ -151,15 +151,18 @@ export function PowerTools({ onOpenAssistant }: PowerToolsProps) {
 
                 {/* Command Display */}
                 <div className="relative">
-                  <div
+                  <pre
                     className={cn(
                       'bg-muted rounded-md p-2 pr-8 text-xs font-mono flex items-center gap-2 overflow-x-auto',
                       tool.disabled && 'opacity-50'
                     )}
+                    tabIndex={0}
+                    role="region"
+                    aria-label={`Command: ${tool.command}`}
                   >
-                    <Terminal className="h-3 w-3 flex-shrink-0" />
+                    <Terminal className="h-3 w-3 flex-shrink-0" aria-hidden="true" />
                     <code className="flex-1 whitespace-nowrap">{tool.command}</code>
-                  </div>
+                  </pre>
                   {!tool.disabled && tool.command.startsWith('make') && (
                     <button
                       onClick={() => copyCommand(tool.command, tool.id)}

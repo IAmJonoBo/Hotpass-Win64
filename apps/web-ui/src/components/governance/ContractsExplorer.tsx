@@ -51,6 +51,7 @@ export function ContractsExplorer({ className, onOpenAssistant, onOpenHelp }: Co
               size="icon"
               className="h-8 w-8"
               title="Refresh"
+              aria-label="Refresh contracts list"
               onClick={() => contractsQuery.refetch()}
               disabled={contractsQuery.isLoading}
             >
@@ -61,6 +62,7 @@ export function ContractsExplorer({ className, onOpenAssistant, onOpenHelp }: Co
               size="icon"
               className="h-8 w-8"
               title="Open help"
+              aria-label="Open contracts help topic"
               onClick={() => onOpenHelp?.('gov-data-handling')}
             >
               <HelpCircle className="h-4 w-4" />

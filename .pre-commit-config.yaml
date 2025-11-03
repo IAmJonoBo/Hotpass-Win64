@@ -22,7 +22,6 @@ repos:
     rev: v0.14.2
     hooks:
       - id: ruff
-      - id: ruff-format
 
   - repo: https://github.com/psf/black
     rev: 25.9.0

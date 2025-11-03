@@ -13,14 +13,30 @@ if [[ ${TRUNK_SKIP_TRUNK:-0} != "1" ]]; then
 		scripts/testing/trunk_check.sh
 fi
 
-# Comprehensive suite (lint, coverage, security) for scheduled/nightly runs
-# Use -n auto for parallel execution with pytest-xdist
+# Comprehensive suite (lint, coverage, security) for scheduled/nightly runs.
+# Prefer parallel execution when pytest-xdist is available; otherwise, try to bootstrap it.
 if uv run python -c "import xdist" >/dev/null 2>&1; then
 	echo "[testing] Detected pytest-xdist; running in parallel."
 	uv run pytest -n auto "$@"
 else
-	echo "[testing] pytest-xdist not available; falling back to serial pytest run."
-	uv run pytest "$@"
+	if [[ ${HOTPASS_SKIP_XDIST_BOOTSTRAP:-0} != "1" ]]; then
+		echo "[testing] pytest-xdist missing; attempting on-the-fly install via uv pip."
+		if uv pip install pytest-xdist >/dev/null 2>&1; then
+			if uv run python -c "import xdist" >/dev/null 2>&1; then
+				echo "[testing] pytest-xdist installed; running in parallel."
+				uv run pytest -n auto "$@"
+			else
+				echo "[testing] Install succeeded but import still failing; running serial tests." >&2
+				uv run pytest "$@"
+			fi
+		else
+			echo "[testing] Unable to install pytest-xdist (network or lockdown). Running serial tests." >&2
+			uv run pytest "$@"
+		fi
+	else
+		echo "[testing] pytest-xdist not available and bootstrap disabled; running serial tests."
+		uv run pytest "$@"
+	fi
 fi
 uv run coverage html
 uv run python tools/coverage/report_low_coverage.py coverage.xml --min-lines 5 --min-branches 0

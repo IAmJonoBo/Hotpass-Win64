@@ -268,6 +268,7 @@ export function PipelineActivityPanel({ className }: PipelineActivityPanelProps)
               variant="ghost"
               onClick={() => refetch()}
               disabled={isFetching}
+              aria-label="Refresh pipeline activity"
             >
               <RefreshCw className={cn('h-4 w-4', isFetching && 'animate-spin')} />
             </Button>

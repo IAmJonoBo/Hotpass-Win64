@@ -470,6 +470,7 @@ export function AssistantChat({ className, initialMessage }: AssistantChatProps)
             onClick={() => handleSendMessage()}
             disabled={isProcessing || !input.trim()}
             size="icon"
+            aria-label="Send message"
           >
             <Send className="h-4 w-4" />
           </Button>
