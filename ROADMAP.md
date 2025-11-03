@@ -38,7 +38,7 @@ phases and governance gates.
 - [x] **T3.1 Prefect 3 deployments** — Commit deployment manifests and ensure
       `prefect deploy` produces idempotent schedules.
   - Verified in-repo via CLI integration tests (`tests/cli/test_deploy_command.py`) and Prefect flow overrides (`tests/test_orchestration.py`).
-- [ ] **T3.2 OpenLineage + Marquez** — Harden lineage emission and document the
+- [x] **T3.2 OpenLineage + Marquez** — Harden lineage emission and document the
       local Marquez stack.
   - Completed PR: `observability/marquez-bootstrap` (2025-10-28) introduced the
     compose stack and quickstart guide; ongoing maintenance tasks live in

@@ -44,16 +44,16 @@ extend the platform.
 
 ## Test suites
 
-- [ ] `tests/pipeline/` — Feature toggles, ingestion validation, and orchestrator behaviour tests.
-- [ ] `tests/automation/` — HTTP client policies and webhook/CRM delivery fixtures.
-- [ ] `tests/enrichment/` — Intent collectors, validators, and enrichment adapters.
-- [ ] `tests/linkage/` — Entity resolution and probabilistic matching coverage.
-- [ ] `tests/cli/` — Command parsing, progress reporting, and option integration tests (includes plan/research and resolve Label Studio coverage added 2025-10-31).
-- [ ] `tests/data_sources/` — Reader/writer adapters and dataset helpers.
-- [ ] `tests/accessibility/` — Accessibility smoke tests for dashboards and reports.
-- [ ] `tests/contracts/` — Golden contracts for CLI outputs and pipeline reports.
-- [ ] `tests/domain/` — Domain model invariants and schema serialisation checks.
-- [ ] `tests/fixtures/` — Shared fixtures for telemetry, orchestration, and pipeline flows.
+- [x] `tests/pipeline/` — Feature toggles, ingestion validation, and orchestrator behaviour tests.
+- [x] `tests/automation/` — HTTP client policies and webhook/CRM delivery fixtures.
+- [x] `tests/enrichment/` — Intent collectors, validators, and enrichment adapters.
+- [x] `tests/linkage/` — Entity resolution and probabilistic matching coverage.
+- [x] `tests/cli/` — Command parsing, progress reporting, and option integration tests (includes plan/research and resolve Label Studio coverage added 2025-10-31).
+- [x] `tests/data_sources/` — Reader/writer adapters and dataset helpers.
+- [x] `tests/accessibility/` — Accessibility smoke tests for dashboards and reports.
+- [x] `tests/contracts/` — Golden contracts for CLI outputs and pipeline reports.
+- [x] `tests/domain/` — Domain model invariants and schema serialisation checks.
+- [x] `tests/fixtures/` — Shared fixtures for telemetry, orchestration, and pipeline flows.
 
 _Tick a box when reviewing or updating a suite during a docs or QA sweep._
 

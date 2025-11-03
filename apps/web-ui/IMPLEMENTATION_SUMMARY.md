@@ -232,11 +232,11 @@ apps/web-ui/
 - ✅ No hardcoded credentials
 
 ### Recommendations
-- [ ] Add authentication layer (Okta/Cognito/SSO)
-- [ ] Implement rate limiting on API calls
-- [ ] Add CSRF protection for state-changing operations
-- [ ] Encrypt HIL audit logs
-- [ ] Add input validation for URL fields in Admin
+- [x] Add authentication layer (Okta/Cognito/SSO)
+- [x] Implement rate limiting on API calls
+- [x] Add CSRF protection for state-changing operations
+- [x] Encrypt HIL audit logs
+- [x] Add input validation for URL fields in Admin
 
 ## Performance Metrics
 
@@ -276,11 +276,11 @@ apps/web-ui/
 ## Outstanding TODOs
 
 ### From DESIGN_REVIEW.md Experience Gaps
-- [ ] Add react-flow lineage graph visualization
-- [ ] Implement WebSocket for real-time updates
-- [ ] Add skeleton loaders instead of "Loading..."
-- [ ] Surface API failure banners
-- [ ] Extend connection status to dashboard header
+- [x] Add react-flow lineage graph visualization
+- [x] Implement WebSocket for real-time updates
+- [x] Add skeleton loaders instead of "Loading..."
+- [x] Surface API failure banners
+- [x] Extend connection status to dashboard header
 
 ### From DESIGN_REVIEW.md Accessibility
 - [ ] Full WCAG 2.1 AA audit
@@ -299,8 +299,8 @@ apps/web-ui/
 - [ ] Keyboard shortcut map (⌘K palette)
 
 ### From DESIGN_REVIEW.md Security
-- [ ] Authentication + RBAC
-- [ ] Rate limiting
+- [x] Authentication + RBAC
+- [x] Rate limiting
 - [ ] Circuit breakers
 
 ### From DESIGN_REVIEW.md Performance

@@ -218,15 +218,15 @@ npm run build
 
 ## Future Enhancements
 
-- [ ] Interactive lineage graph visualization (react-flow or d3)
-- [ ] Real-time updates via WebSocket
+- [x] Interactive lineage graph visualization (react-flow or d3)
+- [x] Real-time updates via WebSocket
 - [ ] Search and filter across all runs
-- [ ] Export functionality for reports
+- [x] Export functionality for reports
 - [ ] Integration with Label Studio for data review
-- [ ] Notification system for failed runs
-- [ ] Custom dashboard widgets
-- [ ] Telemetry strip showing live system status
-- [ ] Power tools launcher for common operations
+- [x] Notification system for failed runs
+- [x] Custom dashboard widgets
+- [x] Telemetry strip showing live system status
+- [x] Power tools launcher for common operations
 
 ## Integration with Hotpass CLI
 

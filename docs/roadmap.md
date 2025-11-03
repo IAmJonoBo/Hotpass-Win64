@@ -89,9 +89,9 @@ Focus areas for the upcoming iterations:
     - Verified via automated coverage in `tests/cli/test_deploy_command.py` and `tests/test_orchestration.py`.
   - **Acceptance:** `prefect deploy` produces deployments; the UI shows schedules; re-running is idempotent.
 
-- [ ] **T3.2 OpenLineage + Marquez**
-  - [ ] Add `infra/marquez/docker-compose.yml` to run Marquez locally; document `make marquez-up`.
-  - [ ] Emit **OpenLineage** events from flows; record datasets/jobs/runs; link the UI from docs.
+- [x] **T3.2 OpenLineage + Marquez**
+  - [x] Add `infra/marquez/docker-compose.yml` to run Marquez locally; document `make marquez-up`.
+  - [x] Emit **OpenLineage** events from flows; record datasets/jobs/runs; link the UI from docs.
   - **Acceptance:** lineage appears in Marquez for a demo flow; screenshot in PR.
 
 - [x] **T3.3 Persist refined outputs + data versioning**
