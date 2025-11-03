@@ -83,6 +83,7 @@ dev = [
   "pytest>=8.4.2",
   "pytest-cov>=7.0.0",
   "pytest-asyncio>=1.2.0",
+  "pytest-xdist>=3.6.1",
   "hypothesis>=6.142.5",
   "mypy>=1.18.2",
   "ruff>=0.14.3",
@@ -101,6 +102,7 @@ docs = [
   "sphinx>=8.2.3",
   "myst-parser>=4.0.1",
   "sphinx-autodoc-typehints>=3.5.2",
+  "sphinxcontrib-mermaid>=1.0.0",
   "furo>=2025.9.25",
   "linkify-it-py>=2.0.3",
 ]

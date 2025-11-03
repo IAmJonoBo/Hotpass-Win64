@@ -14,7 +14,8 @@ if [[ ${TRUNK_SKIP_TRUNK:-0} != "1" ]]; then
 fi
 
 # Comprehensive suite (lint, coverage, security) for scheduled/nightly runs
-uv run pytest "$@"
+# Use -n auto for parallel execution with pytest-xdist
+uv run pytest -n auto "$@"
 uv run coverage html
 uv run python tools/coverage/report_low_coverage.py coverage.xml --min-lines 5 --min-branches 0
 

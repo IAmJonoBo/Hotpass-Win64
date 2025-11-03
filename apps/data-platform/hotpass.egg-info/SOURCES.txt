@@ -62,6 +62,7 @@ apps/data-platform/hotpass/cli/commands/doctor.py
 apps/data-platform/hotpass/cli/commands/enrich.py
 apps/data-platform/hotpass/cli/commands/env.py
 apps/data-platform/hotpass/cli/commands/explain_provenance.py
+apps/data-platform/hotpass/cli/commands/imports.py
 apps/data-platform/hotpass/cli/commands/init.py
 apps/data-platform/hotpass/cli/commands/net.py
 apps/data-platform/hotpass/cli/commands/orchestrate.py
@@ -107,6 +108,9 @@ apps/data-platform/hotpass/enrichment/registries/base.py
 apps/data-platform/hotpass/enrichment/registries/cipc.py
 apps/data-platform/hotpass/enrichment/registries/sacaa.py
 apps/data-platform/hotpass/enrichment/validators/__init__.py
+apps/data-platform/hotpass/imports/__init__.py
+apps/data-platform/hotpass/imports/preprocess.py
+apps/data-platform/hotpass/imports/profiling.py
 apps/data-platform/hotpass/linkage/__init__.py
 apps/data-platform/hotpass/linkage/blocking.py
 apps/data-platform/hotpass/linkage/comparators.py
