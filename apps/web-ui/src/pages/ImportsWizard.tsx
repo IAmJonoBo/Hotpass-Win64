@@ -179,7 +179,7 @@ export function ImportsWizard() {
         source: sourceName,
         target: slugify(sourceName),
         defaultValue: '',
-        transform: column.inferred_type === 'string' ? 'trim' : '',
+        transform: column.inferredType === 'string' ? 'trim' : '',
         strip: true,
         drop: false,
       })
@@ -288,7 +288,7 @@ export function ImportsWizard() {
 
   const validationIssues = useMemo(() => {
     const issues: string[] = []
-    const seenSources = new Map<string, number>()
+    const seenSources: Map<string, number> = new window.Map<string, number>()
     mappingRows.forEach(row => {
       const key = row.source.trim().toLowerCase()
       if (!key) return
@@ -352,7 +352,7 @@ export function ImportsWizard() {
       },
       payload: draftPayload,
       origin: 'wizard-ui',
-    })
+    }) as { template: { name: string } }
     const filename = `${slugify(contract.template.name)}-contract.json`
     const blob = new Blob([`${JSON.stringify(contract, null, 2)}\n`], { type: 'application/json' })
     const url = URL.createObjectURL(blob)

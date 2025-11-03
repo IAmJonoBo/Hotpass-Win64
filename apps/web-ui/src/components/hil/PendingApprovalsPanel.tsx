@@ -1,28 +1,34 @@
-import { useMemo } from 'react'
-import { formatDistanceToNow } from 'date-fns'
-import { Link } from 'react-router-dom'
-import { AlertCircle, Clock, MessageSquare, UserCheck } from 'lucide-react'
-import type { HILApproval, PrefectFlowRun } from '@/types'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
-import { cn } from '@/lib/utils'
+import { useMemo } from "react";
+import { formatDistanceToNow } from "date-fns";
+import { Link } from "react-router-dom";
+import { AlertCircle, Clock, MessageSquare, UserCheck } from "lucide-react";
+import type { HILApproval, PrefectFlowRun } from "@/types";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
 interface PendingApprovalsPanelProps {
-  approvals: Record<string, HILApproval>
-  runs: PrefectFlowRun[]
-  isLoading?: boolean
-  onOpenAssistant?: (message?: string) => void
-  className?: string
+  approvals: Record<string, HILApproval>;
+  runs: PrefectFlowRun[];
+  isLoading?: boolean;
+  onOpenAssistant?: (message?: string) => void;
+  className?: string;
 }
 
 type PendingApprovalEntry = {
-  approval: HILApproval
-  run?: PrefectFlowRun
-}
+  approval: HILApproval;
+  run?: PrefectFlowRun;
+};
 
-const MAX_DISPLAY = 6
+const MAX_DISPLAY = 6;
 
 export function PendingApprovalsPanel({
   approvals,
@@ -32,36 +38,50 @@ export function PendingApprovalsPanel({
   className,
 }: PendingApprovalsPanelProps) {
   const waitingEntries = useMemo<PendingApprovalEntry[]>(() => {
-    const entries = Object.values(approvals).filter(entry => entry.status === 'waiting')
-    entries.sort((a, b) => Date.parse(b.timestamp) - Date.parse(a.timestamp))
-    return entries.slice(0, MAX_DISPLAY).map(entry => ({
+    const entries = Object.values(approvals).filter(
+      (entry) => entry.status === "waiting",
+    );
+    entries.sort((a, b) => Date.parse(b.timestamp) - Date.parse(a.timestamp));
+    return entries.slice(0, MAX_DISPLAY).map((entry) => ({
       approval: entry,
-      run: runs.find(run => run.id === entry.runId),
-    }))
-  }, [approvals, runs])
+      run: runs.find((run) => run.id === entry.runId),
+    }));
+  }, [approvals, runs]);
 
   const totalWaiting = useMemo(
-    () => Object.values(approvals).filter(entry => entry.status === 'waiting').length,
+    () =>
+      Object.values(approvals).filter((entry) => entry.status === "waiting")
+        .length,
     [approvals],
-  )
+  );
   const totalApproved = useMemo(
-    () => Object.values(approvals).filter(entry => entry.status === 'approved').length,
+    () =>
+      Object.values(approvals).filter((entry) => entry.status === "approved")
+        .length,
     [approvals],
-  )
+  );
   const totalRejected = useMemo(
-    () => Object.values(approvals).filter(entry => entry.status === 'rejected').length,
+    () =>
+      Object.values(approvals).filter((entry) => entry.status === "rejected")
+        .length,
     [approvals],
-  )
+  );
 
   return (
-    <Card className={cn('h-full rounded-3xl border border-border/80 bg-card/90 shadow-sm', className)}>
+    <Card
+      className={cn(
+        "h-full rounded-3xl border border-border/80 bg-card/90 shadow-sm",
+        className,
+      )}
+    >
       <CardHeader className="pb-4">
         <CardTitle className="flex items-center gap-2 text-base">
           <UserCheck className="h-4 w-4 text-primary" aria-hidden="true" />
           Pending approvals
         </CardTitle>
         <CardDescription>
-          Manual reviews waiting on an operator decision. Open Run Details to see full QA context.
+          Manual reviews waiting on an operator decision. Open Run Details to
+          see full QA context.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -88,15 +108,22 @@ export function PendingApprovalsPanel({
           </div>
         ) : waitingEntries.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-border/60 bg-muted/30 p-4 text-xs text-muted-foreground">
-            No approvals waiting on you right now. Completed decisions will appear here for 24 hours.
+            No approvals waiting on you right now. Completed decisions will
+            appear here for 24 hours.
           </div>
         ) : (
           <ul className="space-y-3">
             {waitingEntries.map(({ approval, run }) => {
-              const runName = run?.name ?? approval.runId
-              const profile = typeof run?.parameters?.profile === 'string' ? run.parameters.profile : null
-              const comment = approval.comment || run?.parameters?.notes || run?.parameters?.comment
-              const timestamp = Date.parse(approval.timestamp)
+              const runName = run?.name ?? approval.runId;
+              const profile =
+                typeof run?.parameters?.profile === "string"
+                  ? run.parameters.profile
+                  : null;
+              const comment =
+                approval.comment ||
+                run?.parameters?.notes ||
+                run?.parameters?.comment;
+              const timestamp = Date.parse(approval.timestamp);
               return (
                 <li
                   key={approval.id}
@@ -104,18 +131,27 @@ export function PendingApprovalsPanel({
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
-                      <p className="truncate text-sm font-semibold text-foreground" title={runName}>
+                      <p
+                        className="truncate text-sm font-semibold text-foreground"
+                        title={runName}
+                      >
                         {runName}
                       </p>
                       <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
                         <span className="inline-flex items-center gap-1">
                           <Clock className="h-3 w-3" aria-hidden="true" />
                           {Number.isNaN(timestamp)
-                            ? 'timestamp unknown'
-                            : formatDistanceToNow(new Date(approval.timestamp), { addSuffix: true })}
+                            ? "timestamp unknown"
+                            : formatDistanceToNow(
+                                new Date(approval.timestamp),
+                                { addSuffix: true },
+                              )}
                         </span>
                         {profile && (
-                          <Badge variant="secondary" className="rounded-full px-2 py-0.5 text-[10px] uppercase">
+                          <Badge
+                            variant="secondary"
+                            className="rounded-full px-2 py-0.5 text-[10px] uppercase"
+                          >
                             {profile}
                           </Badge>
                         )}
@@ -127,13 +163,21 @@ export function PendingApprovalsPanel({
                         )}
                       </div>
                     </div>
-                    <Badge variant="outline" className="border-yellow-500/40 text-yellow-700 dark:text-yellow-400">
+                    <Badge
+                      variant="outline"
+                      className="border-yellow-500/40 text-yellow-700 dark:text-yellow-400"
+                    >
                       Waiting
                     </Badge>
                   </div>
-                  {comment && (
+                  {typeof comment === "string" && comment && (
                     <p className="mt-2 line-clamp-3 text-xs text-muted-foreground">
-                      “{String(comment)}”
+                      “{comment}”
+                    </p>
+                  )}
+                  {comment && typeof comment !== "string" && (
+                    <p className="mt-2 line-clamp-3 text-xs text-muted-foreground">
+                      “{JSON.stringify(comment)}”
                     </p>
                   )}
                   <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -148,7 +192,7 @@ export function PendingApprovalsPanel({
                         size="sm"
                         onClick={() =>
                           onOpenAssistant(
-                            `Help me prepare approval notes for run ${approval.runId}. Current comment: ${comment ?? 'None provided'}.`,
+                            `Help me prepare approval notes for run ${approval.runId}. Current comment: ${comment ?? "None provided"}.`,
                           )
                         }
                       >
@@ -158,22 +202,24 @@ export function PendingApprovalsPanel({
                     )}
                   </div>
                 </li>
-              )
+              );
             })}
           </ul>
         )}
 
         {waitingEntries.length > 0 && waitingEntries.length === MAX_DISPLAY && (
           <div className="rounded-xl border border-border/60 bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground">
-            Showing the {MAX_DISPLAY} most recent requests. Older approvals remain available in Run Details.
+            Showing the {MAX_DISPLAY} most recent requests. Older approvals
+            remain available in Run Details.
           </div>
         )}
 
         <div className="flex items-center gap-2 rounded-xl border border-border/60 bg-background/80 px-3 py-2 text-[11px] text-muted-foreground">
           <AlertCircle className="h-3 w-3 text-primary" aria-hidden="true" />
-          Decisions sync back to Prefect automatically. Use Run Details for full QA breakdowns before approving.
+          Decisions sync back to Prefect automatically. Use Run Details for full
+          QA breakdowns before approving.
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

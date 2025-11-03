@@ -165,12 +165,17 @@ export function LatestRefinedWorkbookCard({
             </Button>
           </Link>
           {typeof run.parameters?.data_docs_url === 'string' && (
-            <Button size="sm" variant="outline" asChild>
-              <a href={run.parameters.data_docs_url} target="_blank" rel="noreferrer">
+            <a
+              href={run.parameters.data_docs_url}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex"
+            >
+              <Button size="sm" variant="outline">
                 Open data docs
                 <ArrowUpRight className="ml-2 h-4 w-4" />
-              </a>
-            </Button>
+              </Button>
+            </a>
           )}
         </div>
       </CardContent>

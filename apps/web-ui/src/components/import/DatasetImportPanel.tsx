@@ -151,7 +151,7 @@ const sanitizeArtifacts = (value: unknown): ImportArtifact[] => {
     const name = typeof item.name === 'string' ? item.name : undefined
     const kindRaw = typeof item.kind === 'string' ? item.kind : undefined
     const url = typeof item.url === 'string' ? item.url : undefined
-    if (!id || !name || !url) return
+    if (!id || !name || !url || typeof kindRaw !== 'string') return
     if (!['refined', 'archive', 'profile'].includes(kindRaw)) return
     const size = typeof item.size === 'number' && Number.isFinite(item.size) ? item.size : 0
     artifacts.push({ id, name, kind: kindRaw as ImportArtifact['kind'], url, size })
