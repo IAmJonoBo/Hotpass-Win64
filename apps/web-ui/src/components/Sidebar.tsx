@@ -9,6 +9,7 @@ import {
   MessageSquare,
   History,
   Stethoscope,
+  Files,
 } from 'lucide-react'
 import { cn, getEnvironmentColor } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -53,6 +54,7 @@ export function Sidebar({ environment = 'local', onOpenAssistant, onOpenActivity
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
     { name: 'Lineage', href: '/lineage', icon: GitBranch },
     { name: 'Health', href: '/health', icon: Stethoscope },
+    { name: 'Smart Import', href: '/imports/wizard', icon: Files, roles: ['operator', 'approver', 'admin'] as const },
     { name: 'Assistant', href: '/assistant', icon: MessageSquare },
     { name: 'Admin', href: '/admin', icon: Settings, roles: ['admin'] as const },
   ]

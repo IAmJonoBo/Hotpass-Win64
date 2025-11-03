@@ -7,6 +7,7 @@ import { RunDetails } from './pages/RunDetails'
 import { Admin } from './pages/Admin'
 import { Health } from './pages/Health'
 import { Assistant } from './pages/Assistant'
+import { ImportsWizard } from './pages/ImportsWizard'
 import { AuthProvider, RequireRole } from './auth'
 import { AuthCallback } from './pages/AuthCallback'
 import './index.css'
@@ -34,6 +35,14 @@ function App() {
               <Route path="/lineage" element={<Lineage />} />
               <Route path="/assistant" element={<Assistant />} />
               <Route path="/health" element={<Health />} />
+              <Route
+                path="/imports/wizard"
+                element={(
+                  <RequireRole roles={['operator', 'approver', 'admin']}>
+                    <ImportsWizard />
+                  </RequireRole>
+                )}
+              />
               <Route
                 path="/runs/:runId"
                 element={(

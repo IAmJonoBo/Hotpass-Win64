@@ -47,7 +47,7 @@ interface UploadFileMetadata {
 interface ImportArtifact {
   id: string
   name: string
-  kind: 'refined' | 'archive'
+  kind: 'refined' | 'archive' | 'profile'
   size: number
   url: string
 }
@@ -149,9 +149,9 @@ const sanitizeArtifacts = (value: unknown): ImportArtifact[] => {
     const kindRaw = typeof item.kind === 'string' ? item.kind : undefined
     const url = typeof item.url === 'string' ? item.url : undefined
     if (!id || !name || !url) return
-    if (kindRaw !== 'refined' && kindRaw !== 'archive') return
+    if (!['refined', 'archive', 'profile'].includes(kindRaw)) return
     const size = typeof item.size === 'number' && Number.isFinite(item.size) ? item.size : 0
-    artifacts.push({ id, name, kind: kindRaw, url, size })
+    artifacts.push({ id, name, kind: kindRaw as ImportArtifact['kind'], url, size })
   })
   return artifacts
 }
@@ -649,6 +649,11 @@ export function DatasetImportPanel({ flowRuns, hilApprovals, isLoadingRuns, onOp
       return
     }
 
+    if (shouldAttachProfile && !profilePreview) {
+      setSubmissionError('Profiling still running. Wait for the preview or disable attachment before starting the import.')
+      return
+    }
+
     setError(null)
     setSubmissionError(null)
     setConnectionError(null)
@@ -669,8 +674,9 @@ export function DatasetImportPanel({ flowRuns, hilApprovals, isLoadingRuns, onOp
       if (notes.trim().length > 0) {
         formData.append('notes', notes.trim())
       }
-      formData.append('attachProfile', shouldAttachProfile ? 'true' : 'false')
-      if (shouldAttachProfile && profilePreview) {
+      const includeProfileAttachment = shouldAttachProfile && Boolean(profilePreview)
+      formData.append('attachProfile', includeProfileAttachment ? 'true' : 'false')
+      if (includeProfileAttachment && profilePreview) {
         formData.append('profilePayload', JSON.stringify(profilePreview))
         if (previewSourceName) {
           formData.append('profileSourceName', previewSourceName)
@@ -791,6 +797,7 @@ export function DatasetImportPanel({ flowRuns, hilApprovals, isLoadingRuns, onOp
   )
 
   const refinedArtifact = importJob?.artifacts.find(artifact => artifact.kind === 'refined') ?? null
+  const profileArtifact = importJob?.artifacts.find(artifact => artifact.kind === 'profile') ?? null
   const jobNotes = isRecord(importJob?.job.metadata) && typeof importJob?.job.metadata?.notes === 'string'
     ? (importJob?.job.metadata?.notes as string)
     : null
@@ -1233,6 +1240,11 @@ export function DatasetImportPanel({ flowRuns, hilApprovals, isLoadingRuns, onOp
                         Refined workbook ready ({formatBytes(refinedArtifact.size)})
                       </span>
                     )}
+                    {!refinedArtifact && profileArtifact && (
+                      <span className="text-xs text-muted-foreground">
+                        Profiling JSON attached ({formatBytes(profileArtifact.size)})
+                      </span>
+                    )}
                   </div>
                   {importJob.artifacts.length === 0 ? (
                     <p className="mt-2 text-xs text-muted-foreground">Artifacts will appear once the job completes.</p>
@@ -1242,7 +1254,13 @@ export function DatasetImportPanel({ flowRuns, hilApprovals, isLoadingRuns, onOp
                         <li key={artifact.id} className="flex items-center justify-between rounded-xl border border-border/60 bg-background/80 px-3 py-2 text-xs">
                           <div className="flex flex-col">
                             <span className="font-medium text-foreground">{artifact.name}</span>
-                            <span className="text-muted-foreground">{artifact.kind === 'refined' ? 'Refined workbook' : 'Archive'} · {formatBytes(artifact.size)}</span>
+                            <span className="text-muted-foreground">
+                              {artifact.kind === 'refined'
+                                ? 'Refined workbook'
+                                : artifact.kind === 'archive'
+                                  ? 'Archive bundle'
+                                  : 'Profiling JSON'} · {formatBytes(artifact.size)}
+                            </span>
                           </div>
                           <Button
                             variant="outline"

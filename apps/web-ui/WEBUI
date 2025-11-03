@@ -64,7 +64,7 @@
 - [x] Expose `useImportProfile` (React Query mutation) and `useStoredProfiles` (query) for DatasetImport + wizard flows.
 - [x] Introduce `ImportProfilePreview` inside `DatasetImportPanel` (sheet cards, column stats, issue list, join-key badges).
 - [x] Provide “Download profiling JSON” + “Attach to next run” actions (copy payload into job metadata/archive).
-- [x] Persist profiles under `.hotpass/ui/import-profiles/` and promote the selected one to `dist/import/<job-id>/profile.json` when a run starts. _(storage + REST scaffolding now in place; job pipeline hand-off still pending)_
+- [x] Persist profiles under `.hotpass/ui/import-profiles/` and promote the selected one to `dist/import/<job-id>/profile.json` when a run starts (profile.json artifact + job metadata).
 
 ---
 
@@ -72,7 +72,7 @@
 
 ### 3.1 Dashboard (operator-first)
 
-- [ ] Create `SmartImportWizard` route (`/imports/wizard`) with stepper (Upload → Profile review → Mapping → Rule toggles → Summary).
+- [x] Create `SmartImportWizard` route (`/imports/wizard`) with stepper (Upload → Profile review → Mapping → Rule toggles → Summary).
 - [ ] Add `LatestRefinedWorkbookCard` + `DataQualityChip` components sourced from recent run summaries.
 - [ ] Implement `LiveProcessingWidget` (current workbook, sheet count, rows processed, autofixes, errors, session timer; 200–500 ms refresh).
 - [ ] Build optional `CellSpotlight` panel highlighting most recent fix (e.g. Sheet2!D14 + rule).
@@ -104,7 +104,8 @@
 ### 3.5 Template management & consolidation preview
 
 - [x] Ship `/api/imports/templates` CRUD in `server/index.mjs` + storage (list/create/update/delete named templates).
-- [ ] Build `TemplatePicker` + `TemplateManagerDrawer` components (integrate with wizard + assistant actions).
+- [x] Build `TemplatePicker` component (integrated with wizard scaffold); `TemplateManagerDrawer` pending.
+- [ ] Ship `TemplateManagerDrawer` component (management drawer with create/update/delete flows).
 - [ ] Implement wizard `MappingStep` + `RuleToggleStep` consuming profiling defaults + template overrides.
 - [ ] Add `ConsolidationPreview` (master/entities/contacts/addresses tabs + download).
 - [ ] Provide “Export template JSON” action (writes into `dist/import/templates/<name>.json`).

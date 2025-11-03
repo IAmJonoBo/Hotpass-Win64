@@ -10,7 +10,7 @@ import { createProxyMiddleware } from 'http-proxy-middleware'
 import Busboy from 'busboy'
 import os from 'os'
 import fs from 'fs'
-import { copyFile, mkdir, mkdtemp, readdir, rm, rename, stat } from 'fs/promises'
+import { copyFile, mkdir, mkdtemp, readdir, rm, rename, stat, writeFile } from 'fs/promises'
 import crypto from 'crypto'
 import { EventEmitter } from 'events'
 import { spawn } from 'child_process'
@@ -224,6 +224,27 @@ const enumerateImportArtifacts = async (job) => {
       if (error.code !== 'ENOENT') {
         console.warn('[import] failed to enumerate archive artifacts', error)
       }
+    }
+  }
+
+  const profileAttachment = job?.metadata && typeof job.metadata === 'object'
+    ? job.metadata.profileAttachment
+    : null
+
+  const profilePath = profileAttachment && typeof profileAttachment === 'object' && typeof profileAttachment.path === 'string'
+    ? profileAttachment.path
+    : null
+
+  if (profilePath) {
+    const profileStats = await safeStatFile(profilePath)
+    if (profileStats) {
+      artifacts.push({
+        id: 'profile',
+        name: profileAttachment?.name || path.basename(profilePath),
+        kind: 'profile',
+        size: profileStats.size,
+        url: `/api/jobs/${job.id}/artifacts/profile`,
+      })
     }
   }
 
@@ -867,6 +888,36 @@ app.post('/api/import', csrfProtection, async (req, res) => {
     return sendError(res, 400, 'No files were uploaded')
   }
 
+  const parseBooleanField = (value) => {
+    if (typeof value === 'boolean') return value
+    if (typeof value === 'string') {
+      const normalised = value.trim().toLowerCase()
+      if (['true', '1', 'yes', 'on'].includes(normalised)) return true
+      if (['false', '0', 'no', 'off'].includes(normalised)) return false
+    }
+    return false
+  }
+
+  const attachProfile = parseBooleanField(fields.attachProfile)
+  let profilePayload = null
+  if (attachProfile) {
+    const rawPayload = typeof fields.profilePayload === 'string' ? fields.profilePayload.trim() : ''
+    if (!rawPayload) {
+      await rm(tempDir, { recursive: true, force: true })
+      return sendError(res, 400, 'profilePayload is required when attachProfile is true')
+    }
+    try {
+      profilePayload = JSON.parse(rawPayload)
+    } catch (error) {
+      await rm(tempDir, { recursive: true, force: true })
+      return sendError(res, 400, 'profilePayload must be valid JSON', { message: error.message })
+    }
+  }
+
+  const profileSourceName = typeof fields.profileSourceName === 'string' && fields.profileSourceName.trim().length > 0
+    ? fields.profileSourceName.trim()
+    : undefined
+
   const profile = typeof fields.profile === 'string' && fields.profile.trim().length > 0
     ? fields.profile.trim()
     : 'generic'
@@ -901,6 +952,60 @@ app.post('/api/import', csrfProtection, async (req, res) => {
 
     await rm(tempDir, { recursive: true, force: true })
 
+    let profileAttachmentMeta = null
+    if (attachProfile && profilePayload) {
+      const deriveProfileFilename = (sourceName) => {
+        if (!sourceName) return 'profile.json'
+        const base = sourceName
+          .replace(/\.[^/.]+$/, '')
+          .replace(/[^a-z0-9-_]+/gi, '_')
+          .replace(/_{2,}/g, '_')
+          .replace(/^_+|_+$/g, '')
+          .slice(0, 64)
+        return base ? `${base}-profile.json` : 'profile.json'
+      }
+
+      const referenceName =
+        profileSourceName ||
+        filesMetadata[0]?.originalName ||
+        uploadedFiles[0]?.originalName ||
+        'workbook'
+      const profileFilename = deriveProfileFilename(referenceName)
+      const profilePath = path.join(jobRoot, profileFilename)
+      const payloadToPersist = {
+        ...profilePayload,
+      }
+      if (typeof payloadToPersist.attachedAt !== 'string') {
+        payloadToPersist.attachedAt = new Date().toISOString()
+      }
+
+      await writeFile(profilePath, `${JSON.stringify(payloadToPersist, null, 2)}\n`, 'utf8')
+      const profileStats = await stat(profilePath)
+      profileAttachmentMeta = {
+        path: profilePath,
+        name: profileFilename,
+        sourceName: referenceName,
+        size: profileStats.size,
+        attachedAt: payloadToPersist.attachedAt,
+      }
+
+      try {
+        const storedProfile = await writeImportProfile({
+          id: jobId,
+          profile: payloadToPersist,
+          source: 'upload',
+          workbookPath: referenceName,
+          tags: [profile],
+          description: `Attached during import ${jobId}`,
+        })
+        if (storedProfile?.id) {
+          profileAttachmentMeta.profileId = storedProfile.id
+        }
+      } catch (error) {
+        console.warn('[import] failed to persist profile snapshot', error)
+      }
+    }
+
     const command = [
       'uv',
       'run',
@@ -929,6 +1034,24 @@ app.post('/api/import', csrfProtection, async (req, res) => {
       archiveDir,
       files: filesMetadata,
       ...(notes ? { notes } : {}),
+      ...(profileAttachmentMeta ? {
+        profileAttachment: {
+          path: profileAttachmentMeta.path,
+          name: profileAttachmentMeta.name,
+          sourceName: profileAttachmentMeta.sourceName,
+          size: profileAttachmentMeta.size,
+          attachedAt: profileAttachmentMeta.attachedAt,
+        },
+        artifacts: [
+          {
+            id: 'profile',
+            name: profileAttachmentMeta.name,
+            kind: 'profile',
+            size: profileAttachmentMeta.size,
+            url: `/api/jobs/${jobId}/artifacts/profile`,
+          },
+        ],
+      } : {}),
     }
 
     const job = createCommandJob({
@@ -943,6 +1066,10 @@ app.post('/api/import', csrfProtection, async (req, res) => {
       profile,
       files: filesMetadata,
       ...(notes ? { notes } : {}),
+      ...(profileAttachmentMeta ? {
+        profileAttachment: metadata.profileAttachment,
+        artifacts: metadata.artifacts,
+      } : {}),
     })
 
     await appendActivityEvent(createActivityEvent({
@@ -959,6 +1086,14 @@ app.post('/api/import', csrfProtection, async (req, res) => {
       publishJobEvent(job.id, {
         type: 'file-accepted',
         file: fileMeta,
+        timestamp: new Date().toISOString(),
+      })
+    }
+
+    if (profileAttachmentMeta) {
+      publishJobEvent(job.id, {
+        type: 'artifact-ready',
+        artifacts: metadata.artifacts,
         timestamp: new Date().toISOString(),
       })
     }
@@ -1320,6 +1455,41 @@ app.get('/api/jobs/:id/artifacts', async (req, res) => {
   } catch (error) {
     console.error('[import] failed to enumerate artifacts', error)
     sendError(res, 500, 'Failed to enumerate artifacts', { message: error.message })
+  }
+})
+
+app.get('/api/jobs/:id/artifacts/profile', async (req, res) => {
+  const job = getJob(req.params.id)
+  if (!job) {
+    return sendError(res, 404, 'Job not found')
+  }
+  if (!isImportJob(job)) {
+    return sendError(res, 400, 'Artifact available for import jobs only')
+  }
+  const attachment = job.metadata?.profileAttachment
+  if (!attachment || typeof attachment.path !== 'string') {
+    return sendError(res, 404, 'Profile artifact unavailable')
+  }
+  const resolvedPath = path.resolve(attachment.path)
+  const allowedRoot = path.resolve(IMPORT_ROOT)
+  if (!resolvedPath.startsWith(allowedRoot)) {
+    return sendError(res, 403, 'Profile artifact outside import directory')
+  }
+  try {
+    const stats = await stat(resolvedPath)
+    if (!stats.isFile()) {
+      return sendError(res, 404, 'Profile artifact missing')
+    }
+    res.setHeader('Content-Type', 'application/json')
+    res.setHeader('Content-Length', stats.size)
+    res.setHeader('Content-Disposition', `attachment; filename="${attachment.name || path.basename(resolvedPath)}"`)
+    fs.createReadStream(resolvedPath).pipe(res)
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      return sendError(res, 404, 'Profile artifact missing')
+    }
+    console.error('[import] failed to stream profile artifact', error)
+    sendError(res, 500, 'Failed to stream profile artifact', { message: error.message })
   }
 })
 
