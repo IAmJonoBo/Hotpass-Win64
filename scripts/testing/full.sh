@@ -49,4 +49,6 @@ uv run bandit -r apps/data-platform ops --severity-level medium --confidence-lev
 uv run python -m detect_secrets scan \
   --exclude-files '(pnpm-lock\.yaml$|scancode-sample\.json$)' \
   apps docs infra ops scripts src tests tools
-uv run pre-commit run --all-files --show-diff-on-failure
+# Run pre-commit with a configurable timeout to avoid hanging automation.
+PRECOMMIT_TIMEOUT=${HOTPASS_PRECOMMIT_TIMEOUT:-1800}
+timeout "${PRECOMMIT_TIMEOUT}"s uv run pre-commit run --all-files --show-diff-on-failure

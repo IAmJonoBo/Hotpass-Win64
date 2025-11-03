@@ -51,6 +51,11 @@ entory` remains available out of the box.
 - Added unit coverage for CellSpotlight parsing heuristics, keeping the import UI under test.
 - Refreshed the implementation summary and feature inventory to highlight remaining governance and planner tasks.
 
+### Accessibility & QA hardening
+- Normalised icon-only controls, scroll regions, and alert palettes across dashboard, contracts explorer, lineage filters, and assistant widgets so Playwright axe scans pass on `/`, `/lineage`, `/admin`, and `/assistant`.
+- Tightened shared primitives (`<Table>`, power tools command previews, sheet close buttons) to expose keyboard focus and narratable labels, eliminating nested interactive/control violations.
+- Upgraded the QA harness to bootstrap `pytest-xdist`, regenerated the detect-secrets baseline without lockfile noise, and retired redundant `ruff-format` hooks so pre-commit completes cleanly on airgapped agents.
+
 ### Known gaps
 - LiveProcessingWidget metrics still require dedicated tests.
 - Planner tab (`plan research`) and approvals audit timeline remain open items for Stage 3.3/3.2 respectively.

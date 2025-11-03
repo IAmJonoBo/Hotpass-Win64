@@ -9,6 +9,7 @@
 
 - Pre‑commit: format, lint, typecheck, secrets scan.
 - Pre‑push: unit tests.
+- Front-end testing: install Playwright browsers once with `npx playwright install --with-deps chromium` so accessibility/e2e suites run locally before committing.
 
 ## IDE
 
