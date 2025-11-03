@@ -20,6 +20,7 @@ import { useHILApprovals } from '@/store/hilStore'
 import { PipelineActivityPanel } from '@/components/pipeline/PipelineActivityPanel'
 import { PowerTools } from '@/components/powertools/PowerTools'
 import { DatasetImportPanel } from '@/components/import/DatasetImportPanel'
+import { LatestRefinedWorkbookCard } from '@/components/import/LatestRefinedWorkbookCard'
 import { useLineageTelemetry, jobHasHotpassFacet } from '@/hooks/useLineageTelemetry'
 import { useConsolidationTelemetry } from '@/api/imports'
 
@@ -140,6 +141,62 @@ export function Dashboard() {
       run: null,
     }))
 
+  const toLower = (value: unknown) => (typeof value === 'string' ? value.toLowerCase() : '')
+  const toTimestamp = (value?: string) => {
+    if (!value) return 0
+    const parsed = Date.parse(value)
+    return Number.isNaN(parsed) ? 0 : parsed
+  }
+
+  const refineRuns = recentRuns
+    .filter((run) => {
+      const nameMatch = toLower(run.name).includes('refine')
+      const tagMatch = Array.isArray(run.tags) && run.tags.some(tag => toLower(tag) === 'refine')
+      return nameMatch || tagMatch
+    })
+    .sort((a, b) => toTimestamp(b.start_time ?? b.created) - toTimestamp(a.start_time ?? a.created))
+
+  const latestRefineRun = refineRuns[0]
+
+  const latestRefineSummary = latestRefineRun
+    ? {
+        id: latestRefineRun.id,
+        name: latestRefineRun.name,
+        state_name: latestRefineRun.state_name,
+        state_type: latestRefineRun.state_type,
+        profile: typeof latestRefineRun.parameters?.profile === 'string' ? latestRefineRun.parameters.profile : undefined,
+        startedAt: latestRefineRun.start_time ?? latestRefineRun.created,
+        completedAt: latestRefineRun.end_time ?? latestRefineRun.updated,
+        durationSeconds: typeof latestRefineRun.total_run_time === 'number'
+          ? latestRefineRun.total_run_time
+          : latestRefineRun.start_time && latestRefineRun.end_time
+            ? (new Date(latestRefineRun.end_time).getTime() - new Date(latestRefineRun.start_time).getTime()) / 1000
+            : undefined,
+        parameters: latestRefineRun.parameters,
+      }
+    : undefined
+
+  const completedRefineRuns = refineRuns.filter(run => run.state_type === 'COMPLETED')
+  const passRate = refineRuns.length > 0 ? completedRefineRuns.length / refineRuns.length : 0
+
+  let trend: 'up' | 'down' | 'steady' = 'steady'
+  if (refineRuns.length >= 6) {
+    const recentSlice = refineRuns.slice(0, 3)
+    const previousSlice = refineRuns.slice(3, 6)
+    const recentRate =
+      recentSlice.length > 0
+        ? recentSlice.filter(run => run.state_type === 'COMPLETED').length / recentSlice.length
+        : 0
+    const previousRate =
+      previousSlice.length > 0
+        ? previousSlice.filter(run => run.state_type === 'COMPLETED').length / previousSlice.length
+        : 0
+    const delta = recentRate - previousRate
+    if (delta >= 0.05) trend = 'up'
+    else if (delta <= -0.05) trend = 'down'
+  }
+
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -149,6 +206,14 @@ export function Dashboard() {
           Monitor pipeline runs, track performance, and explore data lineage
         </p>
       </div>
+
+      <LatestRefinedWorkbookCard
+        run={latestRefineSummary}
+        passRate={passRate}
+        totalRuns={refineRuns.length}
+        windowLabel="last 24h"
+        trend={trend}
+      />
 
       <DatasetImportPanel
         flowRuns={flowRuns}
