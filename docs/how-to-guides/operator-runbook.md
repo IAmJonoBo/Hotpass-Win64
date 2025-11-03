@@ -52,6 +52,8 @@ uv run hotpass refine \
 
 - Watch the console for validation or contract errors. The pipeline stops on failures and prints the affected sheet or expectation.
 - Inspect `dist/<case-id>/reports/` for the Great Expectations summary referenced in QA reviews.
+- If the run stops with `Data contract validation failed for SACAA Cleaned`, remove duplicate rows
+  from the source sheet (positions 15, 43, and 71) or update the governed schema before retrying.
 
 ## 3. Enrich deterministically
 

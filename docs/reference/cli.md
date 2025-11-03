@@ -98,6 +98,8 @@ $ uv run hotpass overview
 
 > ℹ️ Need the MCP equivalents? See [Reference — MCP tools](mcp-tools.md) for the tool names that mirror each CLI verb.
 
+Bundled profiles live under `apps/data-platform/hotpass/profiles`. When you work from a generated workspace, add `--profile-search-path ../apps/data-platform/hotpass/profiles` (or copy the profile into `config/profiles`) so the CLI can resolve the name.
+
 ## Command structure
 
 ```{mermaid}
@@ -141,21 +143,43 @@ graph TD
 
 ## Quick start
 
-```bash
-uv run hotpass run --input-dir ./data --output-path ./dist/refined.xlsx --archive
-```
+1. Bootstrap a workspace and inspect the generated profile:
 
-Scaffold a dedicated workspace and validate prerequisites before your first run:
+   ```bash
+   uv run hotpass init --path ./workspace
+   cd workspace
+   ls config/profiles
+   ```
 
-```bash
-uv run hotpass init --path ./workspace
-uv run hotpass doctor --config ./config/pipeline.quickstart.toml
-```
+2. Validate prerequisites:
 
-Shared flags such as `--profile`, `--config`, `--log-format`, and `--sensitive-field`
-may be supplied before the subcommand or repeated per subcommand thanks to the parser's
-parent structure. Profiles defined in TOML or YAML load via `--profile` and can merge
-additional configuration files and feature toggles.
+   ```bash
+   uv run hotpass doctor --config ./config/pipeline.quickstart.toml
+   ```
+
+3. Run the core pipeline with the bundled profile and timestamped archive:
+
+   ```bash
+   uv run hotpass refine \
+     --profile quickstart \
+     --profile-search-path ./config/profiles \
+     --config ./config/pipeline.quickstart.toml \
+     --log-format json
+   ```
+
+   ```
+   {"event": "pipeline.summary", "data": {"total_records": 1033,
+    "invalid_records": 0, "recommendations":
+    ["CRITICAL: Average data quality score is below 50%. Review data sources and validation rules."]}}
+   ```
+
+   Outputs appear under `dist/` (`refined.xlsx`, `refined.parquet`, and a timestamped archive).
+   If you switch to the aviation profile and point at the SACAA workbook you will see a Frictionless
+   contract failure; resolve duplicates or update the governed schema before re-running.
+
+Shared flags such as `--profile`, `--profile-search-path`, `--config`, and `--log-format`
+can be supplied before the subcommand or repeated. Profiles defined in TOML or YAML load via
+`--profile` and merge additional configuration files or feature toggles as needed.
 
 ## Core commands
 

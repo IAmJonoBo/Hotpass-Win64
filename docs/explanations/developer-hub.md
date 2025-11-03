@@ -19,6 +19,15 @@ Use this hub to jump into the codebase, understand the architecture, and find th
 | `apps/web-ui/` | React operator experience, with Storybook stories under `apps/web-ui/src`. |
 | `ops/` | Automation scripts (quality gates, UV sync, tunnel helpers, supply-chain tooling). |
 
+```{mermaid}
+graph TD
+    CLI[CLI & MCP<br/>apps/data-platform/hotpass] --> Docs[Diátaxis docs<br/>docs/]
+    CLI --> Tests[Quality gates<br/>tests/]
+    Docs --> Agents[AGENTS.md & tools.json]
+    Tests --> CI[GitHub workflows<br/>.github/workflows]
+    Docs --> WebUI[Operator UI<br/>apps/web-ui]
+```
+
 Start with `docs/explanations/architecture.md` for diagrams and the C4 workspace. Use `docs/reference/development-standards.md` to align with linting, typing, and documentation conventions.
 
 ## Daily workflow

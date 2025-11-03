@@ -1,99 +1,152 @@
 # Hotpass
 
-Hotpass ingests messy spreadsheet collections (primarily XLSX) alongside orchestrated research crawlers managed through the CLI and MCP server. It cleans, normalises, backfills, maps relationships, and publishes analysis-ready outputs so teams can run deeper investigations with trusted data.
+You use Hotpass to turn messy spreadsheet collections into governed, analysis-ready workbooks. The CLI and MCP tooling share the same verbs, so you can refine, enrich, run QA, and orchestrate flows from the terminal, an agent, or CI without rewriting steps.
 
-## Why Hotpass
+```mermaid
+flowchart LR
+    Raw[Raw workbooks<br/>data/*.xlsx] --> Refine[`uv run hotpass refine`]
+    Refine --> Archive[Timestamped archive<br/>+ Data Docs]
+    Refine --> QA[`uv run hotpass qa all`]
+    Refine --> Enrich[`uv run hotpass enrich`]
+    Enrich --> Contracts[`uv run hotpass contracts emit`]
+    Enrich --> Research[`uv run hotpass plan research`]
 
-- **Industry-ready**: Configurable profiles tailor validation rules, mappings, and terminology to your sector.
-- **Quality first**: Great Expectations, POPIA compliance checks, and actionable quality reports keep stakeholders informed.
-- **Operational**: Prefect orchestration, OpenTelemetry metrics, and a Streamlit dashboard make the pipeline production-friendly.
-- **Research ready**: Integrated SearXNG meta-search with caching, throttling, and crawler retries keeps network enrichment fast
-  and observable.
+    classDef cmd fill:#e1f5ff,stroke:#17415f,stroke-width:1px
+    classDef artifact fill:#d4edda,stroke:#225c2f,stroke-width:1px
+    class Refine,QA,Enrich,Contracts,Research cmd
+    class Archive artifact
+```
 
-## Product vision
+## Why teams choose Hotpass
 
-Hotpass is stewarded by n00tropic to prove that an open, automation-friendly data refinery can match enterprise suites feature-for-feature. Every shipping artifact—Prefect deployments, Marquez lineage facets, ARC manifests, agent tools—lives in Git so staging runs mirror what lands in production. The goal: messy spreadsheets in, governed outputs out, with clear provenance and repeatable automation backed by a commercial support path when teams outgrow the Business Source License defaults.
+- **Profile driven**: You load sector-specific profiles (aviation, generic, custom) that align validation rules, mappings, and provenance expectations with your domain.
+- **Quality first**: Great Expectations suites, Frictionless contracts, and POPIA-aware compliance checks surface failing sheets with remediation tips before you hand off outputs.
+- **Operable from day one**: Prefect orchestration, OpenTelemetry exporters, and a Streamlit dashboard ship ready to run; tunnels, context bootstrap, and ARC checks are first-class CLI verbs.
+- **Research ready**: Deterministic enrichment works offline. When you enable network research, throttled crawlers and provenance tracking keep audits defensible.
 
-## Five-minute quickstart
+## 10-minute quickstart
 
-1. Create an isolated environment with uv (n00tropic publishes the canonical extras list so agents and operators stay aligned):
+1. **Create an environment**
 
    ```bash
    uv venv
-   export HOTPASS_UV_EXTRAS="dev docs"
-   bash ops/uv_sync_extras.sh
+   uv sync --extra dev --extra docs
    ```
 
-   Need orchestration or enrichment extras? Append them to
-   `HOTPASS_UV_EXTRAS` before rerunning the helper script.
+   Add orchestration or enrichment extras up front (`uv sync --extra dev --extra docs --extra orchestration --extra enrichment`) so the firewall lock-down never blocks later installs.
 
-2. Confirm the CLI surface and available profiles:
+2. **Discover the CLI surface**
 
    ```bash
    uv run hotpass overview
    ```
 
-   The overview command lists the core verbs (`refine`, `enrich`, `qa`, `contracts`) and reports the
-   installed extras/profile set so agents and operators can plan the next steps.
-
-3. Inspect the governed asset inventory and feature readiness:
-
-   ```bash
-   uv run hotpass inventory status
+   ```
+   ╭─────────────────────────────── About Hotpass ────────────────────────────────╮
+   │ Hotpass Data Refinement Platform                                             │
+   │ Version: 0.2.0                                                               │
+   ╰──────────────────────────────────────────────────────────────────────────────╯
+   ┏━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+   │ Command         │ Description                                                │
+   ┡━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+   │ refine          │ Run the Hotpass refinement pipeline on input data          │
+   │ enrich          │ Enrich refined data with additional information            │
+   │ qa              │ Run quality assurance checks and validation                │
+   │ contracts       │ Emit data contracts and schemas for a profile              │
+   │ setup           │ Run the guided staging wizard (deps, tunnels, contexts,    │
+   │                 │ env)                                                       │
+   │ …               │ …                                                          │
+   └─────────────────┴────────────────────────────────────────────────────────────┘
    ```
 
-   Add `--json` to integrate with automation or generate quick reports.
+3. **Bootstrap a workspace**
 
-4. Run the refinement pipeline against the bundled fixtures:
+   ```bash
+   uv run hotpass init --path ./hotpass-workspace
+   cd hotpass-workspace
+   ```
+
+   ```
+   Hotpass workspace initialised at …/hotpass-workspace
+   Generated artefacts:
+     - config
+     - config/profiles
+     - data
+     - dist
+     - prefect
+     - config/pipeline.quickstart.toml
+     - config/profiles/quickstart.toml
+   ```
+
+4. **Load a sample workbook and validate the environment**
+
+   ```bash
+   cp ../data/'Reachout Database.xlsx' data/
+   uv run hotpass doctor --config ./config/pipeline.quickstart.toml
+   ```
+
+   ```
+   Environment diagnostics
+   [PASS] environment.python_version: Python 3.13 detected
+   [PASS] environment.input_dir: Input directory ready: data
+   Configuration diagnostics
+   [PASS] governance.data_owner: Data owner registered as 'Data Governance'.
+   ```
+
+5. **Run the refinement pipeline with the bundled profile**
 
    ```bash
    uv run hotpass refine \
-     --input-dir ./data \
-     --output-path ./dist/refined.xlsx \
-     --profile generic \
-     --archive
+     --profile quickstart \
+     --profile-search-path ./config/profiles \
+     --config ./config/pipeline.quickstart.toml \
+     --log-format json
    ```
 
-   The command writes refined outputs to `dist/refined.xlsx` and publishes the
-   latest Great Expectations Data Docs under `dist/data-docs/`.
+   ```
+   {"event": "pipeline.summary", "data": {"total_records": 1033,
+    "invalid_records": 0, "recommendations":
+    ["CRITICAL: Average data quality score is below 50%. Review data sources and validation rules."],
+    "performance_metrics": {"total_seconds": 4.31}, "source_breakdown":
+    {"Reachout Database": 1034}}}
+   ```
 
-5. Optional: enrich the refined workbook deterministically (network off by default):
+   Outputs land under `dist/` (`refined.xlsx`, `refined.parquet`, and a timestamped archive). The warning reminds you to triage the low data-quality score before sharing the workbook.
+
+   > **Heads-up:** If you run the aviation profile against the sample SACAA workbook you will hit a Frictionless contract failure (duplicate rows at positions 15, 71, and 43). Inspect the failing sheet or adjust the governed schema before rerunning:
+   >
+   > ```
+   > Error: Data contract validation failed: Frictionless schema validation failed for SACAA Cleaned
+   > Suggested fix: Align the ingest table with the governed schema or update the schema contract
+   > ```
+
+6. **Run the platform QA gates**
 
    ```bash
-   uv run hotpass enrich \
-     --input ./dist/refined.xlsx \
-     --output ./dist/enriched.xlsx \
-     --profile generic \
+   uv run hotpass qa all --profile generic \
+     --profile-search-path ../apps/data-platform/hotpass/profiles
+   ```
+
+   ```
+   Running: CLI Integrity          ✓ 13/13 checks passed
+   Running: Fitness Functions      ✓ All fitness functions satisfied
+   Running: Data Quality (GE)      ✓ 7/7 checks passed
+   Running: Documentation Checks   ✓ 9/9 checks passed
+   ✓ All QA checks passed
+   ```
+
+7. **Plan enrichment or research (optional)**
+
+   ```bash
+   uv run hotpass plan research \
+     --dataset ./dist/refined.xlsx \
+     --row-id 0 \
      --allow-network=false
    ```
 
-6. Optional: regenerate validation reports explicitly while exploring the
-   dataset contracts:
+   Enable network-backed enrichment only after the compliance controls in the profile (intent statements, rate limits, and provenance requirements) are approved.
 
-   ```bash
-   uv run python ops/validation/refresh_data_docs.py
-   ```
-
-7. Optional: build an adaptive research plan for a specific entity (offline-first):
-
-   ```bash
-   uv run hotpass plan research \\
-     --dataset ./dist/refined.xlsx \\
-     --row-id 0 \\
-     --allow-network
-   ```
-
-   The planner surfaces cached authority snapshots, deterministic enrichment updates, and
-   crawl/backfill recommendations before you enable network access. To execute the
-   crawl step with rate-limit enforcement, pass `--allow-network=true` only after
-   setting the appropriate profile guardrails.
-
-7. Launch the interactive bootstrap when you are ready to provision Prefect,
-   observability, and supply-chain integrations:
-
-   ```bash
-   python ops/idp/bootstrap.py --execute
-   ```
+With the workspace validated you can branch into the tutorials (refine + orchestrate), follow the operator runbook, or wire up MCP tools for assistants.
 
 ### Docker compose (local stack)
 
