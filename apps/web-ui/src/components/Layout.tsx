@@ -15,6 +15,8 @@ export function Layout() {
   const [assistantMessage, setAssistantMessage] = useState<string>()
   const [activityOpen, setActivityOpen] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
+  const [helpTopicId, setHelpTopicId] = useState<string | null>(null)
+  const [helpQuery, setHelpQuery] = useState<string | null>(null)
 
   // Get environment from env var or localStorage config
   const environment =
@@ -26,6 +28,12 @@ export function Layout() {
   const openAssistant = (message?: string) => {
     setAssistantMessage(message)
     setAssistantOpen(true)
+  }
+
+  const openHelp = (options?: { topicId?: string | null; query?: string | null }) => {
+    setHelpTopicId(options?.topicId ?? null)
+    setHelpQuery(options?.query ?? null)
+    setHelpOpen(true)
   }
 
   // Show environment banner for non-local environments
@@ -48,14 +56,14 @@ export function Layout() {
           )}
           <TelemetryStrip />
           <div className="container mx-auto p-6 max-w-7xl">
-            <Outlet context={{ openAssistant }} />
+            <Outlet context={{ openAssistant, openHelp }} />
           </div>
           <div className="pointer-events-none fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
             <Button
               type="button"
               size="lg"
               className="pointer-events-auto h-12 rounded-full shadow-lg"
-              onClick={() => setHelpOpen(true)}
+              onClick={() => openHelp()}
             >
               <HelpCircle className="mr-2 h-5 w-5" />
               Help
@@ -75,6 +83,8 @@ export function Layout() {
           open={helpOpen}
           onOpenChange={setHelpOpen}
           onOpenAssistant={openAssistant}
+          initialTopicId={helpTopicId ?? undefined}
+          initialQuery={helpQuery ?? undefined}
         />
       </div>
     </FeedbackProvider>

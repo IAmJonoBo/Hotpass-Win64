@@ -9,9 +9,9 @@
  */
 
 import { useParams, Link, useOutletContext, useSearchParams } from 'react-router-dom'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowLeft, CheckCircle2, XCircle, AlertTriangle, Clock, Tag, UserCheck, GitBranch } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, XCircle, AlertTriangle, Clock, Tag, UserCheck, GitBranch, Loader2, Terminal } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -27,13 +27,29 @@ import { useAuth } from '@/auth'
 
 interface OutletContext {
   openAssistant: (message?: string) => void
+  openHelp: (options?: { topicId?: string; query?: string }) => void
 }
+
+interface LogEntry {
+  id: string
+  message: string
+  stream: 'stdout' | 'stderr'
+  timestamp?: string | null
+  highlight: boolean
+}
+
+const MAX_LOG_LINES = 400
 
 export function RunDetails() {
   const { runId } = useParams<{ runId: string }>()
   const { openAssistant } = useOutletContext<OutletContext>()
   const [approvalPanelOpen, setApprovalPanelOpen] = useState(false)
   const [searchParams] = useSearchParams()
+  const [logEntries, setLogEntries] = useState<LogEntry[]>([])
+  const [isStreamingLogs, setIsStreamingLogs] = useState(false)
+  const [logError, setLogError] = useState<string | null>(null)
+  const highlightTimeoutsRef = useRef<Record<string, number>>({})
+  const streamClosedByServerRef = useRef(false)
   const { hasRole } = useAuth()
 
   const mockRun = mockPrefectData.flowRuns.find(r => r.id === runId)
@@ -62,6 +78,119 @@ export function RunDetails() {
       setApprovalPanelOpen(true)
     }
   }, [shouldAutoOpenApproval])
+
+  const clearHighlightTimeouts = () => {
+    Object.values(highlightTimeoutsRef.current).forEach((timeoutId) => window.clearTimeout(timeoutId))
+    highlightTimeoutsRef.current = {}
+  }
+
+  useEffect(() => {
+    clearHighlightTimeouts()
+    setLogEntries([])
+    setLogError(null)
+    streamClosedByServerRef.current = false
+
+    if (!runId) {
+      setIsStreamingLogs(false)
+      return
+    }
+
+    let eventSource: EventSource | null = null
+
+    const parseEventData = (event: MessageEvent<string>) => {
+      try {
+        return JSON.parse(event.data) as Record<string, unknown>
+      } catch (error) {
+        console.warn('[run-details] failed to parse log event payload', error)
+        return null
+      }
+    }
+
+    const openStream = () => {
+      setIsStreamingLogs(true)
+      setLogError(null)
+
+      eventSource = new EventSource(`/api/runs/${encodeURIComponent(runId)}/logs`)
+
+      eventSource.addEventListener('snapshot', (event) => {
+        const payload = parseEventData(event as MessageEvent<string>)
+        if (!payload || !Array.isArray(payload.logs)) return
+        setLogEntries(
+          payload.logs
+            .map((log, index) => {
+              if (!log || typeof log !== 'object') return null
+              const safeLog = log as Record<string, unknown>
+              return {
+                id: `snapshot-${index}-${safeLog.timestamp ?? index}`,
+                message: typeof safeLog.message === 'string' ? safeLog.message : '',
+                stream: (typeof safeLog.stream === 'string' && safeLog.stream === 'stderr') ? 'stderr' : 'stdout',
+                timestamp: typeof safeLog.timestamp === 'string' ? safeLog.timestamp : null,
+                highlight: false,
+              } satisfies LogEntry
+            })
+            .filter(Boolean) as LogEntry[],
+        )
+      })
+
+      eventSource.addEventListener('log', (event) => {
+        const payload = parseEventData(event as MessageEvent<string>)
+        if (!payload || typeof payload.message !== 'string') {
+          return
+        }
+
+        const entryId = `log-${Date.now()}-${Math.random().toString(16).slice(2)}`
+        const entry: LogEntry = {
+          id: entryId,
+          message: payload.message,
+          stream: typeof payload.stream === 'string' && payload.stream === 'stderr' ? 'stderr' : 'stdout',
+          timestamp: typeof payload.timestamp === 'string' ? payload.timestamp : new Date().toISOString(),
+          highlight: true,
+        }
+
+        setLogEntries((previous) => {
+          const next = [...previous, entry]
+          if (next.length > MAX_LOG_LINES) {
+            next.splice(0, next.length - MAX_LOG_LINES)
+          }
+          return next
+        })
+
+        highlightTimeoutsRef.current[entryId] = window.setTimeout(() => {
+          setLogEntries((previous) =>
+            previous.map((item) => (item.id === entryId ? { ...item, highlight: false } : item)),
+          )
+          delete highlightTimeoutsRef.current[entryId]
+        }, 180)
+      })
+
+      eventSource.addEventListener('finished', () => {
+        streamClosedByServerRef.current = true
+        setIsStreamingLogs(false)
+        eventSource?.close()
+      })
+
+      eventSource.onerror = () => {
+        eventSource?.close()
+        if (!streamClosedByServerRef.current) {
+          setLogError('Streaming logs unavailable for this run.')
+        }
+        setIsStreamingLogs(false)
+      }
+    }
+
+    try {
+      openStream()
+    } catch (error) {
+      console.error('[run-details] failed to open log stream', error)
+      setLogError('Unable to initialise log stream.')
+      setIsStreamingLogs(false)
+    }
+
+    return () => {
+      eventSource?.close()
+      clearHighlightTimeouts()
+    }
+  }, [runId])
 
   const {
     data: lineageTelemetry,
@@ -318,8 +447,8 @@ export function RunDetails() {
               </div>
             </div>
           )}
-        </CardContent>
-      </Card>
+      </CardContent>
+    </Card>
 
       {/* QA Results */}
       <Card>
@@ -431,6 +560,68 @@ export function RunDetails() {
               </pre>
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Terminal className="h-4 w-4" />
+              Live Logs
+            </CardTitle>
+            <CardDescription>Streaming updates from the underlying job runner.</CardDescription>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            {isStreamingLogs && (
+              <span className="inline-flex items-center gap-1">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Streaming…
+              </span>
+            )}
+            <span>{logEntries.length} lines</span>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {logError && (
+            <ApiBanner
+              variant="warning"
+              title="Live logs unavailable"
+              description={logError}
+            />
+          )}
+          <div className="max-h-72 overflow-y-auto rounded-2xl border border-border/60 bg-background/95 p-3 font-mono text-xs shadow-inner">
+            {logEntries.length === 0 ? (
+              <p className="text-muted-foreground">
+                {isStreamingLogs ? 'Waiting for logs…' : 'No logs captured for this run yet.'}
+              </p>
+            ) : (
+              logEntries.map((entry) => (
+                <div
+                  key={entry.id}
+                  className={cn(
+                    'mb-1 rounded-lg border border-transparent px-2 py-1 transition-colors last:mb-0',
+                    entry.highlight && 'border-primary/40 bg-primary/10 shadow-sm',
+                  )}
+                >
+                  <span
+                    className={cn(
+                      'font-semibold',
+                      entry.stream === 'stderr' ? 'text-rose-500' : 'text-muted-foreground',
+                    )}
+                  >
+                    [{entry.stream}]
+                  </span>
+                  <span className="ml-2 text-foreground">{entry.message}</span>
+                  {entry.timestamp && (
+                    <span className="ml-2 text-muted-foreground/70">
+                      {new Date(entry.timestamp).toLocaleTimeString()}
+                    </span>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
         </CardContent>
       </Card>
 

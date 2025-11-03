@@ -58,6 +58,7 @@ const marquezTarget = process.env.MARQUEZ_API_URL || process.env.VITE_MARQUEZ_AP
 const prefectLimit = Number.parseInt(process.env.PREFECT_RATE_LIMIT ?? '120', 10)
 const marquezLimit = Number.parseInt(process.env.MARQUEZ_RATE_LIMIT ?? '60', 10)
 const IMPORT_ROOT = process.env.HOTPASS_IMPORT_ROOT || path.join(process.cwd(), 'dist', 'import')
+const CONTRACTS_ROOT = process.env.HOTPASS_CONTRACT_ROOT || path.join(process.cwd(), 'dist', 'contracts')
 const MAX_IMPORT_FILE_SIZE = Number.parseInt(process.env.HOTPASS_IMPORT_MAX_FILE_SIZE ?? `${1024 * 1024 * 1024}`, 10)
 const MAX_IMPORT_FILES = Number.parseInt(process.env.HOTPASS_IMPORT_MAX_FILES ?? '10', 10)
 const PIPELINE_RUN_LIMIT = Number.parseInt(process.env.HOTPASS_PIPELINE_RUN_LIMIT ?? '100', 10)
@@ -762,6 +763,70 @@ app.get('/api/imports/templates/:id/summary', async (req, res) => {
   }
 })
 
+const listContracts = async () => {
+  await ensureDirectory(CONTRACTS_ROOT)
+  const entries = await readdir(CONTRACTS_ROOT, { withFileTypes: true })
+  const files = []
+  for (const entry of entries) {
+    if (!entry.isFile()) continue
+    const name = entry.name
+    const ext = path.extname(name).toLowerCase()
+    if (!['.yaml', '.yml', '.json'].includes(ext)) continue
+    const filePath = path.join(CONTRACTS_ROOT, name)
+    try {
+      const stats = await stat(filePath)
+      files.push({
+        id: `${name}-${stats.mtimeMs}`,
+        name,
+        format: ext.replace('.', ''),
+        profile: path.basename(name, ext),
+        size: stats.size,
+        updatedAt: stats.mtime.toISOString(),
+      })
+    } catch (error) {
+      console.warn('[contracts] failed to stat file', { name, error })
+    }
+  }
+  files.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+  return files
+}
+
+app.get('/api/contracts', async (_req, res) => {
+  try {
+    const contracts = await listContracts()
+    const payload = contracts.map(contract => ({
+      ...contract,
+      downloadUrl: `/api/contracts/${encodeURIComponent(contract.name)}/download`,
+    }))
+    res.json({ contracts: payload })
+  } catch (error) {
+    console.error('[contracts] failed to list contracts', error)
+    sendError(res, 500, 'Unable to load contracts', { message: error.message })
+  }
+})
+
+app.get('/api/contracts/:name/download', async (req, res) => {
+  const safeName = path.basename(req.params.name)
+  if (!safeName) {
+    return sendError(res, 400, 'Invalid contract name')
+  }
+  const filePath = path.join(CONTRACTS_ROOT, safeName)
+  try {
+    const stats = await stat(filePath)
+    if (!stats.isFile()) {
+      return sendError(res, 404, 'Contract file not found')
+    }
+    res.download(filePath, safeName)
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      sendError(res, 404, 'Contract file not found')
+    } else {
+      console.error('[contracts] failed to download contract', error)
+      sendError(res, 500, 'Unable to download contract', { message: error.message })
+    }
+  }
+})
+
 const normaliseTemplatePayload = (payload) => {
   if (!isRecord(payload)) {
     throw new Error('Template payload must be an object')
@@ -1409,6 +1474,58 @@ app.get('/api/jobs/:id/events', (req, res) => {
 
   const unsubscribe = subscribeToJob(id, (payload) => {
     sendEvent(payload.type ?? 'update', payload)
+  })
+
+  const keepAlive = setInterval(() => {
+    res.write(': keep-alive\n\n')
+  }, 25_000)
+
+  req.on('close', () => {
+    clearInterval(keepAlive)
+    unsubscribe()
+  })
+})
+
+app.get('/api/runs/:id/logs', (req, res) => {
+  const { id } = req.params
+  const job = getJob(id)
+  if (!job) {
+    return sendError(res, 404, 'Logs unavailable for this run')
+  }
+
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    Connection: 'keep-alive',
+  })
+
+  const sendEvent = (event, data) => {
+    res.write(`event: ${event}\n`)
+    res.write(`data: ${JSON.stringify(data)}\n\n`)
+  }
+
+  const snapshotLogs = Array.isArray(job.log)
+    ? job.log.map((entry) => ({
+        message: entry.message ?? '',
+        stream: entry.type ?? 'stdout',
+        timestamp: entry.timestamp ?? new Date().toISOString(),
+      }))
+    : []
+
+  sendEvent('snapshot', { logs: snapshotLogs })
+
+  const unsubscribe = subscribeToJob(id, (payload) => {
+    if (!payload || typeof payload !== 'object') return
+    if (payload.type === 'log' && typeof payload.message === 'string') {
+      sendEvent('log', {
+        message: payload.message,
+        stream: payload.stream ?? 'stdout',
+        timestamp: new Date().toISOString(),
+      })
+    }
+    if (payload.type === 'finished') {
+      sendEvent('finished', { status: payload.status ?? job.status ?? 'unknown' })
+    }
   })
 
   const keepAlive = setInterval(() => {

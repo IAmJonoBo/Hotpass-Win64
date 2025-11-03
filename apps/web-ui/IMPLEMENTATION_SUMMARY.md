@@ -69,11 +69,12 @@ This document summarizes the implementation of all 8 stages from DESIGN_REVIEW.m
 - `src/components/import/DataQualityChip.tsx` - Reusable QA status badge
 - `src/components/import/LiveProcessingWidget.tsx` - Real-time import telemetry widget
 - `src/components/hil/PendingApprovalsPanel.tsx` - HIL approvals dashboard panel
+- `src/components/import/CellSpotlight.tsx` - Highlights most recent cell-level fixes
 
 **Modified Files:**
-- `src/pages/Dashboard.tsx` - Integrated live refinement panel, latest-refine summary card, and pending approvals panel
-- `src/components/import/DatasetImportPanel.tsx` - Live import runner UI with in-flight telemetry
-- `src/pages/RunDetails.tsx` - Supports deep links to open the approval panel
+- `src/pages/Dashboard.tsx` - Integrated live refinement panel, latest-refine summary card, pending approvals, and cell spotlight
+- `src/components/import/DatasetImportPanel.tsx` - Live import runner UI with in-flight telemetry and cell spotlight
+- `src/pages/RunDetails.tsx` - Supports deep links to open the approval panel and live log streaming
 
 **Features:**
 - Table showing last 50 refined rows with status badges
@@ -87,6 +88,8 @@ This document summarizes the implementation of all 8 stages from DESIGN_REVIEW.m
 - Live processing widget with timer, throughput, autofix/error tallies, and health trend
 - Pending approvals panel with direct Run Details links and assistant escalation
 - Run Details query parameter `?hil=1` auto-opens the approval panel
+- Cell spotlight panel surfaces the latest auto-fix context during imports
+- Run Details streams live logs via SSE with real-time highlighting
 
 ### Stage 5 - Telemetry Strip ✅
 **New Files:**

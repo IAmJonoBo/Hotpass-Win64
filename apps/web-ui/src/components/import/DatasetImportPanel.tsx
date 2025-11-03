@@ -20,6 +20,7 @@ import { Input } from '@/components/ui/input'
 import { cn, formatBytes, formatDuration, getStatusColor } from '@/lib/utils'
 import { useImportProfileMutation } from '@/api/imports'
 import { LiveProcessingWidget, type LiveProcessingSnapshot } from '@/components/import/LiveProcessingWidget'
+import { CellSpotlight } from '@/components/import/CellSpotlight'
 
 type JobStatus = 'queued' | 'running' | 'succeeded' | 'failed'
 type ImportStage = 'queued' | 'upload-complete' | 'refine-started' | 'completed' | 'failed'
@@ -67,6 +68,7 @@ interface DatasetImportPanelProps {
   hilApprovals: Record<string, HILApproval>
   isLoadingRuns: boolean
   onOpenAssistant?: (message?: string) => void
+  onOpenHelp?: (topicId?: string) => void
 }
 
 interface PendingUpload {
@@ -214,7 +216,7 @@ const ISSUE_SEVERITY_STYLES: Record<ImportIssueSeverity, string> = {
   error: 'border-red-500/50 text-red-600 dark:text-red-400',
 }
 
-export function DatasetImportPanel({ flowRuns, hilApprovals, isLoadingRuns, onOpenAssistant }: DatasetImportPanelProps) {
+export function DatasetImportPanel({ flowRuns, hilApprovals, isLoadingRuns, onOpenAssistant, onOpenHelp }: DatasetImportPanelProps) {
   const [pendingUploads, setPendingUploads] = useState<PendingUpload[]>([])
   const [activeProfile, setActiveProfile] = useState(PROFILE_OPTIONS[0].value)
   const [notes, setNotes] = useState('')
@@ -854,6 +856,16 @@ export function DatasetImportPanel({ flowRuns, hilApprovals, isLoadingRuns, onOp
           <CardDescription>
             Drag files or browse to kick off refinement. Hotpass validates schema, enforces retention, and surfaces HIL prompts automatically.
           </CardDescription>
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            Need a refresher?{' '}
+            <button
+              type="button"
+              className="font-semibold text-primary underline-offset-2 hover:underline"
+              onClick={() => onOpenHelp?.('import-bulk-datasets')}
+            >
+              Open import playbook
+            </button>
+          </div>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <label className="text-xs font-semibold uppercase text-muted-foreground">Profile</label>
@@ -1319,6 +1331,12 @@ export function DatasetImportPanel({ flowRuns, hilApprovals, isLoadingRuns, onOp
                     </ul>
                   )}
                 </div>
+
+                <CellSpotlight
+                  logs={importJob.logs}
+                  profile={profilePreview}
+                  onOpenAssistant={onOpenAssistant}
+                />
 
                 <div className="rounded-2xl border border-border/70 bg-card/90 p-4">
                   <div className="flex items-center justify-between">

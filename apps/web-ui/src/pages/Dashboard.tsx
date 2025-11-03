@@ -22,15 +22,17 @@ import { PowerTools } from '@/components/powertools/PowerTools'
 import { DatasetImportPanel } from '@/components/import/DatasetImportPanel'
 import { LatestRefinedWorkbookCard } from '@/components/import/LatestRefinedWorkbookCard'
 import { PendingApprovalsPanel } from '@/components/hil/PendingApprovalsPanel'
+import { ContractsExplorer } from '@/components/governance/ContractsExplorer'
 import { useLineageTelemetry, jobHasHotpassFacet } from '@/hooks/useLineageTelemetry'
 import { useConsolidationTelemetry } from '@/api/imports'
 
 interface OutletContext {
   openAssistant: (message?: string) => void
+  openHelp: (options?: { topicId?: string; query?: string }) => void
 }
 
 export function Dashboard() {
-  const { openAssistant } = useOutletContext<OutletContext>()
+  const { openAssistant, openHelp } = useOutletContext<OutletContext>()
 
   // Fetch Prefect flow runs from last 24h
   const flowRunsQuery = useQuery({
@@ -225,6 +227,7 @@ export function Dashboard() {
           hilApprovals={hilApprovals}
           isLoadingRuns={isLoadingPrefect}
           onOpenAssistant={openAssistant}
+          onOpenHelp={(topicId) => openHelp({ topicId })}
         />
         <PendingApprovalsPanel
           approvals={hilApprovals}
@@ -468,6 +471,10 @@ export function Dashboard() {
           </Card>
 
           <PowerTools onOpenAssistant={() => openAssistant()} />
+          <ContractsExplorer
+            onOpenAssistant={openAssistant}
+            onOpenHelp={(topicId) => openHelp({ topicId })}
+          />
         </div>
       </div>
 

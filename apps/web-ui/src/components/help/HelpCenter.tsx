@@ -10,6 +10,8 @@ interface HelpCenterProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onOpenAssistant?: (message?: string) => void
+  initialTopicId?: string
+  initialQuery?: string
 }
 
 interface HelpResult extends HelpTopic {
@@ -82,7 +84,7 @@ function fuzzyTokenMatch(corpus: string, token: string): boolean {
 
 const featuredTopics = helpTopics.filter(topic => topic.highlight)
 
-export function HelpCenter({ open, onOpenChange, onOpenAssistant }: HelpCenterProps) {
+export function HelpCenter({ open, onOpenChange, onOpenAssistant, initialTopicId, initialQuery }: HelpCenterProps) {
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState<HelpCategory | 'all'>('all')
   const searchRef = useRef<HTMLInputElement>(null)
@@ -93,6 +95,19 @@ export function HelpCenter({ open, onOpenChange, onOpenAssistant }: HelpCenterPr
       setCategory('all')
     }
   }, [open])
+
+  useEffect(() => {
+    if (!open) return
+    if (initialQuery) {
+      setQuery(initialQuery)
+    } else if (initialTopicId) {
+      const topic = helpTopics.find(item => item.id === initialTopicId)
+      if (topic) {
+        setQuery(topic.title)
+        setCategory('all')
+      }
+    }
+  }, [open, initialQuery, initialTopicId])
 
   const results = useMemo<HelpResult[]>(() => {
     return helpTopics

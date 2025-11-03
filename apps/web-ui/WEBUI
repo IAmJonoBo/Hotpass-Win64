@@ -75,7 +75,7 @@
 - [x] Create `SmartImportWizard` route (`/imports/wizard`) with stepper (Upload → Profile review → Mapping → Rule toggles → Summary).
 - [x] Add `LatestRefinedWorkbookCard` + `DataQualityChip` components sourced from recent run summaries.
 - [x] Implement `LiveProcessingWidget` (current workbook, sheet count, rows processed, autofixes, errors, session timer; 200–500 ms refresh).
-- [ ] Build optional `CellSpotlight` panel highlighting most recent fix (e.g. Sheet2!D14 + rule).
+- [x] Build optional `CellSpotlight` panel highlighting most recent fix (e.g. Sheet2!D14 + rule).
 - [x] Surface `PendingApprovalsPanel` (links to `RunDetails` with HIL context).
 - [ ] Wire inline help anchors into HelpCenter (`helpContent.ts`).
 
@@ -83,7 +83,7 @@
 
 ### 3.2 RunDetails (technical depth)
 
-- [ ] Stream live logs (SSE) with tail component.
+- [x] Stream live logs (SSE) with tail component.
 - [ ] New events (logs, cell-fixed, validation-failed) should briefly glow (≤200 ms) and then settle to normal state.
 - [ ] Provide link-back to source rule / contract when an auto-fix is displayed, so users can stay in-app (no hard context switch to docs).
 - [ ] QA viewer embedded from `dist/data-docs` (iframe) & JSON summary.
@@ -93,7 +93,7 @@
 ### 3.3 Research & governance
 
 - [ ] Add planner tab (form for `plan research`, results viewer).
-- [ ] Contracts explorer (list YAML from `dist/contracts/` with download).
+- [x] Contracts explorer (list YAML from `dist/contracts/` with download).
 - [ ] Data Docs global page or modal (link from sidebar).
 
 ### 3.4 Power tools
