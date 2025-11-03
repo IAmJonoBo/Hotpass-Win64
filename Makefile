@@ -20,12 +20,21 @@ MARQUEZ_UI_PORT ?= 3000
 
 .PHONY: sync
 sync:
-	@echo "Synchronising extras: $(EXTRAS)"
-	@HOTPASS_UV_EXTRAS="$(EXTRAS)" bash ops/uv_sync_extras.sh
+        @echo "Synchronising extras: $(EXTRAS)"
+        @HOTPASS_UV_EXTRAS="$(EXTRAS)" bash ops/uv_sync_extras.sh
+
+.PHONY: docs
+docs:
+	uv run sphinx-build -n -b html docs docs/_build/html
+	@if [ "$(LINKCHECK)" = "1" ]; then \
+		uv run sphinx-build -b linkcheck docs docs/_build/linkcheck; \
+	else \
+		echo "Skipping linkcheck (set LINKCHECK=1 to enable)"; \
+	fi
 
 .PHONY: semgrep-auto
 semgrep-auto:
-	@HOTPASS_CA_BUNDLE_B64="$(HOTPASS_CA_BUNDLE_B64)" bash ops/security/semgrep_auto.sh
+        @HOTPASS_CA_BUNDLE_B64="$(HOTPASS_CA_BUNDLE_B64)" bash ops/security/semgrep_auto.sh
 
 .PHONY: marquez-up
 marquez-up:

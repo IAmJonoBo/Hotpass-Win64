@@ -249,7 +249,7 @@ uv run mlflow ui
 Production (example):
 
 ```bash
-export MLFLOW_TRACKING_URI="postgresql://user:pass@db:5432/mlflow"
+export MLFLOW_TRACKING_URI="postgresql://<user>:<password>@db:5432/mlflow"
 export MLFLOW_ARTIFACT_LOCATION="s3://hotpass-mlflow-artifacts/"
 ```
 

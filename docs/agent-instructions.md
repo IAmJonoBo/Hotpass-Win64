@@ -1,18 +1,18 @@
 # Hotpass Agent Guide
 
 **Audience:** GitHub Copilot, Codex, and other AI coding assistants
-**Last Updated:** 2025-11-01
+**Last Updated:** 2025-11-18
 **Maintainers:** Platform Engineering (platform@hotpass.example)
 
 > This guide follows the [Diátaxis](https://diataxis.fr/) framework. Each section is labelled as a tutorial, how-to, reference, or explanation so agents can quickly find the right level of detail.
 
 ---
 
-## At a Glance *(Explanation)*
+## At a Glance _(Explanation)_
 
 Hotpass turns semi-structured spreadsheets into a governed, traceable data asset. Agents interact with the system through the CLI (`uv run hotpass …`) or the MCP server (`python -m hotpass.mcp.server`). Workstation and CI runners are locked down: deterministic steps execute offline by default, while network enrichment and crawlers require explicit approval.
 
-```mermaid
+```{mermaid}
 flowchart LR
     Raw[Raw Workbooks] --> Refine[Refine]
     Refine --> Enrich
@@ -30,7 +30,7 @@ flowchart LR
 
 ---
 
-## Quickstart Tutorial *(Tutorial)*
+## Quickstart Tutorial _(Tutorial)_
 
 Follow these steps to refine, enrich, and validate a workbook end-to-end.
 
@@ -84,18 +84,18 @@ Follow these steps to refine, enrich, and validate a workbook end-to-end.
 
 ---
 
-## How-To Guides *(How-to)*
+## How-To Guides _(How-to)_
 
 ### Hotpass CLI Cheatsheet
 
-| Task | Command | Notes |
-|------|---------|-------|
-| Inspect capabilities | `uv run hotpass overview` | Lists profiles, commands, examples |
-| Refine data | `uv run hotpass refine --input-dir … --profile …` | Use `--archive` to snapshot sources |
-| Enrich deterministically | `uv run hotpass enrich --allow-network=false` | Safe on air-gapped runners |
-| Enrich with network | `FEATURE_ENABLE_REMOTE_RESEARCH=1 ALLOW_NETWORK_RESEARCH=1 uv run hotpass enrich --allow-network=true` | Requires allow-listed domains |
-| Run QA suites | `uv run hotpass qa all` or `qa fitness` / `qa docs` / `qa ta` | Mirrors Quality Gate expectations |
-| Emit contracts | `uv run hotpass contracts emit --format yaml` | Results land under `./contracts` |
+| Task                     | Command                                                                                                | Notes                               |
+| ------------------------ | ------------------------------------------------------------------------------------------------------ | ----------------------------------- |
+| Inspect capabilities     | `uv run hotpass overview`                                                                              | Lists profiles, commands, examples  |
+| Refine data              | `uv run hotpass refine --input-dir … --profile …`                                                      | Use `--archive` to snapshot sources |
+| Enrich deterministically | `uv run hotpass enrich --allow-network=false`                                                          | Safe on air-gapped runners          |
+| Enrich with network      | `FEATURE_ENABLE_REMOTE_RESEARCH=1 ALLOW_NETWORK_RESEARCH=1 uv run hotpass enrich --allow-network=true` | Requires allow-listed domains       |
+| Run QA suites            | `uv run hotpass qa all` or `qa fitness` / `qa docs` / `qa ta`                                          | Mirrors Quality Gate expectations   |
+| Emit contracts           | `uv run hotpass contracts emit --format yaml`                                                          | Results land under `./contracts`    |
 
 ### Launching and Using the MCP Server
 
@@ -107,12 +107,12 @@ Available tools: `hotpass.refine`, `hotpass.enrich`, `hotpass.qa`, `hotpass.expl
 
 ### Choosing the Right Test Tier
 
-| Situation | Run | Command |
-|-----------|-----|---------|
-| Fast validation on PR | Smoke suite | `scripts/testing/smoke.sh` or `make qa` |
-| Full regression / nightly | Full suite | `scripts/testing/full.sh` or `make qa-full` |
-| Front-end unit coverage only | Vitest | `cd apps/web-ui && npm run test:unit` |
-| E2E UX validation | Playwright | `cd apps/web-ui && npm run test:e2e` |
+| Situation                    | Run         | Command                                     |
+| ---------------------------- | ----------- | ------------------------------------------- |
+| Fast validation on PR        | Smoke suite | `scripts/testing/smoke.sh` or `make qa`     |
+| Full regression / nightly    | Full suite  | `scripts/testing/full.sh` or `make qa-full` |
+| Front-end unit coverage only | Vitest      | `cd apps/web-ui && npm run test:unit`       |
+| E2E UX validation            | Playwright  | `cd apps/web-ui && npm run test:e2e`        |
 
 Smoke executes Ruff lint, the Python smoke marker set, coverage export, and Vitest coverage. Full runs add the entire pytest tree, the coverage guard (`tools/coverage/report_low_coverage.py`), mypy, Bandit, detect-secrets, and pre-commit hooks. See [Engineering → Testing](engineering/testing.md) for thresholds and CI wiring.
 
@@ -130,48 +130,48 @@ Smoke executes Ruff lint, the Python smoke marker set, coverage export, and Vite
 
 ---
 
-## Interface Reference *(Reference)*
+## Interface Reference _(Reference)_
 
 ### CLI Commands
 
-| Command | Description | Key Flags |
-|---------|-------------|-----------|
-| `hotpass overview` | Lists commands, profiles, and quick links | `--json` for machine output |
-| `hotpass refine` | Cleans, normalises, archives input data | `--input-dir`, `--output-path`, `--profile`, `--archive` |
-| `hotpass enrich` | Adds deterministic and optional network data | `--allow-network`, `--profile`, `--output` |
-| `hotpass qa` | Runs QA suites | `--target (all\|fitness\|profiles\|docs\|ta)` |
-| `hotpass contracts emit` | Emits contract artefacts | `--profile`, `--format`, `--output` |
-| `hotpass explain-provenance` | Shows provenance for a single row | `--dataset`, `--row-id`, `--json` |
-| `hotpass crawl` | Executes crawler flow (guarded) | `--allow-network`, `--profile`, `--backend` |
+| Command                      | Description                                  | Key Flags                                                |
+| ---------------------------- | -------------------------------------------- | -------------------------------------------------------- |
+| `hotpass overview`           | Lists commands, profiles, and quick links    | `--json` for machine output                              |
+| `hotpass refine`             | Cleans, normalises, archives input data      | `--input-dir`, `--output-path`, `--profile`, `--archive` |
+| `hotpass enrich`             | Adds deterministic and optional network data | `--allow-network`, `--profile`, `--output`               |
+| `hotpass qa`                 | Runs QA suites                               | `--target (all\|fitness\|profiles\|docs\|ta)`            |
+| `hotpass contracts emit`     | Emits contract artefacts                     | `--profile`, `--format`, `--output`                      |
+| `hotpass explain-provenance` | Shows provenance for a single row            | `--dataset`, `--row-id`, `--json`                        |
+| `hotpass crawl`              | Executes crawler flow (guarded)              | `--allow-network`, `--profile`, `--backend`              |
 
 ### MCP Tools
 
-| Tool | Purpose | Signature |
-|------|---------|-----------|
-| `hotpass.refine` | Refinement pipeline | `input_path`, `output_path`, `profile`, `archive` |
-| `hotpass.enrich` | Deterministic / network enrichment | `input_path`, `output_path`, `profile`, `allow_network` |
-| `hotpass.qa` | Quality checks | `target` (`all`, `fitness`, `profiles`, `docs`, `ta`) |
-| `hotpass.explain_provenance` | Row-level provenance | `dataset_path`, `row_id` |
-| `hotpass.crawl` | Research crawl (requires approvals) | `query_or_url`, `profile`, `allow_network` |
+| Tool                         | Purpose                             | Signature                                               |
+| ---------------------------- | ----------------------------------- | ------------------------------------------------------- |
+| `hotpass.refine`             | Refinement pipeline                 | `input_path`, `output_path`, `profile`, `archive`       |
+| `hotpass.enrich`             | Deterministic / network enrichment  | `input_path`, `output_path`, `profile`, `allow_network` |
+| `hotpass.qa`                 | Quality checks                      | `target` (`all`, `fitness`, `profiles`, `docs`, `ta`)   |
+| `hotpass.explain_provenance` | Row-level provenance                | `dataset_path`, `row_id`                                |
+| `hotpass.crawl`              | Research crawl (requires approvals) | `query_or_url`, `profile`, `allow_network`              |
 
 ### Essential Environment Variables
 
-| Variable | Purpose |
-|----------|---------|
-| `HOTPASS_UV_EXTRAS` | Extras installed by `ops/uv_sync_extras.sh` (e.g., `"dev orchestration"`) |
-| `FEATURE_ENABLE_REMOTE_RESEARCH` | Enables network research features when set to `1` |
-| `ALLOW_NETWORK_RESEARCH` | Allows crawler to make network calls when set to `1` |
-| `OPENLINEAGE_URL` / `VITE_MARQUEZ_API_URL` | Targets the Marquez API for lineage visualisations |
-| `PREFECT_API_URL` / `VITE_PREFECT_API_URL` | Targets Prefect API for run telemetry |
+| Variable                                   | Purpose                                                                   |
+| ------------------------------------------ | ------------------------------------------------------------------------- |
+| `HOTPASS_UV_EXTRAS`                        | Extras installed by `ops/uv_sync_extras.sh` (e.g., `"dev orchestration"`) |
+| `FEATURE_ENABLE_REMOTE_RESEARCH`           | Enables network research features when set to `1`                         |
+| `ALLOW_NETWORK_RESEARCH`                   | Allows crawler to make network calls when set to `1`                      |
+| `OPENLINEAGE_URL` / `VITE_MARQUEZ_API_URL` | Targets the Marquez API for lineage visualisations                        |
+| `PREFECT_API_URL` / `VITE_PREFECT_API_URL` | Targets Prefect API for run telemetry                                     |
 
 ---
 
-## Operating Model *(Explanation)*
+## Operating Model _(Explanation)_
 
 ### Network Safety
 
 - CLI commands default to offline operations.
-- Network enrichment and crawling require both environment flags *and* allow-listed domains in CI (`quality-gates.yml`).
+- Network enrichment and crawling require both environment flags _and_ allow-listed domains in CI (`quality-gates.yml`).
 - For MCP, reject requests that combine `allow_network=true` with missing approvals.
 
 ### Telemetry & Provenance
@@ -188,7 +188,7 @@ Smoke executes Ruff lint, the Python smoke marker set, coverage export, and Vite
 
 ---
 
-## Related Documents *(Reference)*
+## Related Documents _(Reference)_
 
 - [Engineering › Testing strategy](engineering/testing.md)
 - [UPGRADE.md](../UPGRADE.md) – release requirements

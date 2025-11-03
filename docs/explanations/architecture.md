@@ -1,7 +1,7 @@
 ---
 title: Explanation — architecture overview
 summary: High-level view of Hotpass components and how data flows between them.
-last_updated: 2025-11-02
+last_updated: 2025-11-18
 ---
 
 # Architecture overview
@@ -136,6 +136,69 @@ flowchart LR
 - **Enrichment**: Optional connectors add registry data, scraped insights, and geospatial coordinates.
 
 The pipeline runtime has been modularised so each stage now lives in a focused module:
+
+## Integration points
+
+```{mermaid}
+flowchart TB
+    subgraph "CLI & MCP clients"
+        CLI[hotpass CLI]
+        MCP[MCP server]
+        Assistants[Agent integrations]
+    end
+
+    subgraph "Orchestration"
+        Prefect[Prefect deployments]
+        Schedulers[Prefect schedules]
+    end
+
+    subgraph "Pipeline runtime"
+        Ingest[Ingestion stage]
+        Map[Mapping & cleaning]
+        Validate[Validation]
+        Enrich[Enrichment]
+        Publish[Export & reporting]
+    end
+
+    subgraph "Observability"
+        OTLP[OpenTelemetry]
+        Marquez[Marquez lineage]
+        Dashboard[Streamlit dashboard]
+    end
+
+    CLI --> Ingest
+    MCP --> Ingest
+    Assistants --> MCP
+    Prefect --> Ingest
+    Prefect --> Map
+    Prefect --> Validate
+    Prefect --> Enrich
+    Prefect --> Publish
+
+    Ingest --> Map
+    Map --> Validate
+    Validate --> Enrich
+    Enrich --> Publish
+
+    Publish --> Dashboard
+    Publish --> OTLP
+    Publish --> Marquez
+    Dashboard --> Operators[Operators]
+    OTLP --> ObservabilityStack[(Metrics/Alerts)]
+    Marquez --> LineageUsers[Lineage consumers]
+
+    classDef client fill:#e1f5ff,stroke:#333
+    classDef runtime fill:#fff3cd,stroke:#333
+    classDef obs fill:#d4edda,stroke:#333
+
+    class CLI,MCP,Assistants client
+    class Prefect,Schedulers runtime
+    class Ingest,Map,Validate,Enrich,Publish runtime
+    class OTLP,Marquez,Dashboard obs
+```
+
+This view clarifies how operator inputs (CLI, MCP, or scheduled runs) converge on the shared runtime while observability systems
+receive canonical telemetry regardless of the entry point.
 
 - `pipeline.ingestion` handles source loading, acquisition plans, slug generation, and initial PII redaction.
 - `pipeline.aggregation` encapsulates canonicalisation, conflict tracking, and per-record scoring logic.
