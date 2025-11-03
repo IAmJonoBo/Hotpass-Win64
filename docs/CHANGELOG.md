@@ -1,5 +1,25 @@
 # Hotpass Changelog
 
+## 2025-11-20 — Governance inventory UI alignment
+
+### Governance inventory
+- Wired the `/governance/inventory` route into the React router with role guards so operators and approvers can reach the govern
+ance snapshot directly from the sidebar.
+- Added locale-aware snapshot timestamps and mobile overflow handling to the inventory table so manifests render cleanly on smal
+ler breakpoints.
+- Hardened the inventory fetch client to surface backend JSON error messages (manifest missing, cache failures) instead of gener
+ic HTTP status text.
+
+### Frontend infrastructure
+- Copied `data/inventory` into the production Docker image and documented the dependency in the UI feature catalog so `/api/inv
+entory` remains available out of the box.
+- Extended the Vite dev proxy with `/api/inventory` so local development setups can share the Express backend without additional
+ wiring.
+
+### Quality
+- Added Vitest coverage for the `Inventory` page hook-up and API error handling scenarios.
+- Introduced a Playwright `inventory` spec to exercise the new navigation route and backend stub.
+
 ## 2025-11-19 — Inventory feature rollout (v0.2.0)
 
 ### Inventory orchestration

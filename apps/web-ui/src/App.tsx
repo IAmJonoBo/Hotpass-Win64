@@ -8,6 +8,7 @@ import { Admin } from './pages/Admin'
 import { Health } from './pages/Health'
 import { Assistant } from './pages/Assistant'
 import { ImportsWizard } from './pages/ImportsWizard'
+import { Inventory } from './pages/Inventory'
 import { AuthProvider, RequireRole } from './auth'
 import { AuthCallback } from './pages/AuthCallback'
 import './index.css'
@@ -40,6 +41,14 @@ function App() {
                 element={(
                   <RequireRole roles={['operator', 'approver', 'admin']}>
                     <ImportsWizard />
+                  </RequireRole>
+                )}
+              />
+              <Route
+                path="/governance/inventory"
+                element={(
+                  <RequireRole roles={['operator', 'approver', 'admin']}>
+                    <Inventory />
                   </RequireRole>
                 )}
               />

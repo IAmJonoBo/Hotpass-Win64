@@ -71,3 +71,29 @@
 - [x] Add CycloneDX SBOM generation to CI baseline
   - notes: Inserted `uv run cyclonedx-bom` step into `.github/workflows/process-data.yml` to retain JSON SBOM under `dist/reports/`.
   - checks: tests=not-run, lint=pass, type=not-run, sec=pass, build=not-run
+
+## 2025-11-03T11:29Z (branch: work, pr: n/a, actor: codex)
+- [x] Normalize legacy documentation heading levels and cross-references (owner: docs, due: 2025-03-03)
+  - notes: Migrated completed documentation cleanup item from Next_Steps.md during session start reconciliation.
+  - checks: tests=not-run, lint=not-run, type=not-run, sec=not-run, build=not-run
+- [x] Harden detect-secrets configuration for full-repo scans (owner: platform, due: 2025-03-03)
+  - notes: Documented prior completion while syncing planning state.
+  - checks: tests=not-run, lint=not-run, type=not-run, sec=pass, build=not-run
+- [x] Update infrastructure docs to point to current ARC deployment paths (owner: platform, due: 2025-03-03)
+  - notes: Archived finished infrastructure documentation task from planning ledger.
+  - checks: tests=not-run, lint=not-run, type=not-run, sec=not-run, build=not-run
+- [x] Rerun baseline pytest suite without interruption to confirm green signal (owner: codex, due: 2025-03-03)
+  - notes: Previously executed baseline pytest suite; capturing in log for traceability.
+  - checks: tests=pass, lint=not-run, type=not-run, sec=not-run, build=not-run
+- [x] Resolve Ruff findings from `uv run ruff check` (exit=1) (owner: platform, due: 2025-03-03)
+  - notes: Recorded existing lint remediation noted in planning document.
+  - checks: tests=not-run, lint=pass, type=not-run, sec=not-run, build=not-run
+- [x] Provide typing stubs or ignores for `uv run mypy` (`types-PyYAML` missing, exit=1) (owner: platform, due: 2025-03-03)
+  - notes: Captured prior type-check cleanup when normalizing planning file.
+  - checks: tests=not-run, lint=not-run, type=pass, sec=not-run, build=not-run
+- [x] Triage Bandit warnings from `uv run bandit -r apps/data-platform/hotpass -q` (exit=1) (owner: platform, due: 2025-03-03)
+  - notes: Logged resolved security scan follow-up from earlier cycle.
+  - checks: tests=not-run, lint=not-run, type=not-run, sec=pass, build=not-run
+- [x] Ensure packaging build succeeds (`uv run python -m build`, exit=1) (owner: platform, due: 2025-03-03)
+  - notes: Documented successful packaging build remediation while syncing state.
+  - checks: tests=not-run, lint=not-run, type=not-run, sec=not-run, build=pass

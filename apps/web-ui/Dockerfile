@@ -37,6 +37,7 @@ RUN npm install -g pnpm && pnpm install --frozen-lockfile --prod
 
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/server ./server
+COPY --from=builder /app/data ./data
 
 EXPOSE 3000
 
