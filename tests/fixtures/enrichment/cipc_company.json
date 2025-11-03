@@ -1,45 +1,45 @@
 {
-  "results": [
-    {
-      "enterprise_number": "K2020/123456/07",
-      "enterprise_name": "Aero Tech (Pty) Ltd",
-      "enterprise_type": "Private Company",
-      "status": "In Business",
-      "status_date": "2024-11-01",
-      "registration_date": "2020-03-01",
-      "business_start_date": "2020-02-20",
-      "registered_address": {
-        "line1": "1 Innovation Way",
-        "line2": "Hangar 3",
-        "city": "Pretoria",
-        "province": "Gauteng",
-        "postal_code": "0087",
-        "country": "ZA"
-      },
-      "postal_address": {
-        "line1": "PO Box 100",
-        "line2": "Centurion",
-        "city": "Pretoria",
-        "province": "Gauteng",
-        "postal_code": "0046",
-        "country": "ZA"
-      },
-      "email": "info@aerotech.test",
-      "phone": "+27 12 555 1234",
-      "directors": [
-        {
-          "full_name": "Jane Doe",
-          "role": "Director",
-          "appointment_date": "2020-03-01"
-        },
-        {
-          "full_name": "Sipho Nkosi",
-          "role": "Director",
-          "appointment_date": "2022-07-15"
-        }
-      ],
-      "financial_year_end": "2024-02-29",
-      "last_updated": "2025-09-30T13:45:00Z"
-    }
-  ]
+	"results": [
+		{
+			"enterprise_number": "K2020/123456/07",
+			"enterprise_name": "Aero Tech (Pty) Ltd",
+			"enterprise_type": "Private Company",
+			"status": "In Business",
+			"status_date": "2024-11-01",
+			"registration_date": "2020-03-01",
+			"business_start_date": "2020-02-20",
+			"registered_address": {
+				"line1": "1 Innovation Way",
+				"line2": "Hangar 3",
+				"city": "Pretoria",
+				"province": "Gauteng",
+				"postal_code": "0087",
+				"country": "ZA"
+			},
+			"postal_address": {
+				"line1": "PO Box 100",
+				"line2": "Centurion",
+				"city": "Pretoria",
+				"province": "Gauteng",
+				"postal_code": "0046",
+				"country": "ZA"
+			},
+			"email": "info@aerotech.test",
+			"phone": "+27 12 555 1234",
+			"directors": [
+				{
+					"full_name": "Jane Doe",
+					"role": "Director",
+					"appointment_date": "2020-03-01"
+				},
+				{
+					"full_name": "Sipho Nkosi",
+					"role": "Director",
+					"appointment_date": "2022-07-15"
+				}
+			],
+			"financial_year_end": "2024-02-29",
+			"last_updated": "2025-09-30T13:45:00Z"
+		}
+	]
 }

@@ -1,17 +1,17 @@
 {
-  "expectation_suite_name": "contact_company_cat",
-  "expectations": [
-    {
-      "expectation_type": "expect_column_values_to_not_be_null",
-      "kwargs": { "column": "Company" }
-    },
-    {
-      "expectation_type": "expect_column_to_exist",
-      "kwargs": { "column": "Category" }
-    }
-  ],
-  "meta": {
-    "notes": ["Ensures Company catalogue retains identifiers and categories"],
-    "canonical_dataset": "contact_company_cat"
-  }
+	"expectation_suite_name": "contact_company_cat",
+	"expectations": [
+		{
+			"expectation_type": "expect_column_values_to_not_be_null",
+			"kwargs": { "column": "Company" }
+		},
+		{
+			"expectation_type": "expect_column_to_exist",
+			"kwargs": { "column": "Category" }
+		}
+	],
+	"meta": {
+		"notes": ["Ensures Company catalogue retains identifiers and categories"],
+		"canonical_dataset": "contact_company_cat"
+	}
 }

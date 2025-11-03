@@ -136,10 +136,12 @@ apps/data-platform/hotpass/ml/tracking.py
 apps/data-platform/hotpass/pipeline/__init__.py
 apps/data-platform/hotpass/pipeline/aggregation.py
 apps/data-platform/hotpass/pipeline/base.py
+apps/data-platform/hotpass/pipeline/helpers.py
 apps/data-platform/hotpass/pipeline/config.py
 apps/data-platform/hotpass/pipeline/enrichment.py
 apps/data-platform/hotpass/pipeline/events.py
 apps/data-platform/hotpass/pipeline/export.py
+apps/data-platform/hotpass/pipeline/helpers.py
 apps/data-platform/hotpass/pipeline/ingestion.py
 apps/data-platform/hotpass/pipeline/orchestrator.py
 apps/data-platform/hotpass/pipeline/quality_summary.py

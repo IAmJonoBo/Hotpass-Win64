@@ -1,30 +1,30 @@
 {
-  "expectation_suite_name": "reachout_organisation",
-  "expectations": [
-    {
-      "expectation_type": "expect_column_to_exist",
-      "kwargs": { "column": "Organisation Name" }
-    },
-    {
-      "expectation_type": "expect_column_values_to_not_be_null",
-      "kwargs": { "column": "Organisation Name" }
-    },
-    {
-      "expectation_type": "expect_column_to_exist",
-      "kwargs": { "column": "ID" }
-    },
-    {
-      "expectation_type": "expect_column_values_to_not_be_null",
-      "kwargs": { "column": "ID" }
-    },
-    {
-      "expectation_type": "expect_column_to_exist",
-      "kwargs": { "column": "Type" }
-    }
-  ],
-  "meta": {
-    "notes": [
-      "Ensures Organisation sheet carries key identifiers and descriptors"
-    ]
-  }
+	"expectation_suite_name": "reachout_organisation",
+	"expectations": [
+		{
+			"expectation_type": "expect_column_to_exist",
+			"kwargs": { "column": "Organisation Name" }
+		},
+		{
+			"expectation_type": "expect_column_values_to_not_be_null",
+			"kwargs": { "column": "Organisation Name" }
+		},
+		{
+			"expectation_type": "expect_column_to_exist",
+			"kwargs": { "column": "ID" }
+		},
+		{
+			"expectation_type": "expect_column_values_to_not_be_null",
+			"kwargs": { "column": "ID" }
+		},
+		{
+			"expectation_type": "expect_column_to_exist",
+			"kwargs": { "column": "Type" }
+		}
+	],
+	"meta": {
+		"notes": [
+			"Ensures Organisation sheet carries key identifiers and descriptors"
+		]
+	}
 }

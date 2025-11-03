@@ -1,80 +1,80 @@
 {
-  "$schema": "https://frictionlessdata.io/schemas/table-schema.json",
-  "name": "reachout_organisation",
-  "title": "Reachout organisation sheet",
-  "description": "Contract defining the Organisation sheet in Reachout Database.xlsx",
-  "primaryKey": ["ID"],
-  "fields": [
-    {
-      "name": "Organisation Name",
-      "type": "string",
-      "constraints": {
-        "required": true
-      },
-      "description": "Organisation name tracked in Reachout"
-    },
-    {
-      "name": "ID",
-      "type": "number",
-      "constraints": {
-        "required": true
-      },
-      "description": "Reachout record identifier"
-    },
-    {
-      "name": "Reachout Date",
-      "type": "string",
-      "description": "Date of most recent outreach"
-    },
-    {
-      "name": "Recent_Touch_Ind",
-      "type": "string",
-      "description": "Indicator flag for recent engagement"
-    },
-    {
-      "name": "Area",
-      "type": "string",
-      "description": "Geographic area"
-    },
-    {
-      "name": "Distance",
-      "type": "string",
-      "description": "Distance notes from the Reachout workbook"
-    },
-    {
-      "name": "Type",
-      "type": "string",
-      "description": "Organisation type"
-    },
-    {
-      "name": "Website",
-      "type": "string",
-      "description": "Organisation website"
-    },
-    {
-      "name": "Address",
-      "type": "string",
-      "description": "Physical address"
-    },
-    {
-      "name": "Planes",
-      "type": "string",
-      "description": "Aircraft or fleet summary"
-    },
-    {
-      "name": "Description Type",
-      "type": "string",
-      "description": "Description category"
-    },
-    {
-      "name": "Notes",
-      "type": "string",
-      "description": "General notes"
-    },
-    {
-      "name": "Open Questions",
-      "type": "string",
-      "description": "Outstanding questions logged by outreach"
-    }
-  ]
+	"$schema": "https://frictionlessdata.io/schemas/table-schema.json",
+	"name": "reachout_organisation",
+	"title": "Reachout organisation sheet",
+	"description": "Contract defining the Organisation sheet in Reachout Database.xlsx",
+	"primaryKey": ["ID"],
+	"fields": [
+		{
+			"name": "Organisation Name",
+			"type": "string",
+			"constraints": {
+				"required": true
+			},
+			"description": "Organisation name tracked in Reachout"
+		},
+		{
+			"name": "ID",
+			"type": "number",
+			"constraints": {
+				"required": true
+			},
+			"description": "Reachout record identifier"
+		},
+		{
+			"name": "Reachout Date",
+			"type": "string",
+			"description": "Date of most recent outreach"
+		},
+		{
+			"name": "Recent_Touch_Ind",
+			"type": "string",
+			"description": "Indicator flag for recent engagement"
+		},
+		{
+			"name": "Area",
+			"type": "string",
+			"description": "Geographic area"
+		},
+		{
+			"name": "Distance",
+			"type": "string",
+			"description": "Distance notes from the Reachout workbook"
+		},
+		{
+			"name": "Type",
+			"type": "string",
+			"description": "Organisation type"
+		},
+		{
+			"name": "Website",
+			"type": "string",
+			"description": "Organisation website"
+		},
+		{
+			"name": "Address",
+			"type": "string",
+			"description": "Physical address"
+		},
+		{
+			"name": "Planes",
+			"type": "string",
+			"description": "Aircraft or fleet summary"
+		},
+		{
+			"name": "Description Type",
+			"type": "string",
+			"description": "Description category"
+		},
+		{
+			"name": "Notes",
+			"type": "string",
+			"description": "General notes"
+		},
+		{
+			"name": "Open Questions",
+			"type": "string",
+			"description": "Outstanding questions logged by outreach"
+		}
+	]
 }

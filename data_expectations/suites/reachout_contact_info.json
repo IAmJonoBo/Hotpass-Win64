@@ -1,31 +1,31 @@
 {
-  "expectation_suite_name": "reachout_contact_info",
-  "expectations": [
-    {
-      "expectation_type": "expect_column_to_exist",
-      "kwargs": { "column": "Email" }
-    },
-    {
-      "expectation_type": "expect_column_values_to_match_regex",
-      "kwargs": {
-        "column": "Email",
-        "regex": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$",
-        "mostly": 0.85
-      }
-    },
-    {
-      "expectation_type": "expect_column_to_exist",
-      "kwargs": { "column": "Phone" }
-    },
-    {
-      "expectation_type": "expect_column_to_exist",
-      "kwargs": { "column": "WhatsApp" }
-    }
-  ],
-  "meta": {
-    "notes": [
-      "Validates Reachout contacts have emails and consistent structure"
-    ],
-    "canonical_dataset": "reachout_contact_info"
-  }
+	"expectation_suite_name": "reachout_contact_info",
+	"expectations": [
+		{
+			"expectation_type": "expect_column_to_exist",
+			"kwargs": { "column": "Email" }
+		},
+		{
+			"expectation_type": "expect_column_values_to_match_regex",
+			"kwargs": {
+				"column": "Email",
+				"regex": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$",
+				"mostly": 0.85
+			}
+		},
+		{
+			"expectation_type": "expect_column_to_exist",
+			"kwargs": { "column": "Phone" }
+		},
+		{
+			"expectation_type": "expect_column_to_exist",
+			"kwargs": { "column": "WhatsApp" }
+		}
+	],
+	"meta": {
+		"notes": [
+			"Validates Reachout contacts have emails and consistent structure"
+		],
+		"canonical_dataset": "reachout_contact_info"
+	}
 }

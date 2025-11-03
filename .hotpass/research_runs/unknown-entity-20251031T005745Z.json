@@ -1,43 +1,39 @@
 {
-  "plan": {
-    "entity_name": "unknown-entity",
-    "entity_slug": "unknown-entity",
-    "query": null,
-    "target_urls": [
-      "https://example.org"
-    ],
-    "allow_network": true,
-    "authority_sources": [],
-    "backfill_fields": [
-      "contact_primary_email",
-      "contact_primary_phone",
-      "website",
-      "province",
-      "address_primary"
-    ],
-    "rate_limit_seconds": null
-  },
-  "steps": [
-    {
-      "name": "network_enrichment",
-      "status": "skipped",
-      "message": "No dataset row supplied \u2013 skipping network enrichment",
-      "artifacts": {}
-    },
-    {
-      "name": "native_crawl",
-      "status": "skipped",
-      "message": "Scrapy crawl failed (non-fatal): ",
-      "artifacts": {
-        "urls": [
-          "https://example.org"
-        ]
-      }
-    }
-  ],
-  "enriched_row": null,
-  "provenance": null,
-  "elapsed_seconds": 0.01942245796089992,
-  "success": true,
-  "artifact_path": null
+	"plan": {
+		"entity_name": "unknown-entity",
+		"entity_slug": "unknown-entity",
+		"query": null,
+		"target_urls": ["https://example.org"],
+		"allow_network": true,
+		"authority_sources": [],
+		"backfill_fields": [
+			"contact_primary_email",
+			"contact_primary_phone",
+			"website",
+			"province",
+			"address_primary"
+		],
+		"rate_limit_seconds": null
+	},
+	"steps": [
+		{
+			"name": "network_enrichment",
+			"status": "skipped",
+			"message": "No dataset row supplied \u2013 skipping network enrichment",
+			"artifacts": {}
+		},
+		{
+			"name": "native_crawl",
+			"status": "skipped",
+			"message": "Scrapy crawl failed (non-fatal): ",
+			"artifacts": {
+				"urls": ["https://example.org"]
+			}
+		}
+	],
+	"enriched_row": null,
+	"provenance": null,
+	"elapsed_seconds": 0.01942245796089992,
+	"success": true,
+	"artifact_path": null
 }

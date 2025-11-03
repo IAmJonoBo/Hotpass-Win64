@@ -1,13 +1,13 @@
 {
-  "expectation_suite_name": "contact_company_addresses",
-  "expectations": [
-    {
-      "expectation_type": "expect_column_values_to_not_be_null",
-      "kwargs": { "column": "Company" }
-    }
-  ],
-  "meta": {
-    "notes": ["Addresses sheet must be keyed to a company"],
-    "canonical_dataset": "contact_company_addresses"
-  }
+	"expectation_suite_name": "contact_company_addresses",
+	"expectations": [
+		{
+			"expectation_type": "expect_column_values_to_not_be_null",
+			"kwargs": { "column": "Company" }
+		}
+	],
+	"meta": {
+		"notes": ["Addresses sheet must be keyed to a company"],
+		"canonical_dataset": "contact_company_addresses"
+	}
 }

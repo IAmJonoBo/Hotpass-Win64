@@ -1,62 +1,62 @@
 {
-  "$schema": "https://frictionlessdata.io/schemas/table-schema.json",
-  "name": "contact_capture",
-  "title": "Contact Database capture log",
-  "description": "Schema for 10-10-25 Capture sheet in Contact Database.xlsx",
-  "primaryKey": ["School"],
-  "fields": [
-    {
-      "name": "Unnamed: 0",
-      "type": "string",
-      "description": "Source worksheet row identifier"
-    },
-    {
-      "name": "School",
-      "type": "string",
-      "constraints": {
-        "required": true
-      },
-      "description": "School or organisation name captured during outreach"
-    },
-    {
-      "name": "Contact person (role)",
-      "type": "string",
-      "description": "Primary contact name with role context"
-    },
-    {
-      "name": "Phone",
-      "type": "string",
-      "description": "Primary phone number captured for the contact"
-    },
-    {
-      "name": "Email",
-      "type": "string",
-      "description": "Email address captured for the contact"
-    },
-    {
-      "name": "Addresses",
-      "type": "string",
-      "description": "Free-form address information captured from the sheet"
-    },
-    {
-      "name": "Planes",
-      "type": "string",
-      "description": "Aircraft or fleet notes gathered during outreach"
-    },
-    {
-      "name": "Website",
-      "type": "string",
-      "description": "Organisation website or landing page"
-    },
-    {
-      "name": "Description",
-      "type": "string",
-      "description": "Narrative notes captured by the outreach team"
-    },
-    {
-      "name": "Type",
-      "type": "string",
-      "description": "Captured organisation classification from the sheet"
-    }
-  ]
+	"$schema": "https://frictionlessdata.io/schemas/table-schema.json",
+	"name": "contact_capture",
+	"title": "Contact Database capture log",
+	"description": "Schema for 10-10-25 Capture sheet in Contact Database.xlsx",
+	"primaryKey": ["School"],
+	"fields": [
+		{
+			"name": "Unnamed: 0",
+			"type": "string",
+			"description": "Source worksheet row identifier"
+		},
+		{
+			"name": "School",
+			"type": "string",
+			"constraints": {
+				"required": true
+			},
+			"description": "School or organisation name captured during outreach"
+		},
+		{
+			"name": "Contact person (role)",
+			"type": "string",
+			"description": "Primary contact name with role context"
+		},
+		{
+			"name": "Phone",
+			"type": "string",
+			"description": "Primary phone number captured for the contact"
+		},
+		{
+			"name": "Email",
+			"type": "string",
+			"description": "Email address captured for the contact"
+		},
+		{
+			"name": "Addresses",
+			"type": "string",
+			"description": "Free-form address information captured from the sheet"
+		},
+		{
+			"name": "Planes",
+			"type": "string",
+			"description": "Aircraft or fleet notes gathered during outreach"
+		},
+		{
+			"name": "Website",
+			"type": "string",
+			"description": "Organisation website or landing page"
+		},
+		{
+			"name": "Description",
+			"type": "string",
+			"description": "Narrative notes captured by the outreach team"
+		},
+		{
+			"name": "Type",
+			"type": "string",
+			"description": "Captured organisation classification from the sheet"
+		}
+	]
 }

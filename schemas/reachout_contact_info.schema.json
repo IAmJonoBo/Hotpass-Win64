@@ -1,70 +1,70 @@
 {
-  "$schema": "https://frictionlessdata.io/schemas/table-schema.json",
-  "name": "reachout_contact_info",
-  "title": "Reachout contact info sheet",
-  "description": "Contract defining the Contact Info sheet in Reachout Database.xlsx",
-  "primaryKey": ["ID", "Email", "Phone"],
-  "fields": [
-    {
-      "name": "ID",
-      "type": "number",
-      "constraints": {
-        "required": true
-      },
-      "description": "Reachout record identifier"
-    },
-    {
-      "name": "Organisation Name",
-      "type": "string",
-      "constraints": {
-        "required": true
-      },
-      "description": "Organisation associated with the outreach record"
-    },
-    {
-      "name": "Reachout Date",
-      "type": "string",
-      "description": "Date the outreach took place"
-    },
-    {
-      "name": "Firstname",
-      "type": "string",
-      "description": "Contact given name"
-    },
-    {
-      "name": "Surname",
-      "type": "string",
-      "description": "Contact surname"
-    },
-    {
-      "name": "Position",
-      "type": "string",
-      "description": "Role captured during outreach"
-    },
-    {
-      "name": "Phone",
-      "type": "string",
-      "description": "Primary phone number recorded"
-    },
-    {
-      "name": "WhatsApp",
-      "type": "string",
-      "description": "WhatsApp number if supplied"
-    },
-    {
-      "name": "Email",
-      "type": "string",
-      "description": "Email address recorded for the contact"
-    },
-    {
-      "name": "Invalid",
-      "type": "string",
-      "description": "Flags invalid contact information"
-    },
-    {
-      "name": "Unnamed: 10",
-      "type": "string",
-      "description": "Auxiliary notes column"
-    }
-  ]
+	"$schema": "https://frictionlessdata.io/schemas/table-schema.json",
+	"name": "reachout_contact_info",
+	"title": "Reachout contact info sheet",
+	"description": "Contract defining the Contact Info sheet in Reachout Database.xlsx",
+	"primaryKey": ["ID", "Email", "Phone"],
+	"fields": [
+		{
+			"name": "ID",
+			"type": "number",
+			"constraints": {
+				"required": true
+			},
+			"description": "Reachout record identifier"
+		},
+		{
+			"name": "Organisation Name",
+			"type": "string",
+			"constraints": {
+				"required": true
+			},
+			"description": "Organisation associated with the outreach record"
+		},
+		{
+			"name": "Reachout Date",
+			"type": "string",
+			"description": "Date the outreach took place"
+		},
+		{
+			"name": "Firstname",
+			"type": "string",
+			"description": "Contact given name"
+		},
+		{
+			"name": "Surname",
+			"type": "string",
+			"description": "Contact surname"
+		},
+		{
+			"name": "Position",
+			"type": "string",
+			"description": "Role captured during outreach"
+		},
+		{
+			"name": "Phone",
+			"type": "string",
+			"description": "Primary phone number recorded"
+		},
+		{
+			"name": "WhatsApp",
+			"type": "string",
+			"description": "WhatsApp number if supplied"
+		},
+		{
+			"name": "Email",
+			"type": "string",
+			"description": "Email address recorded for the contact"
+		},
+		{
+			"name": "Invalid",
+			"type": "string",
+			"description": "Flags invalid contact information"
+		},
+		{
+			"name": "Unnamed: 10",
+			"type": "string",
+			"description": "Auxiliary notes column"
+		}
+	]
 }

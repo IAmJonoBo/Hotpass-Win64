@@ -66,9 +66,7 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Opinionated bootstrap: credentials → setup → env file.",
         description="Guide operators through the minimum viable setup for Hotpass.",
     )
-    wizard.add_argument(
-        "--host", help="Tunnel host or SSM target for environment access."
-    )
+    wizard.add_argument("--host", help="Tunnel host or SSM target for environment access.")
     wizard.add_argument(
         "--via",
         choices={"ssh-bastion", "ssm"},
@@ -118,9 +116,7 @@ def _build_parser() -> argparse.ArgumentParser:
         "connect",
         help="Open tunnels to Prefect and Marquez (lease mode by default).",
     )
-    connect.add_argument(
-        "--host", help="Tunnel host / SSM target.", default=DEFAULT_TUNNEL_HOST
-    )
+    connect.add_argument("--host", help="Tunnel host / SSM target.", default=DEFAULT_TUNNEL_HOST)
     connect.add_argument(
         "--via",
         choices={"ssh-bastion", "ssm"},
@@ -202,9 +198,7 @@ def _handle_wizard(args: argparse.Namespace, console: Console) -> int:
         summary.append(("Credentials", "Skipped"))
 
     if not args.skip_setup:
-        host = args.host or (
-            DEFAULT_TUNNEL_HOST if assume_yes else _prompt_host(console)
-        )
+        host = args.host or (DEFAULT_TUNNEL_HOST if assume_yes else _prompt_host(console))
         setup_args: list[str] = [
             "hotpass",
             "setup",
@@ -326,9 +320,7 @@ def _handle_qa(args: argparse.Namespace, console: Console) -> int:
     return _invoke(command, console, dry_run=args.dry_run)
 
 
-def _handle_heartbeat(
-    args: argparse.Namespace, console: Console
-) -> int:  # noqa: ARG001
+def _handle_heartbeat(args: argparse.Namespace, console: Console) -> int:  # noqa: ARG001
     console.print("hotpass-operator heartbeat ok")
     return 0
 
@@ -371,9 +363,7 @@ def _render_command(parts: Iterable[str]) -> str:
 
 
 def _prompt_host(console: Console) -> str:
-    return str(
-        Prompt.ask("Tunnel host (bastion or SSM target)", default=DEFAULT_TUNNEL_HOST)
-    )
+    return str(Prompt.ask("Tunnel host (bastion or SSM target)", default=DEFAULT_TUNNEL_HOST))
 
 
 __all__ = ["main"]

@@ -99,7 +99,7 @@ If any command fails, the script exits immediately with a non-zero code so CI ca
 2. From the repo root run `make qa-trunk` for lint-only coverage, or rely on `make qa` / `make qa-full` which now invoke Trunk automatically. Pull requests also run `.github/workflows/trunk-format.yml`, which applies `trunk fmt` in fix mode and attaches a patch when formatting is missing.
 3. For CI-style execution call `scripts/testing/trunk_check.sh` directly. Set `TRUNK_FMT_MODE=fix` to apply autofixes locally or keep the default `check` mode to fail on unformatted files.
 
-**Result:** consistent enforcement of `ruff`, `black`, `bandit`, `mypy`, `detect-secrets`, YAML/Markdown linters, container linting, and additional security scanners through one orchestrated command.
+**Result:** consistent enforcement of `ruff` (lint + format), `bandit`, `mypy`, `detect-secrets`, YAML/Markdown linters, container linting, and additional security scanners through one orchestrated command.
 
 > **Docs CI:** `.github/workflows/docs.yml` runs `make qa-trunk` before building Sphinx artefacts so documentation-only pull requests still pass the full Trunk lint suite.
 

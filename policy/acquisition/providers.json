@@ -1,39 +1,39 @@
 {
-  "providers": {
-    "linkedin": {
-      "category": "professional_network",
-      "collection_basis": "legitimate_interest",
-      "pii_scope": "business_contact",
-      "tos_url": "https://www.linkedin.com/legal/l/service-terms",
-      "notes": "Collect only publicly shared business contact signals; honour profile opt-outs."
-    },
-    "clearbit": {
-      "category": "data_enrichment",
-      "collection_basis": "subscription_contract",
-      "pii_scope": "business_contact",
-      "tos_url": "https://clearbit.com/terms",
-      "notes": "Ensure subscription covers enrichment purpose and respect Clearbit caching and deletion windows."
-    },
-    "aviation_registry": {
-      "category": "public_registry",
-      "collection_basis": "public_information",
-      "pii_scope": "none",
-      "tos_url": "https://www.aviationregistry.example/terms",
-      "notes": "Data restricted to fleet composition; do not store personal crew details."
-    },
-    "cipc": {
-      "category": "public_registry",
-      "collection_basis": "public_information",
-      "pii_scope": "business_contact",
-      "tos_url": "https://www.cipc.co.za/terms-and-conditions/",
-      "notes": "Respect published API rate limits and cache results for seven days; director information must only be processed for business contact purposes."
-    },
-    "sacaa": {
-      "category": "public_registry",
-      "collection_basis": "public_information",
-      "pii_scope": "none",
-      "tos_url": "https://www.caa.co.za/terms-and-conditions/",
-      "notes": "Limit lookups to operational records, honour SACAA acceptable use, and purge cached payloads when certificates expire."
-    }
-  }
+	"providers": {
+		"linkedin": {
+			"category": "professional_network",
+			"collection_basis": "legitimate_interest",
+			"pii_scope": "business_contact",
+			"tos_url": "https://www.linkedin.com/legal/l/service-terms",
+			"notes": "Collect only publicly shared business contact signals; honour profile opt-outs."
+		},
+		"clearbit": {
+			"category": "data_enrichment",
+			"collection_basis": "subscription_contract",
+			"pii_scope": "business_contact",
+			"tos_url": "https://clearbit.com/terms",
+			"notes": "Ensure subscription covers enrichment purpose and respect Clearbit caching and deletion windows."
+		},
+		"aviation_registry": {
+			"category": "public_registry",
+			"collection_basis": "public_information",
+			"pii_scope": "none",
+			"tos_url": "https://www.aviationregistry.example/terms",
+			"notes": "Data restricted to fleet composition; do not store personal crew details."
+		},
+		"cipc": {
+			"category": "public_registry",
+			"collection_basis": "public_information",
+			"pii_scope": "business_contact",
+			"tos_url": "https://www.cipc.co.za/terms-and-conditions/",
+			"notes": "Respect published API rate limits and cache results for seven days; director information must only be processed for business contact purposes."
+		},
+		"sacaa": {
+			"category": "public_registry",
+			"collection_basis": "public_information",
+			"pii_scope": "none",
+			"tos_url": "https://www.caa.co.za/terms-and-conditions/",
+			"notes": "Limit lookups to operational records, honour SACAA acceptable use, and purge cached payloads when certificates expire."
+		}
+	}
 }

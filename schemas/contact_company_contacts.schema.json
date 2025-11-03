@@ -1,60 +1,60 @@
 {
-  "$schema": "https://frictionlessdata.io/schemas/table-schema.json",
-  "name": "contact_company_contacts",
-  "title": "Contact Database contacts",
-  "description": "Schema for Company_Contacts sheet in Contact Database.xlsx",
-  "primaryKey": ["C_ID", "Email", "Cellnumber", "Landline"],
-  "fields": [
-    {
-      "name": "C_ID",
-      "type": "number",
-      "constraints": {
-        "required": true
-      },
-      "description": "Numeric company identifier"
-    },
-    {
-      "name": "Company",
-      "type": "string",
-      "constraints": {
-        "required": true
-      },
-      "description": "Company name for the contact"
-    },
-    {
-      "name": "Status",
-      "type": "string",
-      "description": "Engagement status for the contact"
-    },
-    {
-      "name": "FirstName",
-      "type": "string",
-      "description": "Contact given name"
-    },
-    {
-      "name": "Surname",
-      "type": "string",
-      "description": "Contact surname"
-    },
-    {
-      "name": "Position",
-      "type": "string",
-      "description": "Role or job title"
-    },
-    {
-      "name": "Cellnumber",
-      "type": "string",
-      "description": "Mobile number"
-    },
-    {
-      "name": "Email",
-      "type": "string",
-      "description": "Email address"
-    },
-    {
-      "name": "Landline",
-      "type": "string",
-      "description": "Landline number if supplied"
-    }
-  ]
+	"$schema": "https://frictionlessdata.io/schemas/table-schema.json",
+	"name": "contact_company_contacts",
+	"title": "Contact Database contacts",
+	"description": "Schema for Company_Contacts sheet in Contact Database.xlsx",
+	"primaryKey": ["C_ID", "Email", "Cellnumber", "Landline"],
+	"fields": [
+		{
+			"name": "C_ID",
+			"type": "number",
+			"constraints": {
+				"required": true
+			},
+			"description": "Numeric company identifier"
+		},
+		{
+			"name": "Company",
+			"type": "string",
+			"constraints": {
+				"required": true
+			},
+			"description": "Company name for the contact"
+		},
+		{
+			"name": "Status",
+			"type": "string",
+			"description": "Engagement status for the contact"
+		},
+		{
+			"name": "FirstName",
+			"type": "string",
+			"description": "Contact given name"
+		},
+		{
+			"name": "Surname",
+			"type": "string",
+			"description": "Contact surname"
+		},
+		{
+			"name": "Position",
+			"type": "string",
+			"description": "Role or job title"
+		},
+		{
+			"name": "Cellnumber",
+			"type": "string",
+			"description": "Mobile number"
+		},
+		{
+			"name": "Email",
+			"type": "string",
+			"description": "Email address"
+		},
+		{
+			"name": "Landline",
+			"type": "string",
+			"description": "Landline number if supplied"
+		}
+	]
 }

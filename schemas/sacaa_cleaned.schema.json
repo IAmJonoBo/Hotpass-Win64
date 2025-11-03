@@ -1,47 +1,47 @@
 {
-  "$schema": "https://frictionlessdata.io/schemas/table-schema.json",
-  "name": "sacaa_cleaned",
-  "title": "SACAA cleaned sheet",
-  "description": "Schema for Cleaned sheet in SACAA Flight Schools workbook",
-  "primaryKey": ["Name of Organisation"],
-  "fields": [
-    {
-      "name": "Name of Organisation",
-      "type": "string",
-      "constraints": {
-        "required": true
-      },
-      "description": "Organisation name listed by SACAA"
-    },
-    {
-      "name": "Province",
-      "type": "string",
-      "description": "Province recorded by SACAA"
-    },
-    {
-      "name": "Status",
-      "type": "string",
-      "description": "Approval status"
-    },
-    {
-      "name": "Website URL",
-      "type": "string",
-      "description": "Website URL captured in the SACAA sheet"
-    },
-    {
-      "name": "Contact Person",
-      "type": "string",
-      "description": "Named contact person"
-    },
-    {
-      "name": "Contact Number",
-      "type": "string",
-      "description": "Primary phone number"
-    },
-    {
-      "name": "Contact Email Address",
-      "type": "string",
-      "description": "Primary email address"
-    }
-  ]
+	"$schema": "https://frictionlessdata.io/schemas/table-schema.json",
+	"name": "sacaa_cleaned",
+	"title": "SACAA cleaned sheet",
+	"description": "Schema for Cleaned sheet in SACAA Flight Schools workbook",
+	"primaryKey": ["Name of Organisation"],
+	"fields": [
+		{
+			"name": "Name of Organisation",
+			"type": "string",
+			"constraints": {
+				"required": true
+			},
+			"description": "Organisation name listed by SACAA"
+		},
+		{
+			"name": "Province",
+			"type": "string",
+			"description": "Province recorded by SACAA"
+		},
+		{
+			"name": "Status",
+			"type": "string",
+			"description": "Approval status"
+		},
+		{
+			"name": "Website URL",
+			"type": "string",
+			"description": "Website URL captured in the SACAA sheet"
+		},
+		{
+			"name": "Contact Person",
+			"type": "string",
+			"description": "Named contact person"
+		},
+		{
+			"name": "Contact Number",
+			"type": "string",
+			"description": "Primary phone number"
+		},
+		{
+			"name": "Contact Email Address",
+			"type": "string",
+			"description": "Primary email address"
+		}
+	]
 }

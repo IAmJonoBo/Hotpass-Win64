@@ -56,9 +56,7 @@ def marquez_lineage_snapshot() -> None:
     except Exception as exc:  # noqa: BLE001 - keep pipeline non-fatal
         print(f"Marquez export skipped: {exc}")
 
-    (output_dir / "LAST_REFRESH.txt").write_text(
-        time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-    )
+    (output_dir / "LAST_REFRESH.txt").write_text(time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()))
 
 
 # --- Research manifests cache directory (metadata only) ---

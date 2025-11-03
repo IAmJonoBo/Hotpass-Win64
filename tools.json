@@ -1,32 +1,32 @@
 [
-  {
-    "name": "list_prefect_flows",
-    "method": "GET",
-    "path": "/api/prefect/flows"
-  },
-  {
-    "name": "get_marquez_lineage",
-    "method": "GET",
-    "path": "/api/marquez/lineage?ns={namespace}"
-  },
-  {
-    "name": "run_hotpass_refine",
-    "method": "POST",
-    "path": "/api/hotpass/refine"
-  },
-  {
-    "name": "publish_contract",
-    "method": "POST",
-    "path": "/api/imports/templates/{id}/contracts"
-  },
-  {
-    "name": "template_summary",
-    "method": "GET",
-    "path": "/api/imports/templates/{id}/summary"
-  },
-  {
-    "name": "consolidation_telemetry",
-    "method": "GET",
-    "path": "/api/imports/consolidation/telemetry"
-  }
+	{
+		"name": "list_prefect_flows",
+		"method": "GET",
+		"path": "/api/prefect/flows"
+	},
+	{
+		"name": "get_marquez_lineage",
+		"method": "GET",
+		"path": "/api/marquez/lineage?ns={namespace}"
+	},
+	{
+		"name": "run_hotpass_refine",
+		"method": "POST",
+		"path": "/api/hotpass/refine"
+	},
+	{
+		"name": "publish_contract",
+		"method": "POST",
+		"path": "/api/imports/templates/{id}/contracts"
+	},
+	{
+		"name": "template_summary",
+		"method": "GET",
+		"path": "/api/imports/templates/{id}/summary"
+	},
+	{
+		"name": "consolidation_telemetry",
+		"method": "GET",
+		"path": "/api/imports/consolidation/telemetry"
+	}
 ]

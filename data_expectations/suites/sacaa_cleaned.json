@@ -1,23 +1,23 @@
 {
-  "expectation_suite_name": "sacaa_cleaned",
-  "expectations": [
-    {
-      "expectation_type": "expect_column_values_to_not_be_null",
-      "kwargs": { "column": "Name of Organisation" }
-    },
-    {
-      "expectation_type": "expect_column_values_to_match_regex",
-      "kwargs": {
-        "column": "Contact Email Address",
-        "regex": "^([^@\\s]+@[^@\\s]+\\.[^@\\s]+)(;\\s*[^@\\s]+@[^@\\s]+\\.[^@\\s]+)*$",
-        "mostly": 0.85
-      }
-    }
-  ],
-  "meta": {
-    "notes": [
-      "SACAA cleansed export must supply organisation name and mostly valid contact emails"
-    ],
-    "canonical_dataset": "sacaa_cleaned"
-  }
+	"expectation_suite_name": "sacaa_cleaned",
+	"expectations": [
+		{
+			"expectation_type": "expect_column_values_to_not_be_null",
+			"kwargs": { "column": "Name of Organisation" }
+		},
+		{
+			"expectation_type": "expect_column_values_to_match_regex",
+			"kwargs": {
+				"column": "Contact Email Address",
+				"regex": "^([^@\\s]+@[^@\\s]+\\.[^@\\s]+)(;\\s*[^@\\s]+@[^@\\s]+\\.[^@\\s]+)*$",
+				"mostly": 0.85
+			}
+		}
+	],
+	"meta": {
+		"notes": [
+			"SACAA cleansed export must supply organisation name and mostly valid contact emails"
+		],
+		"canonical_dataset": "sacaa_cleaned"
+	}
 }

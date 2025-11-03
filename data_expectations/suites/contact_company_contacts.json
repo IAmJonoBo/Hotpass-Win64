@@ -1,49 +1,49 @@
 {
-  "expectation_suite_name": "contact_company_contacts",
-  "expectations": [
-    {
-      "expectation_type": "expect_column_values_to_not_be_null",
-      "kwargs": { "column": "Company" }
-    },
-    {
-      "expectation_type": "expect_column_values_to_match_regex",
-      "kwargs": {
-        "column": "Email",
-        "regex": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$",
-        "mostly": 0.8
-      }
-    },
-    {
-      "expectation_type": "expect_column_values_to_match_regex",
-      "kwargs": {
-        "column": "Cellnumber",
-        "regex": "^\\+?\\d[-\\d\\s()]{5,}(?:\\.0)?$",
-        "mostly": 0.8
-      }
-    },
-    {
-      "expectation_type": "expect_column_values_to_be_in_set",
-      "kwargs": {
-        "column": "Status",
-        "value_set": [
-          "Imminent",
-          "High",
-          "Medium",
-          "Low",
-          "Active",
-          "Prospect",
-          "Dormant",
-          "0",
-          0
-        ],
-        "mostly": 0.9
-      }
-    }
-  ],
-  "meta": {
-    "notes": [
-      "Contact roster must keep reachable contact points and status labels"
-    ],
-    "canonical_dataset": "contact_company_contacts"
-  }
+	"expectation_suite_name": "contact_company_contacts",
+	"expectations": [
+		{
+			"expectation_type": "expect_column_values_to_not_be_null",
+			"kwargs": { "column": "Company" }
+		},
+		{
+			"expectation_type": "expect_column_values_to_match_regex",
+			"kwargs": {
+				"column": "Email",
+				"regex": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$",
+				"mostly": 0.8
+			}
+		},
+		{
+			"expectation_type": "expect_column_values_to_match_regex",
+			"kwargs": {
+				"column": "Cellnumber",
+				"regex": "^\\+?\\d[-\\d\\s()]{5,}(?:\\.0)?$",
+				"mostly": 0.8
+			}
+		},
+		{
+			"expectation_type": "expect_column_values_to_be_in_set",
+			"kwargs": {
+				"column": "Status",
+				"value_set": [
+					"Imminent",
+					"High",
+					"Medium",
+					"Low",
+					"Active",
+					"Prospect",
+					"Dormant",
+					"0",
+					0
+				],
+				"mostly": 0.9
+			}
+		}
+	],
+	"meta": {
+		"notes": [
+			"Contact roster must keep reachable contact points and status labels"
+		],
+		"canonical_dataset": "contact_company_contacts"
+	}
 }

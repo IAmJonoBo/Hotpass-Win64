@@ -1,44 +1,44 @@
 [
-  {
-    "framework": "POPIA",
-    "run_at": "2025-10-26T07:50:46.903691+00:00",
-    "reviewers": ["Compliance Bot"],
-    "findings": [],
-    "notes": "Initial automation baseline"
-  },
-  {
-    "framework": "ISO 27001",
-    "run_at": "2025-10-26T07:50:46.903691+00:00",
-    "reviewers": ["Compliance Bot"],
-    "findings": [],
-    "notes": "Initial automation baseline"
-  },
-  {
-    "framework": "SOC 2",
-    "run_at": "2025-10-26T07:50:46.903691+00:00",
-    "reviewers": ["Compliance Bot"],
-    "findings": [],
-    "notes": "Initial automation baseline"
-  },
-  {
-    "framework": "POPIA",
-    "run_at": "2025-10-26T07:51:10.654526+00:00",
-    "reviewers": ["Compliance Bot"],
-    "findings": [],
-    "notes": "Initial automation baseline"
-  },
-  {
-    "framework": "ISO 27001",
-    "run_at": "2025-10-26T07:51:10.654526+00:00",
-    "reviewers": ["Compliance Bot"],
-    "findings": [],
-    "notes": "Initial automation baseline"
-  },
-  {
-    "framework": "SOC 2",
-    "run_at": "2025-10-26T07:51:10.654526+00:00",
-    "reviewers": ["Compliance Bot"],
-    "findings": [],
-    "notes": "Initial automation baseline"
-  }
+	{
+		"framework": "POPIA",
+		"run_at": "2025-10-26T07:50:46.903691+00:00",
+		"reviewers": ["Compliance Bot"],
+		"findings": [],
+		"notes": "Initial automation baseline"
+	},
+	{
+		"framework": "ISO 27001",
+		"run_at": "2025-10-26T07:50:46.903691+00:00",
+		"reviewers": ["Compliance Bot"],
+		"findings": [],
+		"notes": "Initial automation baseline"
+	},
+	{
+		"framework": "SOC 2",
+		"run_at": "2025-10-26T07:50:46.903691+00:00",
+		"reviewers": ["Compliance Bot"],
+		"findings": [],
+		"notes": "Initial automation baseline"
+	},
+	{
+		"framework": "POPIA",
+		"run_at": "2025-10-26T07:51:10.654526+00:00",
+		"reviewers": ["Compliance Bot"],
+		"findings": [],
+		"notes": "Initial automation baseline"
+	},
+	{
+		"framework": "ISO 27001",
+		"run_at": "2025-10-26T07:51:10.654526+00:00",
+		"reviewers": ["Compliance Bot"],
+		"findings": [],
+		"notes": "Initial automation baseline"
+	},
+	{
+		"framework": "SOC 2",
+		"run_at": "2025-10-26T07:51:10.654526+00:00",
+		"reviewers": ["Compliance Bot"],
+		"findings": [],
+		"notes": "Initial automation baseline"
+	}
 ]

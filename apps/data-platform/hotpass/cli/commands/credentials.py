@@ -187,14 +187,10 @@ def _handle_show(namespace: argparse.Namespace, profile: CLIProfile | None) -> i
     console = Console()
     credentials = _load_credentials()
     if not credentials:
-        console.print(
-            "[yellow]No stored credentials in .hotpass/credentials.json.[/yellow]"
-        )
+        console.print("[yellow]No stored credentials in .hotpass/credentials.json.[/yellow]")
         return 0
 
-    table = Table(
-        title="Stored credentials", show_header=True, header_style="bold cyan"
-    )
+    table = Table(title="Stored credentials", show_header=True, header_style="bold cyan")
     table.add_column("Provider")
     table.add_column("Details")
 
@@ -205,9 +201,7 @@ def _handle_show(namespace: argparse.Namespace, profile: CLIProfile | None) -> i
             f"region={aws_payload.get('region', '-')}",
         ]
         if aws_payload.get("access_key_id"):
-            details.append(
-                f"access_key_id={_mask_secret(aws_payload['access_key_id'])}"
-            )
+            details.append(f"access_key_id={_mask_secret(aws_payload['access_key_id'])}")
         if aws_payload.get("mode"):
             details.append(f"mode={aws_payload['mode']}")
         table.add_row("AWS", "\n".join(details))
@@ -253,9 +247,7 @@ def _handle_clear(namespace: argparse.Namespace, profile: CLIProfile | None) -> 
     if removed_any:
         _write_credentials(credentials, console)
     else:
-        console.print(
-            "[yellow]No matching providers found in credential store.[/yellow]"
-        )
+        console.print("[yellow]No matching providers found in credential store.[/yellow]")
     return 0
 
 
@@ -272,14 +264,10 @@ def _configure_aws(
 ) -> bool:
     aws_payload = credentials.get("aws", {})
     profile_default = (
-        aws_payload.get("profile")
-        or os.environ.get("AWS_PROFILE")
-        or AWS_DEFAULT_PROFILE
+        aws_payload.get("profile") or os.environ.get("AWS_PROFILE") or AWS_DEFAULT_PROFILE
     )
     region_default = (
-        aws_payload.get("region")
-        or os.environ.get("AWS_DEFAULT_REGION")
-        or AWS_DEFAULT_REGION
+        aws_payload.get("region") or os.environ.get("AWS_DEFAULT_REGION") or AWS_DEFAULT_REGION
     )
 
     profile_value = _prompt_text(
@@ -353,9 +341,7 @@ def _configure_aws(
     aws_payload["mode"] = acquisition_mode
     aws_payload["updated_at"] = _iso_now()
     credentials["aws"] = aws_payload
-    console.print(
-        f"[green]AWS credentials recorded for profile '{profile_value}'.[/green]"
-    )
+    console.print(f"[green]AWS credentials recorded for profile '{profile_value}'.[/green]")
     return True
 
 
@@ -422,9 +408,7 @@ def _configure_prefect(
         prefect_payload.get("profile") or os.environ.get("PREFECT_PROFILE") or "hotpass"
     )
     workspace_default = (
-        prefect_payload.get("workspace")
-        or os.environ.get("PREFECT_WORKSPACE")
-        or "hotpass/staging"
+        prefect_payload.get("workspace") or os.environ.get("PREFECT_WORKSPACE") or "hotpass/staging"
     )
 
     profile_value = _prompt_text(
@@ -565,9 +549,7 @@ def _open_portal(console: Console, label: str, url: str) -> None:
         console.print(f"[yellow]Unable to open {label}: {exc}[/yellow]")
 
 
-def _run_optional_command(
-    console: Console, command: list[str], description: str
-) -> None:
+def _run_optional_command(console: Console, command: list[str], description: str) -> None:
     if not command:
         return
     if not _command_available(command[0]):

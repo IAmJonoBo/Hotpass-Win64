@@ -1,53 +1,53 @@
 {
-  "data": {
-    "air_operator_certificate": "CAA-12345",
-    "legal_name": "Sky Charter Aviation (Pty) Ltd",
-    "trading_name": "Sky Charter",
-    "operator_type": "Part 135",
-    "status": "Approved",
-    "issue_date": "2023-06-15",
-    "expiry_date": "2024-06-14",
-    "addresses": [
-      {
-        "type": "physical",
-        "line1": "Hangar 12",
-        "line2": "Wonderboom Airport",
-        "city": "Pretoria",
-        "province": "Gauteng",
-        "postal_code": "0129",
-        "country": "ZA"
-      },
-      {
-        "type": "postal",
-        "line1": "PO Box 45",
-        "city": "Pretoria",
-        "province": "Gauteng",
-        "postal_code": "0001",
-        "country": "ZA"
-      }
-    ],
-    "contacts": {
-      "email": "ops@skycharter.test",
-      "phone": "+27 11 777 0000",
-      "fax": "+27 11 777 0001"
-    },
-    "responsible_persons": [
-      {
-        "name": "Lerato Mokoena",
-        "role": "Accountable Manager",
-        "appointed": "2022-04-01"
-      }
-    ],
-    "aircraft": [
-      {
-        "registration": "ZS-ABC",
-        "type": "Cessna 208B",
-        "status": "Active"
-      }
-    ]
-  },
-  "meta": {
-    "source": "SACAA API",
-    "last_modified": "2025-09-10T09:30:00Z"
-  }
+	"data": {
+		"air_operator_certificate": "CAA-12345",
+		"legal_name": "Sky Charter Aviation (Pty) Ltd",
+		"trading_name": "Sky Charter",
+		"operator_type": "Part 135",
+		"status": "Approved",
+		"issue_date": "2023-06-15",
+		"expiry_date": "2024-06-14",
+		"addresses": [
+			{
+				"type": "physical",
+				"line1": "Hangar 12",
+				"line2": "Wonderboom Airport",
+				"city": "Pretoria",
+				"province": "Gauteng",
+				"postal_code": "0129",
+				"country": "ZA"
+			},
+			{
+				"type": "postal",
+				"line1": "PO Box 45",
+				"city": "Pretoria",
+				"province": "Gauteng",
+				"postal_code": "0001",
+				"country": "ZA"
+			}
+		],
+		"contacts": {
+			"email": "ops@skycharter.test",
+			"phone": "+27 11 777 0000",
+			"fax": "+27 11 777 0001"
+		},
+		"responsible_persons": [
+			{
+				"name": "Lerato Mokoena",
+				"role": "Accountable Manager",
+				"appointed": "2022-04-01"
+			}
+		],
+		"aircraft": [
+			{
+				"registration": "ZS-ABC",
+				"type": "Cessna 208B",
+				"status": "Active"
+			}
+		]
+	},
+	"meta": {
+		"source": "SACAA API",
+		"last_modified": "2025-09-10T09:30:00Z"
+	}
 }

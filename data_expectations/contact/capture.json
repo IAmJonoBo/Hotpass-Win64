@@ -1,12 +1,12 @@
 {
-  "expectation_suite_name": "contact_capture",
-  "expectations": [
-    {
-      "expectation_type": "expect_column_values_to_not_be_null",
-      "kwargs": { "column": "School" }
-    }
-  ],
-  "meta": {
-    "notes": ["Capture log must reference school name"]
-  }
+	"expectation_suite_name": "contact_capture",
+	"expectations": [
+		{
+			"expectation_type": "expect_column_values_to_not_be_null",
+			"kwargs": { "column": "School" }
+		}
+	],
+	"meta": {
+		"notes": ["Capture log must reference school name"]
+	}
 }

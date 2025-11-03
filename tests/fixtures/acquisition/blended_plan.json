@@ -1,103 +1,103 @@
 {
-  "search": {
-    "policies": {
-      "robots_allowed": true,
-      "tos_url": "https://example.com/search-tos"
-    },
-    "results": {
-      "hotpass": [
-        {
-          "identifier": "Hotpass Aero",
-          "domain": "hotpass.example",
-          "location": "Johannesburg",
-          "metadata": {
-            "sector": "Aviation"
-          }
-        }
-      ]
-    }
-  },
-  "crawl": {
-    "policies": {
-      "robots_allowed": true,
-      "tos_url": "https://example.com/crawl-tos"
-    },
-    "source_dataset": "Web Crawl",
-    "pages": {
-      "hotpass.example": {
-        "organization_name": "Hotpass Aero",
-        "website": "https://hotpass.example",
-        "description": "Aviation analytics platform",
-        "notes": "Scraped from marketing site",
-        "contacts": [
-          {
-            "name": "Pat Agent",
-            "role": "Director",
-            "email": "pat.agent@hotpass.example",
-            "phone": "+27 11 123 4567"
-          }
-        ]
-      }
-    }
-  },
-  "providers": {
-    "linkedin": {
-      "policies": {
-        "robots_allowed": true,
-        "tos_url": "https://www.linkedin.com/legal/user-agreement"
-      },
-      "profiles": {
-        "hotpass": {
-          "organization": "Hotpass Aero",
-          "website": "https://hotpass.example",
-          "profile_url": "https://linkedin.com/company/hotpass",
-          "province": "Gauteng",
-          "area": "Johannesburg",
-          "type": "Private",
-          "description": "Commercial aviation analytics",
-          "contacts": [
-            {
-              "name": "Pat Agent",
-              "title": "Director",
-              "email": "pat.agent@hotpass.example",
-              "phone": "+27 11 123 4567",
-              "confidence": 0.92
-            }
-          ]
-        }
-      }
-    },
-    "clearbit": {
-      "policies": {
-        "robots_allowed": true,
-        "tos_url": "https://clearbit.com/terms"
-      },
-      "companies": {
-        "hotpass.example": {
-          "name": "Hotpass Aero",
-          "domain": "hotpass.example",
-          "description": "Aviation analytics",
-          "category": "aviation",
-          "type": "Private",
-          "tags": ["Aviation", "Analytics"],
-          "confidence": 0.88
-        }
-      }
-    },
-    "aviation_registry": {
-      "policies": {
-        "robots_allowed": true,
-        "tos_url": "https://aviation.example/terms"
-      },
-      "fleets": {
-        "Hotpass Aero": {
-          "name": "Hotpass Aero",
-          "registry": "SACAA",
-          "fleet": ["ZS-ABC", "ZS-XYZ"],
-          "notes": "Operator of light aircraft",
-          "confidence": 0.5
-        }
-      }
-    }
-  }
+	"search": {
+		"policies": {
+			"robots_allowed": true,
+			"tos_url": "https://example.com/search-tos"
+		},
+		"results": {
+			"hotpass": [
+				{
+					"identifier": "Hotpass Aero",
+					"domain": "hotpass.example",
+					"location": "Johannesburg",
+					"metadata": {
+						"sector": "Aviation"
+					}
+				}
+			]
+		}
+	},
+	"crawl": {
+		"policies": {
+			"robots_allowed": true,
+			"tos_url": "https://example.com/crawl-tos"
+		},
+		"source_dataset": "Web Crawl",
+		"pages": {
+			"hotpass.example": {
+				"organization_name": "Hotpass Aero",
+				"website": "https://hotpass.example",
+				"description": "Aviation analytics platform",
+				"notes": "Scraped from marketing site",
+				"contacts": [
+					{
+						"name": "Pat Agent",
+						"role": "Director",
+						"email": "pat.agent@hotpass.example",
+						"phone": "+27 11 123 4567"
+					}
+				]
+			}
+		}
+	},
+	"providers": {
+		"linkedin": {
+			"policies": {
+				"robots_allowed": true,
+				"tos_url": "https://www.linkedin.com/legal/user-agreement"
+			},
+			"profiles": {
+				"hotpass": {
+					"organization": "Hotpass Aero",
+					"website": "https://hotpass.example",
+					"profile_url": "https://linkedin.com/company/hotpass",
+					"province": "Gauteng",
+					"area": "Johannesburg",
+					"type": "Private",
+					"description": "Commercial aviation analytics",
+					"contacts": [
+						{
+							"name": "Pat Agent",
+							"title": "Director",
+							"email": "pat.agent@hotpass.example",
+							"phone": "+27 11 123 4567",
+							"confidence": 0.92
+						}
+					]
+				}
+			}
+		},
+		"clearbit": {
+			"policies": {
+				"robots_allowed": true,
+				"tos_url": "https://clearbit.com/terms"
+			},
+			"companies": {
+				"hotpass.example": {
+					"name": "Hotpass Aero",
+					"domain": "hotpass.example",
+					"description": "Aviation analytics",
+					"category": "aviation",
+					"type": "Private",
+					"tags": ["Aviation", "Analytics"],
+					"confidence": 0.88
+				}
+			}
+		},
+		"aviation_registry": {
+			"policies": {
+				"robots_allowed": true,
+				"tos_url": "https://aviation.example/terms"
+			},
+			"fleets": {
+				"Hotpass Aero": {
+					"name": "Hotpass Aero",
+					"registry": "SACAA",
+					"fleet": ["ZS-ABC", "ZS-XYZ"],
+					"notes": "Operator of light aircraft",
+					"confidence": 0.5
+				}
+			}
+		}
+	}
 }

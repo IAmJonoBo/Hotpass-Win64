@@ -1,13 +1,7 @@
 {
-  "job": "hotpass.pipeline.bundle",
-  "run_id": "simulated-20251101T171901Z",
-  "inputs": [
-    "multi-bundle-a.xlsx",
-    "multi-bundle-b.xlsx"
-  ],
-  "outputs": [
-    "refined.xlsx",
-    "enriched.xlsx"
-  ],
-  "status": "COMPLETE"
+	"job": "hotpass.pipeline.bundle",
+	"run_id": "simulated-20251101T171901Z",
+	"inputs": ["multi-bundle-a.xlsx", "multi-bundle-b.xlsx"],
+	"outputs": ["refined.xlsx", "enriched.xlsx"],
+	"status": "COMPLETE"
 }

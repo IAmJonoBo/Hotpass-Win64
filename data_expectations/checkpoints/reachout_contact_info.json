@@ -1,21 +1,21 @@
 {
-  "name": "reachout_contact_info",
-  "config_version": 1.0,
-  "class_name": "Checkpoint",
-  "expectation_suite_name": "reachout_contact_info",
-  "action_list": [
-    {
-      "name": "store_validation_result",
-      "action": {
-        "class_name": "StoreValidationResultAction"
-      }
-    },
-    {
-      "name": "update_data_docs",
-      "action": {
-        "class_name": "UpdateDataDocsAction"
-      }
-    }
-  ],
-  "validations": []
+	"name": "reachout_contact_info",
+	"config_version": 1.0,
+	"class_name": "Checkpoint",
+	"expectation_suite_name": "reachout_contact_info",
+	"action_list": [
+		{
+			"name": "store_validation_result",
+			"action": {
+				"class_name": "StoreValidationResultAction"
+			}
+		},
+		{
+			"name": "update_data_docs",
+			"action": {
+				"class_name": "UpdateDataDocsAction"
+			}
+		}
+	],
+	"validations": []
 }

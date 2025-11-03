@@ -1,66 +1,66 @@
 {
-  "headers": [
-    {
-      "tool_name": "scancode-toolkit",
-      "tool_version": "32.1.0",
-      "options": {
-        "input": ["apps/data-platform/hotpass/compliance.py"],
-        "--info": true,
-        "--json-pp": "scancode-sample.json",
-        "--license": true
-      },
-      "notice": "Generated with ScanCode and provided on an \"AS IS\" BASIS, WITHOUT WARRANTIES\nOR CONDITIONS OF ANY KIND, either express or implied. No content created from\nScanCode should be considered or used as legal advice. Consult an Attorney\nfor any legal advice.\nScanCode is a free software code scanning tool from nexB Inc. and others.\nVisit https://github.com/nexB/scancode-toolkit/ for support and download.",
-      "start_timestamp": "2025-10-26T195256.745973",
-      "end_timestamp": "2025-10-26T195408.135513",
-      "output_format_version": "3.1.0",
-      "duration": 71.38959527015686,
-      "message": null,
-      "errors": [],
-      "warnings": [],
-      "extra_data": {
-        "system_environment": {
-          "operating_system": "linux",
-          "cpu_architecture": "64",
-          "platform": "Linux-6.12.13-x86_64-with-glibc2.39",
-          "platform_version": "#1 SMP Thu Mar 13 11:34:50 UTC 2025",
-          "python_version": "3.13.3 (main, Aug 28 2025, 21:56:01) [GCC 13.3.0]"
-        },
-        "spdx_license_list_version": "3.23",
-        "files_count": 1
-      }
-    }
-  ],
-  "license_detections": [],
-  "files": [
-    {
-      "path": "compliance.py",
-      "type": "file",
-      "name": "compliance.py",
-      "base_name": "compliance",
-      "extension": ".py",
-      "size": 22623,
-      "date": "2025-10-26",
-      "sha1": "ff57db8d3192ed4e3b0c47d765b3a9c2348a9f1a",
-      "md5": "64e75600fe096d3a1cfd6b15839b9fe1",
-      "sha256": "5439e6eec6669d4e4c938caa3d3fd9f013a4e687995058b9ddb8ca4ef3dec980",
-      "mime_type": "text/plain",
-      "file_type": "Python script, ASCII text executable",
-      "programming_language": "Python",
-      "is_binary": false,
-      "is_text": true,
-      "is_archive": false,
-      "is_media": false,
-      "is_source": true,
-      "is_script": true,
-      "detected_license_expression": null,
-      "detected_license_expression_spdx": null,
-      "license_detections": [],
-      "license_clues": [],
-      "percentage_of_license_text": 0,
-      "files_count": 0,
-      "dirs_count": 0,
-      "size_count": 0,
-      "scan_errors": []
-    }
-  ]
+	"headers": [
+		{
+			"tool_name": "scancode-toolkit",
+			"tool_version": "32.1.0",
+			"options": {
+				"input": ["apps/data-platform/hotpass/compliance.py"],
+				"--info": true,
+				"--json-pp": "scancode-sample.json",
+				"--license": true
+			},
+			"notice": "Generated with ScanCode and provided on an \"AS IS\" BASIS, WITHOUT WARRANTIES\nOR CONDITIONS OF ANY KIND, either express or implied. No content created from\nScanCode should be considered or used as legal advice. Consult an Attorney\nfor any legal advice.\nScanCode is a free software code scanning tool from nexB Inc. and others.\nVisit https://github.com/nexB/scancode-toolkit/ for support and download.",
+			"start_timestamp": "2025-10-26T195256.745973",
+			"end_timestamp": "2025-10-26T195408.135513",
+			"output_format_version": "3.1.0",
+			"duration": 71.38959527015686,
+			"message": null,
+			"errors": [],
+			"warnings": [],
+			"extra_data": {
+				"system_environment": {
+					"operating_system": "linux",
+					"cpu_architecture": "64",
+					"platform": "Linux-6.12.13-x86_64-with-glibc2.39",
+					"platform_version": "#1 SMP Thu Mar 13 11:34:50 UTC 2025",
+					"python_version": "3.13.3 (main, Aug 28 2025, 21:56:01) [GCC 13.3.0]"
+				},
+				"spdx_license_list_version": "3.23",
+				"files_count": 1
+			}
+		}
+	],
+	"license_detections": [],
+	"files": [
+		{
+			"path": "compliance.py",
+			"type": "file",
+			"name": "compliance.py",
+			"base_name": "compliance",
+			"extension": ".py",
+			"size": 22623,
+			"date": "2025-10-26",
+			"sha1": "ff57db8d3192ed4e3b0c47d765b3a9c2348a9f1a",
+			"md5": "64e75600fe096d3a1cfd6b15839b9fe1",
+			"sha256": "5439e6eec6669d4e4c938caa3d3fd9f013a4e687995058b9ddb8ca4ef3dec980",
+			"mime_type": "text/plain",
+			"file_type": "Python script, ASCII text executable",
+			"programming_language": "Python",
+			"is_binary": false,
+			"is_text": true,
+			"is_archive": false,
+			"is_media": false,
+			"is_source": true,
+			"is_script": true,
+			"detected_license_expression": null,
+			"detected_license_expression_spdx": null,
+			"license_detections": [],
+			"license_clues": [],
+			"percentage_of_license_text": 0,
+			"files_count": 0,
+			"dirs_count": 0,
+			"size_count": 0,
+			"scan_errors": []
+		}
+	]
 }

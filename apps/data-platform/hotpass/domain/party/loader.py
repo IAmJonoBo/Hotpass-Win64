@@ -27,13 +27,20 @@ from .models import (
 )
 
 
-def _parse_iso_datetime(value: str | None) -> datetime | None:
-    if not value:
+def _parse_iso_datetime(value: object | None) -> datetime | None:
+    if value is None or (isinstance(value, str) and not value.strip()):
         return None
+    if isinstance(value, str):
+        candidate = value
+    elif pd.isna(value):
+        return None
+    else:
+        candidate = str(value)
     try:
-        return datetime.fromisoformat(value).replace(tzinfo=UTC)
+        parsed = datetime.fromisoformat(candidate)
     except ValueError:
         return None
+    return parsed if parsed.tzinfo else parsed.replace(tzinfo=UTC)
 
 
 def _confidence_band(score: float) -> ConfidenceBand:

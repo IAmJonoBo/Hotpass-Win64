@@ -4,6 +4,8 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "${ROOT_DIR}"
 
+export PYTHONPATH="${PYTHONPATH-}:${ROOT_DIR}/apps/data-platform"
+
 ALLOW_MISSING="${TRUNK_ALLOW_MISSING:-0}"
 FMT_MODE="${TRUNK_FMT_MODE:-check}"
 UPSTREAM="${TRUNK_UPSTREAM:-origin/main}"

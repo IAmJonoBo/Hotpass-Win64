@@ -118,9 +118,7 @@ def _command_handler(namespace: argparse.Namespace, profile: CLIProfile | None) 
     )
 
     if dry_run:
-        console.print(
-            Panel("\n".join(env_lines), title="Environment Preview", expand=False)
-        )
+        console.print(Panel("\n".join(env_lines), title="Environment Preview", expand=False))
         console.print("[yellow]Dry-run complete; file not written.[/yellow]")
         return 0
 
@@ -159,15 +157,11 @@ def _build_env_lines(
         namespace = last_entry.get("kubernetes", {}).get("namespace")
         if namespace:
             lines.append(f"HOTPASS_KUBE_NAMESPACE={namespace}")
-    lines.append(
-        f"FEATURE_ENABLE_REMOTE_RESEARCH={'true' if allow_network else 'false'}"
-    )
+    lines.append(f"FEATURE_ENABLE_REMOTE_RESEARCH={'true' if allow_network else 'false'}")
     lines.append(f"ALLOW_NETWORK_RESEARCH={'true' if allow_network else 'false'}")
 
     if credentials:
-        aws_payload = (
-            credentials.get("aws", {}) if isinstance(credentials, dict) else {}
-        )
+        aws_payload = credentials.get("aws", {}) if isinstance(credentials, dict) else {}
         if isinstance(aws_payload, dict):
             if aws_payload.get("profile"):
                 lines.append(f"AWS_PROFILE={aws_payload['profile']}")
@@ -176,21 +170,15 @@ def _build_env_lines(
             if aws_payload.get("access_key_id"):
                 lines.append(f"AWS_ACCESS_KEY_ID={aws_payload['access_key_id']}")
             if aws_payload.get("secret_access_key"):
-                lines.append(
-                    f"AWS_SECRET_ACCESS_KEY={aws_payload['secret_access_key']}"
-                )
+                lines.append(f"AWS_SECRET_ACCESS_KEY={aws_payload['secret_access_key']}")
             if aws_payload.get("session_token"):
                 lines.append(f"AWS_SESSION_TOKEN={aws_payload['session_token']}")
 
-        marquez_payload = (
-            credentials.get("marquez", {}) if isinstance(credentials, dict) else {}
-        )
+        marquez_payload = credentials.get("marquez", {}) if isinstance(credentials, dict) else {}
         if isinstance(marquez_payload, dict) and marquez_payload.get("api_key"):
             lines.append(f"MARQUEZ_API_KEY={marquez_payload['api_key']}")
 
-        prefect_payload = (
-            credentials.get("prefect", {}) if isinstance(credentials, dict) else {}
-        )
+        prefect_payload = credentials.get("prefect", {}) if isinstance(credentials, dict) else {}
         if isinstance(prefect_payload, dict):
             if prefect_payload.get("api_key"):
                 lines.append(f"PREFECT_API_KEY={prefect_payload['api_key']}")

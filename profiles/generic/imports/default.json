@@ -1,78 +1,57 @@
 {
-  "import_mappings": [
-    {
-      "source": "Organisation Name",
-      "target": "organization_name",
-      "strip": true
-    },
-    {
-      "source": "Organisation",
-      "target": "organization_name",
-      "strip": true
-    },
-    {
-      "source": "ID",
-      "target": "source_id",
-      "strip": true
-    },
-    {
-      "source": "C_ID",
-      "target": "source_id",
-      "strip": true
-    }
-  ],
-  "import_rules": [
-    {
-      "type": "normalize_date",
-      "columns": [
-        "Reachout Date",
-        "Last_Order_Date"
-      ],
-      "output_format": "%Y-%m-%d"
-    },
-    {
-      "type": "lowercase",
-      "columns": [
-        "Email",
-        "Contact Email Address"
-      ]
-    },
-    {
-      "type": "strip_whitespace",
-      "columns": [
-        "organisation_name",
-        "Contact Person",
-        "Phone"
-      ]
-    },
-    {
-      "type": "drop_layout_rows",
-      "columns": [
-        "Company Categores",
-        "Midrand Office AMOs (Head Office)"
-      ],
-      "patterns": [
-        "#",
-        "total",
-        "scope",
-        "comment"
-      ]
-    },
-    {
-      "type": "rename_columns",
-      "mapping": {
-        "Contact Email Address": "email",
-        "Contact Number": "phone",
-        "Organisation Name": "organization_name"
-      }
-    },
-    {
-      "type": "fill_missing",
-      "columns": [
-        "email",
-        "phone"
-      ],
-      "value": ""
-    }
-  ]
+	"import_mappings": [
+		{
+			"source": "Organisation Name",
+			"target": "organization_name",
+			"strip": true
+		},
+		{
+			"source": "Organisation",
+			"target": "organization_name",
+			"strip": true
+		},
+		{
+			"source": "ID",
+			"target": "source_id",
+			"strip": true
+		},
+		{
+			"source": "C_ID",
+			"target": "source_id",
+			"strip": true
+		}
+	],
+	"import_rules": [
+		{
+			"type": "normalize_date",
+			"columns": ["Reachout Date", "Last_Order_Date"],
+			"output_format": "%Y-%m-%d"
+		},
+		{
+			"type": "lowercase",
+			"columns": ["Email", "Contact Email Address"]
+		},
+		{
+			"type": "strip_whitespace",
+			"columns": ["organisation_name", "Contact Person", "Phone"]
+		},
+		{
+			"type": "drop_layout_rows",
+			"columns": ["Company Categores", "Midrand Office AMOs (Head Office)"],
+			"patterns": ["#", "total", "scope", "comment"]
+		},
+		{
+			"type": "rename_columns",
+			"mapping": {
+				"Contact Email Address": "email",
+				"Contact Number": "phone",
+				"Organisation Name": "organization_name"
+			}
+		},
+		{
+			"type": "fill_missing",
+			"columns": ["email", "phone"],
+			"value": ""
+		}
+	]
 }

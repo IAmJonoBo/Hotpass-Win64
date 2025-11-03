@@ -1,21 +1,21 @@
 {
-  "name": "contact_company_contacts",
-  "config_version": 1.0,
-  "class_name": "Checkpoint",
-  "expectation_suite_name": "contact_company_contacts",
-  "action_list": [
-    {
-      "name": "store_validation_result",
-      "action": {
-        "class_name": "StoreValidationResultAction"
-      }
-    },
-    {
-      "name": "update_data_docs",
-      "action": {
-        "class_name": "UpdateDataDocsAction"
-      }
-    }
-  ],
-  "validations": []
+	"name": "contact_company_contacts",
+	"config_version": 1.0,
+	"class_name": "Checkpoint",
+	"expectation_suite_name": "contact_company_contacts",
+	"action_list": [
+		{
+			"name": "store_validation_result",
+			"action": {
+				"class_name": "StoreValidationResultAction"
+			}
+		},
+		{
+			"name": "update_data_docs",
+			"action": {
+				"class_name": "UpdateDataDocsAction"
+			}
+		}
+	],
+	"validations": []
 }

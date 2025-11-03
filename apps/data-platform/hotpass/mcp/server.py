@@ -145,6 +145,7 @@ class HotpassMCPServer:
         self._workflow_harness = AgentWorkflowHarness(
             self._research_orchestrator, self._pipeline_supervisor
         )
+        self._default_profile_paths = self._determine_profile_paths()
 
         policy_payload = self._load_policy_payload()
         default_role = os.getenv("HOTPASS_MCP_DEFAULT_ROLE")
@@ -175,6 +176,77 @@ class HotpassMCPServer:
             tool.name, permitted_roles if permitted_roles else None
         )
         self._sync_tool_index()
+
+    def _determine_profile_paths(self) -> tuple[str, ...]:
+        """Resolve default profile search paths for CLI commands."""
+
+        candidates: list[Path] = []
+        env_sources = (
+            os.getenv("HOTPASS_MCP_PROFILE_PATHS"),
+            os.getenv("HOTPASS_PROFILE_PATHS"),
+        )
+        for source in env_sources:
+            if not source:
+                continue
+            for raw in source.split(os.pathsep):
+                value = raw.strip()
+                if not value:
+                    continue
+                candidates.append(Path(value).expanduser())
+
+        candidates.extend(
+            [
+                Path(__file__).resolve().parents[1] / "profiles",
+                Path.cwd() / "profiles",
+                Path.cwd() / "config" / "profiles",
+            ]
+        )
+
+        resolved: list[str] = []
+        seen: set[str] = set()
+        for candidate in candidates:
+            try:
+                path = candidate.resolve()
+            except FileNotFoundError:
+                continue
+            text = str(path)
+            if text in seen or not path.exists():
+                continue
+            seen.add(text)
+            resolved.append(text)
+        return tuple(resolved)
+
+    def _normalise_profile_paths(self, supplied: Any) -> tuple[str, ...]:
+        """Normalise caller supplied profile search paths."""
+
+        collected: list[str] = []
+        if isinstance(supplied, str):
+            candidate = supplied.strip()
+            if candidate:
+                collected.append(candidate)
+        elif isinstance(supplied, Sequence):
+            for item in supplied:
+                if isinstance(item, str):
+                    candidate = item.strip()
+                    if candidate:
+                        collected.append(candidate)
+
+        if not collected:
+            return self._default_profile_paths
+
+        normalised: list[str] = []
+        seen: set[str] = set()
+        for value in (*collected, *self._default_profile_paths):
+            path = Path(value).expanduser()
+            try:
+                resolved = str(path.resolve())
+            except FileNotFoundError:
+                continue
+            if resolved in seen or not Path(resolved).exists():
+                continue
+            seen.add(resolved)
+            normalised.append(resolved)
+        return tuple(normalised)
 
     def register_role(self, definition: RoleDefinition) -> None:
         """Register or override a role definition."""
@@ -216,6 +288,19 @@ class HotpassMCPServer:
                             "description": "Whether to create an archive of the refined output",
                             "default": False,
                         },
+                        "profile_search_path": {
+                            "oneOf": [
+                                {"type": "string"},
+                                {
+                                    "type": "array",
+                                    "items": {"type": "string"},
+                                },
+                            ],
+                            "description": (
+                                "Additional directories to search for named profiles "
+                                "(defaults to bundled profiles)"
+                            ),
+                        },
                     },
                     "required": ["input_path", "output_path"],
                 },
@@ -247,6 +332,19 @@ class HotpassMCPServer:
                             "type": "boolean",
                             "description": "Whether to allow network-based enrichment",
                             "default": False,
+                        },
+                        "profile_search_path": {
+                            "oneOf": [
+                                {"type": "string"},
+                                {
+                                    "type": "array",
+                                    "items": {"type": "string"},
+                                },
+                            ],
+                            "description": (
+                                "Additional directories to search for named profiles "
+                                "(defaults to bundled profiles)"
+                            ),
                         },
                     },
                     "required": ["input_path", "output_path"],
@@ -339,7 +437,15 @@ class HotpassMCPServer:
                             "type": "array",
                             "items": {
                                 "type": "string",
-                                "enum": ["deps", "prereqs", "tunnels", "aws", "ctx", "env", "arc"],
+                                "enum": [
+                                    "deps",
+                                    "prereqs",
+                                    "tunnels",
+                                    "aws",
+                                    "ctx",
+                                    "env",
+                                    "arc",
+                                ],
                             },
                         },
                         "aws_profile": {"type": "string"},
@@ -739,7 +845,9 @@ class HotpassMCPServer:
                     plugin = entry_point.load()
                 except Exception:
                     logger.warning(
-                        "Failed to load MCP plugin entry point %s", entry_point.name, exc_info=True
+                        "Failed to load MCP plugin entry point %s",
+                        entry_point.name,
+                        exc_info=True,
                     )
                     continue
                 self._register_plugin(plugin)
@@ -836,6 +944,9 @@ class HotpassMCPServer:
         if "profile" in args:
             cmd.extend(["--profile", args["profile"]])
 
+        for path in self._normalise_profile_paths(args.get("profile_search_path")):
+            cmd.extend(["--profile-search-path", path])
+
         if args.get("archive", False):
             cmd.append("--archive")
 
@@ -862,6 +973,9 @@ class HotpassMCPServer:
 
         if "allow_network" in args:
             cmd.append(f"--allow-network={str(args['allow_network']).lower()}")
+
+        for path in self._normalise_profile_paths(args.get("profile_search_path")):
+            cmd.extend(["--profile-search-path", path])
 
         result = await self._run_hotpass(cmd)
         return {
@@ -1086,7 +1200,7 @@ class HotpassMCPServer:
         backend = args.get("crawl_backend") or "deterministic"
         report = self._workflow_harness.simulate(
             context,
-            pipeline_snapshot=snapshot_payload if isinstance(snapshot_payload, Mapping) else None,
+            pipeline_snapshot=(snapshot_payload if isinstance(snapshot_payload, Mapping) else None),
             crawl_backend=backend,
         )
         return {
