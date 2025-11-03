@@ -10,7 +10,7 @@ import { marquezApi } from '@/api/marquez'
 import { importsApi } from '@/api/imports'
 import { runCommandJob, buildCommandJobLinks, type CommandJobLinks } from '@/api/commands'
 import type { CommandJob, ImportTemplatePayload } from '@/types'
-import { buildTemplateContract, summariseConsolidation, summariseTemplate } from '@/lib/importTemplates'
+import { buildTemplateContract, summariseTemplate } from '@/lib/importTemplates'
 import { getCachedToolContract, loadToolContract, type ToolDefinition } from './contract'
 
 export interface ToolResult {
@@ -298,6 +298,30 @@ export async function deleteImportTemplateTool(templateId: string): Promise<Tool
   }
 }
 
+export async function publishTemplateContractTool(templateId: string, format: 'yaml' | 'json' = 'yaml'): Promise<ToolResult> {
+  if (!templateId) {
+    return {
+      success: false,
+      error: 'Template ID is required',
+      message: 'Template ID missing',
+    }
+  }
+  try {
+    const result = await importsApi.publishTemplateContract(templateId, { format })
+    return {
+      success: true,
+      data: result,
+      message: `Contract job ${result.job.id} queued for template ${templateId}`,
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      message: `Failed to publish contract for template ${templateId}`,
+    }
+  }
+}
+
 export async function summarizeImportTemplateTool(templateId: string): Promise<ToolResult> {
   if (!templateId) {
     return {
@@ -307,58 +331,17 @@ export async function summarizeImportTemplateTool(templateId: string): Promise<T
     }
   }
   try {
-    const template = await importsApi.getTemplate(templateId)
-    const summary = summariseTemplate(template, template.payload)
-    const consolidation = summariseConsolidation(template.payload)
+    const response = await importsApi.getTemplateSummary(templateId)
     return {
       success: true,
-      data: {
-        template,
-        summary,
-        consolidation,
-      },
-      message: `Template "${template.name}" has ${summary.mappingCount} mapping(s) and ${summary.ruleCount} rule(s).`,
+      data: response,
+      message: `Template "${response.template.name}" summary ready`,
     }
   } catch (error) {
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
       message: `Failed to summarise template ${templateId}`,
-    }
-  }
-}
-
-export async function exportTemplateContractTool(templateId: string): Promise<ToolResult> {
-  if (!templateId) {
-    return {
-      success: false,
-      error: 'Template ID is required',
-      message: 'Template ID missing',
-    }
-  }
-  try {
-    const template = await importsApi.getTemplate(templateId)
-    const payload: ImportTemplatePayload = template.payload ?? { import_mappings: [], import_rules: [] }
-    const contract = buildTemplateContract({
-      template: {
-        name: template.name,
-        profile: template.profile,
-        description: template.description,
-        tags: template.tags,
-      },
-      payload,
-      origin: 'assistant-tool',
-    })
-    return {
-      success: true,
-      data: contract,
-      message: `Generated contract for template "${template.name}"`,
-    }
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-      message: `Failed to generate contract for template ${templateId}`,
     }
   }
 }
@@ -372,16 +355,163 @@ export async function previewConsolidationTool(templateId: string): Promise<Tool
     }
   }
   try {
-    const template = await importsApi.getTemplate(templateId)
-    const consolidation = summariseConsolidation(template.payload)
+    const response = await importsApi.getTemplateSummary(templateId)
+    return {
+      success: true,
+      data: response.consolidation,
+      message: `Consolidation preview generated for template "${response.template.name}"`,
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      message: `Failed to generate consolidation preview for template ${templateId}`,
+    }
+  }
+}
+
+export async function exportTemplateContractTool(templateId: string, format: 'yaml' | 'json' = 'yaml'): Promise<ToolResult> {
+  if (!templateId) {
+    return {
+      success: false,
+      error: 'Template ID is required',
+      message: 'Template ID missing',
+    }
+  }
+  try {
+    const response = await importsApi.getTemplateSummary(templateId)
+    const contract = buildTemplateContract({
+      template: {
+        name: response.template.name,
+        profile: response.template.profile,
+        description: response.template.description,
+        tags: response.template.tags,
+      },
+      payload: response.template.payload ?? { import_mappings: [], import_rules: [] },
+      origin: 'assistant-tool',
+    })
+    return {
+      success: true,
+      data: { format, contract },
+      message: `Contract materialised for template "${response.template.name}"`,
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      message: `Failed to export contract for template ${templateId}`,
+    }
+  }
+}
+
+export async function planImportRefinementTool(profile?: string): Promise<ToolResult> {
+  try {
+    const [templatesPayload, profilesPayload, telemetry] = await Promise.all([
+      importsApi.listTemplates(),
+      importsApi.listStoredProfiles(),
+      importsApi.getConsolidationTelemetry(),
+    ])
+    const templates = templatesPayload.map(template => ({
+      template,
+      summary: summariseTemplate(template, template.payload),
+    }))
+    const matchingTemplates = profile
+      ? templates.filter(item => (item.summary.profile ?? 'generic') === profile)
+      : templates
+    const nextTemplate = matchingTemplates[0]?.template ?? null
+    const latestProfile = profilesPayload[0]?.profile ?? null
+
     return {
       success: true,
       data: {
-        template: template.name,
-        profile: template.profile ?? 'generic',
-        consolidation,
+        profile: profile ?? nextTemplate?.profile ?? latestProfile?.sheets?.[0]?.role ?? 'generic',
+        nextTemplate,
+        latestProfile,
+        telemetry,
       },
-      message: `Consolidation preview generated for template "${template.name}"`,
+      message: 'Generated refinement plan recommendations',
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      message: 'Failed to build refinement plan',
+    }
+  }
+}
+
+export async function summarizeImportTemplateTool(templateId: string): Promise<ToolResult> {
+  if (!templateId) {
+    return {
+      success: false,
+      error: 'Template ID is required',
+      message: 'Template ID missing',
+    }
+  }
+  try {
+    const response = await importsApi.getTemplateSummary(templateId)
+    return {
+      success: true,
+      data: response,
+      message: `Template "${response.template.name}" summary ready`,
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      message: `Failed to summarise template ${templateId}`,
+    }
+  }
+}
+
+export async function exportTemplateContractTool(templateId: string, format: 'yaml' | 'json' = 'yaml'): Promise<ToolResult> {
+  if (!templateId) {
+    return {
+      success: false,
+      error: 'Template ID is required',
+      message: 'Template ID missing',
+    }
+  }
+  try {
+    const response = await importsApi.getTemplateSummary(templateId)
+    const contract = buildTemplateContract({
+      template: {
+        name: response.template.name,
+        profile: response.template.profile,
+        description: response.template.description,
+        tags: response.template.tags,
+      },
+      payload: response.template.payload ?? { import_mappings: [], import_rules: [] },
+      origin: 'assistant-tool',
+    })
+    return {
+      success: true,
+      data: { format, contract },
+      message: `Contract materialised for template "${response.template.name}"`,
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      message: `Failed to export contract for template ${templateId}`,
+    }
+  }
+}
+
+export async function previewConsolidationTool(templateId: string): Promise<ToolResult> {
+  if (!templateId) {
+    return {
+      success: false,
+      error: 'Template ID is required',
+      message: 'Template ID missing',
+    }
+  }
+  try {
+    const response = await importsApi.getTemplateSummary(templateId)
+    return {
+      success: true,
+      data: response.consolidation,
+      message: `Consolidation preview generated for template "${response.template.name}"`,
     }
   } catch (error) {
     return {

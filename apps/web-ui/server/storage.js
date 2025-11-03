@@ -208,6 +208,11 @@ export async function readImportTemplate(templateId) {
   return readJson(filePath, null)
 }
 
+export async function getImportTemplatePath(templateId) {
+  await ensureImportDirs()
+  return path.join(IMPORT_TEMPLATES_DIR, `${templateId}.json`)
+}
+
 export async function writeImportTemplate(input) {
   await ensureImportDirs()
   const id = input.id ?? generateId('template')

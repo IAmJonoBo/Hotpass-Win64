@@ -15,7 +15,7 @@ import {
   Download,
   ShieldAlert,
 } from 'lucide-react'
-import { useStoredImportProfiles } from '@/api/imports'
+import { useStoredImportProfiles, usePublishTemplateContract } from '@/api/imports'
 import type { ImportTemplate, ImportTemplatePayload } from '@/types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -119,6 +119,7 @@ export function ImportsWizard() {
   const [exportError, setExportError] = useState<string | null>(null)
   const [contractMessage, setContractMessage] = useState<string | null>(null)
   const [contractError, setContractError] = useState<string | null>(null)
+  const publishContractMutation = usePublishTemplateContract()
 
   const { data: storedProfiles = [], isLoading: profilesLoading } = useStoredImportProfiles()
 
@@ -367,6 +368,32 @@ export function ImportsWizard() {
     setContractMessage(`Contract exported as ${filename}`)
     setContractError(null)
   }, [draftPayload, selectedTemplate, validationIssues])
+
+  const handlePublishContract = useCallback(() => {
+    if (!selectedTemplate) {
+      setContractMessage(null)
+      setContractError('Select a template before publishing the contract.')
+      return
+    }
+    if (validationIssues.length > 0 || hasRuleErrors) {
+      setContractMessage(null)
+      setContractError('Resolve validation issues before publishing the contract.')
+      return
+    }
+    publishContractMutation.mutate(
+      { templateId: selectedTemplate.id, format: 'yaml' },
+      {
+        onSuccess: ({ job }) => {
+          setContractMessage(`Contract job ${job.id} queued.`)
+          setContractError(null)
+        },
+        onError: (error) => {
+          setContractMessage(null)
+          setContractError(error instanceof Error ? error.message : 'Failed to publish contract')
+        },
+      },
+    )
+  }, [selectedTemplate, validationIssues, hasRuleErrors, publishContractMutation])
 
   const handleDownloadPreview = useCallback(() => {
     const summary = {
@@ -855,13 +882,41 @@ export function ImportsWizard() {
                 </div>
               )}
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-                <Button size="sm" onClick={handleExportTemplate}>
+                <Button size="sm" onClick={handleExportTemplate} disabled={!draftPayload || validationIssues.length > 0}>
                   <Download className="mr-2 h-4 w-4" />
                   Export template JSON
                 </Button>
-                <Button size="sm" variant="outline" onClick={handleExportContract}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleExportContract}
+                  disabled={!draftPayload || validationIssues.length > 0}
+                >
                   <Download className="mr-2 h-4 w-4" />
                   Download contract JSON
+                </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={handlePublishContract}
+                  disabled={
+                    !selectedTemplate ||
+                    validationIssues.length > 0 ||
+                    hasRuleErrors ||
+                    publishContractMutation.isPending
+                  }
+                >
+                  {publishContractMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Publishing…
+                    </>
+                  ) : (
+                    <>
+                      <Download className="mr-2 h-4 w-4" />
+                      Publish contract (CLI)
+                    </>
+                  )}
                 </Button>
               </div>
               {exportMessage && (

@@ -5,6 +5,7 @@ import type {
   ImportTemplate,
   ImportTemplatePayload,
   StoredImportProfile,
+  CommandJob,
 } from '@/types'
 import { ensureCsrfToken } from './csrf'
 
@@ -196,6 +197,33 @@ export const importsApi = {
       throw new Error(message)
     }
   },
+
+  async getTemplateSummary(templateId: string) {
+    return limitedFetch<{ template: ImportTemplate; summary: Record<string, unknown>; consolidation: Record<string, unknown> }>(`${BASE_PATH}/templates/${encodeURIComponent(templateId)}/summary`)
+  },
+
+  async publishTemplateContract(templateId: string, options?: { format?: 'yaml' | 'json' }) {
+    const token = await ensureCsrfToken()
+    const response = await fetch(`${BASE_PATH}/templates/${encodeURIComponent(templateId)}/contracts`, {
+      method: 'POST',
+      headers: {
+        ...jsonHeaders,
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': token,
+      },
+      credentials: 'include',
+      body: JSON.stringify({ format: options?.format ?? 'yaml' }),
+    })
+    if (!response.ok) {
+      const message = await extractErrorMessage(response)
+      throw new Error(message)
+    }
+    return response.json() as Promise<{ job: CommandJob }>
+  },
+
+  async getConsolidationTelemetry() {
+    return limitedFetch<{ aggregate: Record<string, unknown>; templates: Array<Record<string, unknown>> }>(`${BASE_PATH}/consolidation/telemetry`)
+  },
 }
 
 async function extractErrorMessage(response: Response): Promise<string> {
@@ -252,5 +280,34 @@ export function useImportTemplateDelete() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['imports', 'templates'] })
     },
+  })
+}
+
+export function useTemplateSummary(templateId: string | null) {
+  return useQuery({
+    queryKey: ['imports', 'template-summary', templateId],
+    enabled: Boolean(templateId),
+    queryFn: () => importsApi.getTemplateSummary(templateId as string),
+    staleTime: 60_000,
+  })
+}
+
+export function usePublishTemplateContract() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationKey: ['imports', 'publish-contract'],
+    mutationFn: ({ templateId, format }: { templateId: string; format?: 'yaml' | 'json' }) =>
+      importsApi.publishTemplateContract(templateId, { format }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['contracts'] })
+    },
+  })
+}
+
+export function useConsolidationTelemetry() {
+  return useQuery({
+    queryKey: ['imports', 'consolidation-telemetry'],
+    queryFn: () => importsApi.getConsolidationTelemetry(),
+    staleTime: 60_000,
   })
 }

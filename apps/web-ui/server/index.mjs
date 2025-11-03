@@ -39,6 +39,12 @@ import {
   writeImportTemplate,
   deleteImportTemplate,
 } from './storage.js'
+import {
+  summariseTemplate as summariseTemplateSnapshot,
+  summariseConsolidation as summariseConsolidationSnapshot,
+  aggregateConsolidationTelemetry,
+  buildContractOutput,
+} from './template-utils.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -244,6 +250,27 @@ const enumerateImportArtifacts = async (job) => {
         kind: 'profile',
         size: profileStats.size,
         url: `/api/jobs/${job.id}/artifacts/profile`,
+      })
+    }
+  }
+
+  const contractAttachment = job?.metadata && typeof job.metadata === 'object'
+    ? job.metadata.contractAttachment
+    : null
+
+  const contractPath = contractAttachment && typeof contractAttachment === 'object' && typeof contractAttachment.path === 'string'
+    ? contractAttachment.path
+    : null
+
+  if (contractPath) {
+    const contractStats = await safeStatFile(contractPath)
+    if (contractStats) {
+      artifacts.push({
+        id: 'contract',
+        name: contractAttachment?.name || path.basename(contractPath),
+        kind: 'contract',
+        size: contractStats.size,
+        url: `/api/jobs/${job.id}/artifacts/contract`,
       })
     }
   }
@@ -678,6 +705,33 @@ app.get('/api/imports/templates', async (_req, res) => {
   }
 })
 
+app.get('/api/imports/consolidation/telemetry', async (_req, res) => {
+  try {
+    const templates = await listImportTemplates()
+    const enrichedTemplates = await Promise.all(templates.map(async (template) => {
+      const fullTemplate = await readImportTemplate(template.id)
+      return {
+        ...template,
+        payload: fullTemplate?.payload ?? template.payload ?? {},
+      }
+    }))
+    const aggregate = aggregateConsolidationTelemetry(enrichedTemplates)
+    const summaries = enrichedTemplates.map(template => ({
+      id: template.id,
+      name: template.name,
+      summary: summariseTemplateSnapshot(template, template.payload),
+      consolidation: summariseConsolidationSnapshot(template.payload),
+    }))
+    res.json({
+      aggregate,
+      templates: summaries,
+    })
+  } catch (error) {
+    console.error('[imports] failed to build consolidation telemetry', error)
+    sendError(res, 500, 'Unable to load consolidation telemetry', { message: error.message })
+  }
+})
+
 app.get('/api/imports/templates/:id', async (req, res) => {
   const { id } = req.params
   try {
@@ -689,6 +743,22 @@ app.get('/api/imports/templates/:id', async (req, res) => {
   } catch (error) {
     console.error('[imports] failed to read template', error)
     sendError(res, 500, 'Unable to load template', { message: error.message })
+  }
+})
+
+app.get('/api/imports/templates/:id/summary', async (req, res) => {
+  const { id } = req.params
+  try {
+    const template = await readImportTemplate(id)
+    if (!template) {
+      return sendError(res, 404, 'Template not found')
+    }
+    const summary = summariseTemplateSnapshot(template, template.payload)
+    const consolidation = summariseConsolidationSnapshot(template.payload)
+    res.json({ template, summary, consolidation })
+  } catch (error) {
+    console.error('[imports] failed to summarise template', error)
+    sendError(res, 500, 'Unable to summarise template', { message: error.message })
   }
 })
 
@@ -759,6 +829,111 @@ app.delete('/api/imports/templates/:id', csrfProtection, async (req, res) => {
   } catch (error) {
     console.error('[imports] failed to delete template', error)
     sendError(res, 500, 'Unable to delete template', { message: error.message })
+  }
+})
+
+app.post('/api/imports/templates/:id/contracts', csrfProtection, async (req, res) => {
+  const { id } = req.params
+  const formatRaw = typeof req.body?.format === 'string' ? req.body.format.toLowerCase().trim() : 'yaml'
+  const format = ['yaml', 'json'].includes(formatRaw) ? formatRaw : 'yaml'
+  try {
+    const template = await readImportTemplate(id)
+    if (!template) {
+      return sendError(res, 404, 'Template not found')
+    }
+    const contractsDir = path.join(process.cwd(), 'dist', 'contracts')
+    await ensureDirectory(contractsDir)
+    const { profile, outputPath, filename } = buildContractOutput({ template, outputDir: contractsDir, format })
+    const command = [
+      'uv',
+      'run',
+      'hotpass',
+      'contracts',
+      'emit',
+      '--profile',
+      profile,
+      '--format',
+      format,
+      '--output',
+      outputPath,
+    ]
+    const job = createCommandJob({
+      command,
+      label: `Contract (${template.name ?? profile})`,
+      metadata: {
+        type: 'contract',
+        templateId: id,
+        templateName: template.name ?? id,
+        profile,
+        format,
+        outputPath,
+        contractAttachment: {
+          path: outputPath,
+          name: filename,
+          format,
+        },
+      },
+    })
+    mergeJobMetadata(job.id, {
+      stage: 'queued',
+      type: 'contract',
+      templateId: id,
+      profile,
+      format,
+    })
+
+    const unsubscribe = subscribeToJob(job.id, (payload) => {
+      if (payload.type === 'finished') {
+        ;(async () => {
+          try {
+            const stats = await safeStatFile(outputPath)
+            if (stats) {
+              mergeJobMetadata(job.id, {
+                contractAttachment: {
+                  path: outputPath,
+                  name: filename,
+                  format,
+                },
+                artifacts: [
+                  {
+                    id: 'contract',
+                    name: filename,
+                    kind: 'contract',
+                    size: stats.size,
+                    url: `/api/jobs/${job.id}/artifacts/contract`,
+                  },
+                ],
+              })
+              publishJobEvent(job.id, {
+                type: 'artifact-ready',
+                artifacts: [
+                  {
+                    id: 'contract',
+                    name: filename,
+                    kind: 'contract',
+                    size: stats.size,
+                    url: `/api/jobs/${job.id}/artifacts/contract`,
+                  },
+                ],
+                timestamp: new Date().toISOString(),
+              })
+            }
+          } catch (error) {
+            console.error('[contracts] failed to finalise contract job', error)
+          } finally {
+            unsubscribe()
+          }
+        })().catch((error) => {
+          console.error('[contracts] post-processing error', error)
+          unsubscribe()
+        })
+      }
+    })
+
+    res.status(201).json({ job })
+  } catch (error) {
+    console.error('[contracts] failed to publish contract', error)
+    sendError(res, 500, 'Unable to publish contract', { message: error.message })
   }
 })
 
@@ -1490,6 +1665,38 @@ app.get('/api/jobs/:id/artifacts/profile', async (req, res) => {
     }
     console.error('[import] failed to stream profile artifact', error)
     sendError(res, 500, 'Failed to stream profile artifact', { message: error.message })
+  }
+})
+
+app.get('/api/jobs/:id/artifacts/contract', async (req, res) => {
+  const job = getJob(req.params.id)
+  if (!job) {
+    return sendError(res, 404, 'Job not found')
+  }
+  const attachment = job.metadata?.contractAttachment
+  if (!attachment || typeof attachment.path !== 'string') {
+    return sendError(res, 404, 'Contract artifact unavailable')
+  }
+  const resolvedPath = path.resolve(attachment.path)
+  const allowedRoot = path.resolve(process.cwd(), 'dist', 'contracts')
+  if (!resolvedPath.startsWith(allowedRoot)) {
+    return sendError(res, 403, 'Contract artifact outside contracts directory')
+  }
+  try {
+    const stats = await stat(resolvedPath)
+    if (!stats.isFile()) {
+      return sendError(res, 404, 'Contract artifact missing')
+    }
+    res.setHeader('Content-Type', attachment.format === 'json' ? 'application/json' : 'application/x-yaml')
+    res.setHeader('Content-Length', stats.size)
+    res.setHeader('Content-Disposition', `attachment; filename="${attachment.name || path.basename(resolvedPath)}"`)
+    fs.createReadStream(resolvedPath).pipe(res)
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      return sendError(res, 404, 'Contract artifact missing')
+    }
+    console.error('[contracts] failed to stream contract artifact', error)
+    sendError(res, 500, 'Failed to stream contract artifact', { message: error.message })
   }
 })
 

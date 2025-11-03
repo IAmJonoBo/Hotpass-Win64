@@ -21,6 +21,7 @@ import { PipelineActivityPanel } from '@/components/pipeline/PipelineActivityPan
 import { PowerTools } from '@/components/powertools/PowerTools'
 import { DatasetImportPanel } from '@/components/import/DatasetImportPanel'
 import { useLineageTelemetry, jobHasHotpassFacet } from '@/hooks/useLineageTelemetry'
+import { useConsolidationTelemetry } from '@/api/imports'
 
 interface OutletContext {
   openAssistant: (message?: string) => void
@@ -47,6 +48,12 @@ export function Dashboard() {
     error: telemetryError,
     isFetching: isFetchingTelemetry,
   } = useLineageTelemetry()
+
+  const {
+    data: consolidationTelemetry,
+    error: consolidationError,
+    isLoading: isLoadingConsolidation,
+  } = useConsolidationTelemetry()
 
   // Helper to get HIL status badge
   const getHILStatusBadge = (runId: string) => {
@@ -102,6 +109,11 @@ export function Dashboard() {
   const completedRuns = recentRuns.filter(r => r.state_type === 'COMPLETED').length
   const failedRuns = recentRuns.filter(r => r.state_type === 'FAILED').length
   const runningRuns = recentRuns.filter(r => r.state_type === 'RUNNING').length
+
+  const consolidationAggregate = consolidationTelemetry?.aggregate
+  const topProfile = consolidationAggregate?.profileBreakdown?.[0]?.profile ?? 'generic'
+  const topRuleType = consolidationAggregate?.popularRuleTypes?.[0]?.type ?? 'normalize_date'
+  const totalTemplates = consolidationAggregate?.totalTemplates ?? 0
 
   const latestSpreadsheets = recentRuns.slice(0, 50).map((run) => {
     const params = run.parameters ?? {}
@@ -162,6 +174,14 @@ export function Dashboard() {
         />
       )}
 
+      {consolidationError && (
+        <ApiBanner
+          variant="warning"
+          title="Consolidation telemetry unavailable"
+          description={consolidationError instanceof Error ? consolidationError.message : 'Template consolidation metrics could not be refreshed.'}
+        />
+      )}
+
       {/* Summary Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
@@ -179,6 +199,30 @@ export function Dashboard() {
               <>
                 <div className="text-2xl font-bold">{totalRuns}</div>
                 <p className="text-xs text-muted-foreground">Last 24 hours</p>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Consolidation</CardTitle>
+            <Badge variant="outline" className="bg-blue-500/10 text-blue-600 dark:text-blue-400">
+              Σ
+            </Badge>
+          </CardHeader>
+          <CardContent>
+            {isLoadingConsolidation ? (
+              <div className="space-y-2">
+                <Skeleton className="h-7 w-16" />
+                <Skeleton className="h-4 w-32" />
+              </div>
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{totalTemplates}</div>
+                <p className="text-xs text-muted-foreground">
+                  Top profile: {topProfile} · Top rule: {topRuleType}
+                </p>
               </>
             )}
           </CardContent>
@@ -254,6 +298,49 @@ export function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {consolidationTelemetry && consolidationTelemetry.templates?.length > 0 && (
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
+            <div>
+              <CardTitle className="text-base font-semibold">Template consolidation telemetry</CardTitle>
+              <CardDescription>
+                Latest consolidation summaries across {totalTemplates} template{totalTemplates === 1 ? '' : 's'}.
+              </CardDescription>
+            </div>
+            <Badge variant="outline" className="text-[11px] uppercase tracking-wide">Insights</Badge>
+          </CardHeader>
+          <CardContent className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[200px]">Template</TableHead>
+                  <TableHead className="text-right">Mappings</TableHead>
+                  <TableHead className="text-right">Rules</TableHead>
+                  <TableHead>Top Rule Types</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {consolidationTelemetry.templates.slice(0, 5).map(item => (
+                  <TableRow key={item.id}>
+                    <TableCell className="font-medium">
+                      {item.name}
+                      {item.summary?.profile && (
+                        <span className="ml-2 text-xs text-muted-foreground">{item.summary.profile}</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right text-sm text-muted-foreground">{item.summary?.mappingCount ?? 0}</TableCell>
+                    <TableCell className="text-right text-sm text-muted-foreground">{item.summary?.ruleCount ?? 0}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {(item.summary?.ruleTypes ?? []).slice(0, 3).join(', ') || '—'}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <PipelineActivityPanel />
