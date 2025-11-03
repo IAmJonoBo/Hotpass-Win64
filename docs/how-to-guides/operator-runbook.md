@@ -6,7 +6,7 @@ last_updated: 2025-11-03
 
 # Operate Hotpass day to day
 
-This runbook guides operators through the core workflow: ingesting workbooks, reviewing contracts, and responding to quality signals.
+This runbook guides operators through the core workflow: ingesting workbooks, reviewing contracts, and responding to quality signals. When in doubt, start with the operator CLI (`hotpass-operator wizard`) which automates credential capture, tunnel setup, and environment bootstrapping before you run the steps below.
 
 ```{mermaid}
 graph LR
@@ -91,11 +91,13 @@ uv run hotpass enrich \
 
 ## 5. Monitor telemetry
 
-1. Establish tunnels to Prefect and Marquez if you do not already have them:
+1. Establish tunnels to Prefect and Marquez if you do not already have them. Prefer lease mode so the session tears down automatically when you exit:
 
    ```bash
-   uv run hotpass net up --via ssh-bastion --host bastion.staging.internal --detach
+   uv run hotpass net lease --via ssh-bastion --host bastion.staging.internal
    ```
+
+   Use `uv run hotpass net up --detach ...` only when you intentionally need a long-lived tunnel.
 
 2. Open the Streamlit dashboard:
 

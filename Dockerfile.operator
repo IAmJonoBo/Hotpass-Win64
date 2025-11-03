@@ -1,0 +1,92 @@
+# syntax=docker/dockerfile:1.19
+
+#######################################################################
+# Builder stage: install Hotpass with operator extras inside .venv
+#######################################################################
+FROM python:3.13-slim AS builder
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+ARG UV_VERSION=0.4.24
+ARG HOTPASS_UV_EXTRAS="dev orchestration"
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    UV_LINK_MODE=copy \
+    UV_COMPILE_BYTECODE=1 \
+    UV_PROJECT_ENVIRONMENT=/opt/hotpass/.venv \
+    PATH=/opt/hotpass/.venv/bin:/usr/local/bin:$PATH
+
+# hadolint ignore=DL3008
+RUN set -eux; \
+    # hadolint ignore=DL3008
+    apt-get update; \
+    apt-get install --no-install-recommends -y curl ca-certificates build-essential git; \
+    rm -rf /var/lib/apt/lists/*
+
+RUN pip install --no-cache-dir "uv==${UV_VERSION}"
+
+WORKDIR /opt/hotpass
+
+COPY pyproject.toml uv.lock README.md ./
+
+RUN set -eux; \
+    extras=${HOTPASS_UV_EXTRAS:-"dev orchestration"}; \
+    declare -a args=(); \
+    for extra in ${extras}; do \
+        args+=("--extra" "${extra}"); \
+    done; \
+    uv sync --frozen --no-editable "${args[@]}"
+
+COPY . .
+
+RUN set -eux; \
+    extras=${HOTPASS_UV_EXTRAS:-"dev orchestration"}; \
+    declare -a args=(); \
+    for extra in ${extras}; do \
+        args+=("--extra" "${extra}"); \
+    done; \
+    uv sync --frozen --no-editable "${args[@]}"; \
+    uv run hotpass --help >/dev/null; \
+    uv run hotpass-operator heartbeat >/dev/null
+
+#######################################################################
+# Runtime stage: slim image with non-root operator user
+#######################################################################
+FROM python:3.13-slim AS runtime
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+ARG APP_USER=operator
+ARG APP_UID=10001
+ARG APP_GID=10001
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PATH=/opt/hotpass/.venv/bin:/usr/local/bin:$PATH \
+    PYTHONUNBUFFERED=1 \
+    HOTPASS_STATE_DIR=/home/${APP_USER}/.hotpass
+
+# hadolint ignore=DL3008
+RUN set -eux; \
+    # hadolint ignore=DL3008
+    apt-get update; \
+    apt-get install --no-install-recommends -y tini ca-certificates; \
+    rm -rf /var/lib/apt/lists/*; \
+    groupadd --system --gid "${APP_GID}" "${APP_USER}"; \
+    useradd --system --uid "${APP_UID}" --gid "${APP_GID}" --create-home "${APP_USER}"
+
+WORKDIR /opt/hotpass
+
+COPY --from=builder --chown=${APP_UID}:${APP_GID} /opt/hotpass /opt/hotpass
+
+RUN set -eux; \
+    install -d -m 0750 -o "${APP_UID}" -g "${APP_GID}" /home/${APP_USER}/.hotpass; \
+    find /opt/hotpass/.venv -type d -exec chmod 755 {} \; ; \
+    find /opt/hotpass/.venv -type f -exec chmod 644 {} \;
+
+USER ${APP_USER}
+
+HEALTHCHECK --interval=60s --timeout=10s --start-period=40s --retries=3 \
+  CMD hotpass-operator heartbeat >/dev/null 2>&1 || exit 1
+
+ENTRYPOINT ["tini", "--", "hotpass-operator"]
+CMD ["wizard"]

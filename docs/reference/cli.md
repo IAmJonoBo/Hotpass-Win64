@@ -11,22 +11,27 @@ ships with the Python project and mirrors the verbs exposed through the MCP serv
 `hotpass-enhanced` calls still work, but they delegate to the unified entry point after
 printing a deprecation warning.
 
+Operators who prefer a guided, task-oriented interface can launch the companion CLI via
+`hotpass-operator`. The operator tooling wraps the most common workflows (bootstrapping,
+credentials, tunnels, QA) with defaults that match the documentation in `AGENTS.md`.
+
 ```text
 $ uv run hotpass --help
 usage: hotpass [-h]
-               {overview,refine,enrich,explain-provenance,qa,contracts,imports,inventory,plan,crawl,setup,net,aws,ctx,env,arc,distro,run,backfill,doctor,orchestrate,resolve,dashboard,deploy,init,version}
+               {overview,refine,enrich,explain-provenance,qa,contracts,credentials,imports,inventory,plan,crawl,setup,net,aws,ctx,env,arc,distro,run,backfill,doctor,orchestrate,resolve,dashboard,deploy,init,version}
                ...
 
 Hotpass CLI
 
 positional arguments:
-  {overview,refine,enrich,explain-provenance,qa,contracts,imports,inventory,plan,crawl,setup,net,aws,ctx,env,arc,distro,run,backfill,doctor,orchestrate,resolve,dashboard,deploy,init,version}
+  {overview,refine,enrich,explain-provenance,qa,contracts,credentials,imports,inventory,plan,crawl,setup,net,aws,ctx,env,arc,distro,run,backfill,doctor,orchestrate,resolve,dashboard,deploy,init,version}
     overview            Display available Hotpass commands and system status
     refine              Run the Hotpass refinement pipeline
     enrich              Enrich refined data with additional information
     explain-provenance  Inspect provenance metadata for a specific row
     qa                  Run quality assurance checks and validation
     contracts           Emit data contracts and schemas for a profile
+    credentials         Acquire and store provider credentials for reuse
     imports             Smart import utilities
     inventory           Inspect the asset inventory and implementation status
     plan                Plan adaptive research tasks and supporting workflows
@@ -67,7 +72,7 @@ $ uv run hotpass overview
 │ truth.                                                                       │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
-                           Available Hotpass Commands                           
+                           Available Hotpass Commands
 ┏━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ Command         ┃ Description                                                ┃
 ┡━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
@@ -76,9 +81,10 @@ $ uv run hotpass overview
 │ enrich          │ Enrich refined data with additional information            │
 │ qa              │ Run quality assurance checks and validation                │
 │ contracts       │ Emit data contracts and schemas for a profile              │
+│ credentials     │ Capture/stash AWS, Marquez, Prefect credentials            │
 │ setup           │ Run the guided staging wizard (deps, tunnels, contexts,    │
 │                 │ env)                                                       │
-│ net             │ Manage SSH/SSM tunnels to staging services                 │
+│ net             │ Manage SSH/SSM tunnels; lease mode auto-tears down tunnels │
 │ aws             │ Verify AWS credentials and optional EKS access             │
 │ ctx             │ Bootstrap Prefect profiles and kube contexts               │
 │ env             │ Generate .env files aligned with active tunnels            │
@@ -117,6 +123,7 @@ graph TD
     Core --> Contracts[contracts]
 
     Infra --> Setup[setup]
+    Infra --> Credentials[credentials]
     Infra --> Net[net]
     Infra --> AWS[aws]
     Infra --> Ctx[ctx]
@@ -137,7 +144,7 @@ graph TD
     classDef util fill:#e1f5ff,stroke:#333,stroke-width:2px
 
     class Overview,Refine,Enrich,QA,Contracts core
-    class Setup,Net,AWS,Ctx,Env,Arc infra
+    class Setup,Credentials,Net,AWS,Ctx,Env,Arc infra
     class Distro,Doctor,Init,Orchestrate,Resolve,Dashboard,Deploy,Version util
 ```
 
@@ -687,3 +694,43 @@ provided. All values are optional.
 - [How-to guide — orchestrate and observe](../how-to-guides/orchestrate-and-observe.md)
 - [How-to guide — configure pipeline](../how-to-guides/configure-pipeline.md)
 - [Tutorial — enhanced pipeline](../tutorials/enhanced-pipeline.md)
+
+### Operator CLI (`hotpass-operator`)
+
+```text
+$ uv run hotpass-operator --help
+usage: hotpass-operator [-h] [--dry-run] [--assume-yes]
+                        {wizard,connect,refine,qa,heartbeat} ...
+
+Hotpass operator helpers
+
+positional arguments:
+  {wizard,connect,refine,qa,heartbeat}
+    wizard              Bootstrap credentials, setup, and env files in one pass
+    connect             Open tunnels to Prefect and Marquez (lease or detached)
+    refine              Run the refinement pipeline with ergonomic defaults
+    qa                  Execute QA gates without remembering full arguments
+    heartbeat           Lightweight health probe (used by Docker health checks)
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --dry-run             Print commands without executing
+  --assume-yes          Accept defaults for prompts (non-interactive)
+```
+
+Common recipes:
+
+```bash
+# End-to-end bootstrap (credentials wizard → setup → .env)
+hotpass-operator wizard --assume-yes --host bastion.staging.internal
+
+# Start a managed tunnel that tears down when the terminal closes
+hotpass-operator connect --host bastion.staging.internal
+
+# Run QA gates with a single command
+hotpass-operator qa
+```
+
+The operator CLI uses the underlying `hotpass` commands, so anything automated through the
+wizard remains compatible with the scripts and MCP tooling described elsewhere in this
+document.

@@ -1,3 +1,4 @@
 [console_scripts]
 hotpass = hotpass.cli:main
 hotpass-enhanced = hotpass.cli_enhanced:main
+hotpass-operator = hotpass.operator_cli:main

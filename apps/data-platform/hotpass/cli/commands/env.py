@@ -4,15 +4,18 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
+from typing import Any
 
-from ops.net.tunnels import latest_session
 from rich.console import Console
 from rich.panel import Panel
+
+from ops.net.tunnels import latest_session
 
 from ..builder import CLICommand, SharedParsers
 from ..configuration import CLIProfile
 from ..state import load_state
 
+CREDENTIAL_STATE_FILE = "credentials.json"
 CTX_STATE_FILE = "contexts.json"
 
 
@@ -55,6 +58,12 @@ def build(
         help="Toggle network enrichment-related environment variables",
     )
     parser.add_argument(
+        "--include-credentials",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Include stored credentials (API keys, AWS keys) from .hotpass/credentials.json",
+    )
+    parser.add_argument(
         "--force",
         action="store_true",
         help="Overwrite the output file if it already exists",
@@ -88,14 +97,30 @@ def _command_handler(namespace: argparse.Namespace, profile: CLIProfile | None) 
     allow_network = namespace.allow_network
     dry_run = namespace.dry_run
 
+    credentials_store: dict[str, Any] | None = None
+    if namespace.include_credentials:
+        store = load_state(CREDENTIAL_STATE_FILE, default={})
+        if isinstance(store, dict):
+            credentials_store = store
+        else:
+            credentials_store = {}
+        if not credentials_store:
+            console.print(
+                "[yellow]No stored credentials found in .hotpass/credentials.json; "
+                "continuing without secrets.[/yellow]"
+            )
+
     env_lines = _build_env_lines(
         prefect_url=prefect_url,
         openlineage_url=openlineage_url,
         allow_network=allow_network,
+        credentials=credentials_store,
     )
 
     if dry_run:
-        console.print(Panel("\n".join(env_lines), title="Environment Preview", expand=False))
+        console.print(
+            Panel("\n".join(env_lines), title="Environment Preview", expand=False)
+        )
         console.print("[yellow]Dry-run complete; file not written.[/yellow]")
         return 0
 
@@ -117,6 +142,7 @@ def _build_env_lines(
     prefect_url: str,
     openlineage_url: str,
     allow_network: bool,
+    credentials: dict[str, Any] | None,
 ) -> list[str]:
     lines = [
         f"PREFECT_API_URL={prefect_url}",
@@ -133,8 +159,45 @@ def _build_env_lines(
         namespace = last_entry.get("kubernetes", {}).get("namespace")
         if namespace:
             lines.append(f"HOTPASS_KUBE_NAMESPACE={namespace}")
-    lines.append(f"FEATURE_ENABLE_REMOTE_RESEARCH={'true' if allow_network else 'false'}")
+    lines.append(
+        f"FEATURE_ENABLE_REMOTE_RESEARCH={'true' if allow_network else 'false'}"
+    )
     lines.append(f"ALLOW_NETWORK_RESEARCH={'true' if allow_network else 'false'}")
+
+    if credentials:
+        aws_payload = (
+            credentials.get("aws", {}) if isinstance(credentials, dict) else {}
+        )
+        if isinstance(aws_payload, dict):
+            if aws_payload.get("profile"):
+                lines.append(f"AWS_PROFILE={aws_payload['profile']}")
+            if aws_payload.get("region"):
+                lines.append(f"AWS_DEFAULT_REGION={aws_payload['region']}")
+            if aws_payload.get("access_key_id"):
+                lines.append(f"AWS_ACCESS_KEY_ID={aws_payload['access_key_id']}")
+            if aws_payload.get("secret_access_key"):
+                lines.append(
+                    f"AWS_SECRET_ACCESS_KEY={aws_payload['secret_access_key']}"
+                )
+            if aws_payload.get("session_token"):
+                lines.append(f"AWS_SESSION_TOKEN={aws_payload['session_token']}")
+
+        marquez_payload = (
+            credentials.get("marquez", {}) if isinstance(credentials, dict) else {}
+        )
+        if isinstance(marquez_payload, dict) and marquez_payload.get("api_key"):
+            lines.append(f"MARQUEZ_API_KEY={marquez_payload['api_key']}")
+
+        prefect_payload = (
+            credentials.get("prefect", {}) if isinstance(credentials, dict) else {}
+        )
+        if isinstance(prefect_payload, dict):
+            if prefect_payload.get("api_key"):
+                lines.append(f"PREFECT_API_KEY={prefect_payload['api_key']}")
+            if prefect_payload.get("workspace"):
+                lines.append(f"PREFECT_WORKSPACE={prefect_payload['workspace']}")
+            if prefect_payload.get("profile"):
+                lines.append(f"PREFECT_PROFILE={prefect_payload['profile']}")
     return lines
 
 

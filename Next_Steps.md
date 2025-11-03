@@ -109,8 +109,7 @@ qa.coverage_report
 ⸻
 
 Default dialogue policies (applied by the agent) 1. Jurisdiction confirmation before any company crawl/search: “Did you mean Absolute Aviation (South Africa)?” (site & team page shown). ￼ 2. Contact disclosure:
-• Provide official contact channels and any publicly posted personal emails from official sites; do not perform redaction beyond excluding non‑public data. ￼ 3. Offline-first: Present a plan with cost/limits/cache hits; execute crawls only after the operator explicitly opts-in (allow-network=true). ￼ 4. Provenance in every answer: link to Data Docs for workbook answers; link to official pages for contacts; link to Prefect/Marquez for run/lineage. ￼ 5. Ambiguity handling: if a company name is non-unique, present 3 disambiguation candidates with country, homepage, and “meet the team” if available (e.g., Absolute Aviation ZA). ￼
-6. Provenance bundle in every research answer: include {url, title, timestamp, robots_ok, sitemap_hit} for each source.
+• Provide official contact channels and any publicly posted personal emails from official sites; do not perform redaction beyond excluding non‑public data. ￼ 3. Offline-first: Present a plan with cost/limits/cache hits; execute crawls only after the operator explicitly opts-in (allow-network=true). ￼ 4. Provenance in every answer: link to Data Docs for workbook answers; link to official pages for contacts; link to Prefect/Marquez for run/lineage. ￼ 5. Ambiguity handling: if a company name is non-unique, present 3 disambiguation candidates with country, homepage, and “meet the team” if available (e.g., Absolute Aviation ZA). ￼ 6. Provenance bundle in every research answer: include {url, title, timestamp, robots_ok, sitemap_hit} for each source.
 
 ⸻
 
@@ -165,21 +164,33 @@ Quick gaps we should close next 1. Ship the workbook tools (describe/read_cell/s
 
 ⸻
 
+Credential automation and connectivity
+
+- `hotpass credentials wizard` now walks operators through AWS, Marquez, and Prefect credential capture. It can open the right portals, run `aws sso login`, and persist API keys under `.hotpass/credentials.json` (chmod 600). Use `hotpass credentials show` to verify stored values and `hotpass credentials clear` to rotate or remove them.
+- Generate `.env` files with secrets pre-filled via `hotpass env --include-credentials --target staging`. The command reads the credential store and injects `AWS_*`, `MARQUEZ_API_KEY`, and `PREFECT_API_KEY` entries when requested.
+- Connectivity guardrail: `hotpass net lease --via ssh-bastion --host <bastion>` starts tunnels that tear down automatically when the CLI exits. Keep `hotpass net status` for detached sessions, but prefer lease mode when you just need a temporary VPN-style tunnel.
+- `hotpass-operator` wraps the credential/setup/env sequence and ships as a dedicated container (see `Dockerfile.operator`). Run `hotpass-operator wizard --assume-yes --host bastion.staging.internal` for kiosk-style onboarding.
+
+These flows are now part of the staging `hotpass setup` plan (skippable with `--skip-credentials`). Agents should surface the credential wizard in operator responses before asking users to copy secrets manually.
+
+⸻
+
 Copilot/Codex execution plan (authoritative)
 
 Goal: Enable GitHub Copilot / OpenAI Codex to implement, integrate, and keep all artefacts current with minimal human supervision. This section is intentionally explicit so an AI assistant can execute it step-by-step.
 
 Create or update the following repository files
 
-1) .github/workflows/docs-refresh.yml
+1. .github/workflows/docs-refresh.yml
+
 ```yaml
 name: Docs Refresh
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   workflow_dispatch:
   schedule:
-    - cron: '0 21 * * *'  # nightly (21:00 UTC)
+    - cron: "0 21 * * *" # nightly (21:00 UTC)
 jobs:
   refresh:
     runs-on: ubuntu-latest
@@ -189,7 +200,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -210,7 +221,8 @@ jobs:
           git push || true
 ```
 
-2) scripts/docs_refresh.py
+2. scripts/docs_refresh.py
+
 ```python
 """
 Refresh Great Expectations Data Docs, export Marquez lineage subgraphs, and persist research manifests.
@@ -262,25 +274,65 @@ Path("docs/research/").mkdir(parents=True, exist_ok=True)
 print("Docs refresh complete.")
 ```
 
-3) .github/pull_request_template.md
+3. .gitignore — ensure transient CLI state (including credential store) never lands in git
+
+```diff
+@@
+-# Research run artifacts
+-.hotpass/research_runs/
++# Research run artifacts and CLI state
++.hotpass/research_runs/
++.hotpass/*.json
+```
+
+4. apps/data-platform/hotpass/cli/commands/credentials.py — new credential wizard
+
+```python
+def _configure_prefect(...):
+    # prompts for profile/workspace, optionally stores Prefect API key
+
+def _configure_marquez(...):
+    # captures Marquez API url/key and can open the console URL
+
+def _configure_aws(...):
+    # supports aws configure sso, aws sso login, or manual key entry
+
+def _handle_wizard(...):
+    # entry point invoked by `hotpass credentials wizard`
+
+def _handle_show(...):
+    # masks secrets so operators can verify stored values safely
+```
+
+5. CLI enhancements depending on the credential store
+
+- `apps/data-platform/hotpass/cli/commands/env.py`: add `--include-credentials` to inject stored `AWS_*`, `MARQUEZ_API_KEY`, and `PREFECT_API_KEY` values into generated `.env` files.
+- `apps/data-platform/hotpass/cli/commands/setup.py`: introduce `--skip-credentials` and run the wizard automatically for staging presets (respects `--assume-yes`).
+- `apps/data-platform/hotpass/cli/commands/net.py`: add `hotpass net lease` so tunnels behave like a managed VPN session that tears down on exit.
+
+3. .github/pull_request_template.md
+
 ```markdown
 ## Docs refresh checklist
+
 - [ ] Ran **Docs Refresh** workflow or `python scripts/docs_refresh.py`
 - [ ] GE Data Docs updated and linked in Next_Steps.md / README
 - [ ] Marquez lineage snapshots updated in `docs/lineage/`
 - [ ] Research plans & site manifests (metadata only) under `docs/research/`
 ```
 
-4) AGENTS.md — append a section titled **MCP endpoints (authoritative)** summarising the following tools with examples: `workbook.describe`, `workbook.read_cell`, `workbook.search`, `workbook.explain_cell`, `research.resolve_company`, `research.plan`, `research.site_manifest`, `research.fetch_contacts`, `contact.normalise`, `qa.latest`, `qa.coverage_report`, `lineage.graph`.
+4. AGENTS.md — append a section titled **MCP endpoints (authoritative)** summarising the following tools with examples: `workbook.describe`, `workbook.read_cell`, `workbook.search`, `workbook.explain_cell`, `research.resolve_company`, `research.plan`, `research.site_manifest`, `research.fetch_contacts`, `contact.normalise`, `qa.latest`, `qa.coverage_report`, `lineage.graph`.
 
 Great Expectations: checkpoint action snippet (to ensure Data Docs regenerate)
+
 ```yaml
 # great_expectations/checkpoints/contacts_checkpoint.yml
 name: contacts_checkpoint
 config_version: 1.0
 class_name: Checkpoint
 validations:
-  - batch_request: { datasource_name: contacts, data_asset_name: contacts_refined }
+  - batch_request:
+      { datasource_name: contacts, data_asset_name: contacts_refined }
     expectation_suite_name: contacts_suite
 action_list:
   - name: store_validation_result
@@ -292,6 +344,7 @@ action_list:
 ```
 
 SearXNG dry‑run plan (used by `research.plan`)
+
 ```python
 # pseudocode
 params = {"q": company_query, "format": "json", "safesearch": 1}
@@ -300,6 +353,7 @@ params = {"q": company_query, "format": "json", "safesearch": 1}
 ```
 
 Robots + sitemap site manifest (used by `research.site_manifest`)
+
 ```python
 import requests
 from urllib.parse import urljoin
@@ -322,6 +376,7 @@ def site_manifest(base_url: str) -> dict:
 ```
 
 Contact normalisation example (E.164 + email syntax)
+
 ```python
 import phonenumbers, re
 
@@ -333,6 +388,7 @@ def normalise(phone: str, email: str, region: str = "ZA"):
 ```
 
 Marquez lineage subgraph (outline)
+
 ```python
 # Extend the docs_refresh.py script later:
 # 1) enumerate datasets matching pattern e.g., contacts_*
@@ -341,6 +397,7 @@ Marquez lineage subgraph (outline)
 ```
 
 Operational notes for Copilot/Codex
+
 - Always perform **jurisdiction confirmation** before research; prefer official registries and schema.org JSON‑LD where available.
 - Respect **robots.txt** (RFC 9309) and use **sitemaps** to prioritise About/Team/Contact.
 - Include a **provenance bundle** with each research answer: `{url, title, timestamp, robots_ok, sitemap_hit}`.
@@ -367,11 +424,12 @@ Iteration close‑out: auto‑refresh docs & diagrams
 Goal: At the end of each iteration, refresh human‑readable docs (GE Data Docs), lineage diagrams (Marquez), and README/AGENTS notes; commit them so agents and operators always see current state.
 
 Automation blueprint
-1) Great Expectations Data Docs: run UpdateDataDocsAction in the relevant Checkpoints to regenerate Data Docs for the latest Validation Results.
-2) Lineage export: query Marquez for updated datasets/jobs; export PNG/JSON snapshots of impacted lineage subgraphs; store under /docs/lineage/.
-3) Research manifests: persist the latest site manifests and research plans for each company under /docs/research/<slug>/. (Metadata only; no scraped content.)
-4) CI commit: a GitHub Actions workflow commits the refreshed artefacts on successful main‑branch merges (or nightly), tagging the run with the Prefect flow‑run ID.
-5) Copilot step: add a PR‑template checklist item — “Run **Docs Refresh** and let Copilot summarise changes into README/Next_Steps.md and AGENTS.md; ensure diagrams are referenced.”
+
+1. Great Expectations Data Docs: run UpdateDataDocsAction in the relevant Checkpoints to regenerate Data Docs for the latest Validation Results.
+2. Lineage export: query Marquez for updated datasets/jobs; export PNG/JSON snapshots of impacted lineage subgraphs; store under /docs/lineage/.
+3. Research manifests: persist the latest site manifests and research plans for each company under /docs/research/<slug>/. (Metadata only; no scraped content.)
+4. CI commit: a GitHub Actions workflow commits the refreshed artefacts on successful main‑branch merges (or nightly), tagging the run with the Prefect flow‑run ID.
+5. Copilot step: add a PR‑template checklist item — “Run **Docs Refresh** and let Copilot summarise changes into README/Next_Steps.md and AGENTS.md; ensure diagrams are referenced.”
 
 Operator signal
 • The agent should announce “Docs refreshed” with links to: Data Docs index, lineage snapshots, and updated READMEs.

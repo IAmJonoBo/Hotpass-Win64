@@ -21,6 +21,7 @@ htmlcov/
 .venv/
 .env
 .env.*/
+.hotpass/
 
 # Tooling caches
 .gradle/

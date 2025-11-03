@@ -103,6 +103,15 @@ python -m hotpass refine \
 
 ---
 
+### 1.5 Credential acquisition & tunnels
+
+- Run `hotpass credentials wizard` after syncing dependencies. The wizard can launch `aws sso login`, open provider portals, and persist API keys under `.hotpass/credentials.json` with restrictive permissions. Use `--store-secrets=false` when you want to skip writing secrets to disk.
+- Generate environment files that include saved secrets with `hotpass env --target staging --include-credentials`. The flag injects stored `AWS_*`, `MARQUEZ_API_KEY`, and `PREFECT_API_KEY` values into the output file (skipped by default).
+- Prefer `hotpass net lease --via ssh-bastion --host <bastion>` for temporary tunnels. Lease mode starts a managed session and tears it down when the CLI exits, keeping VPN-style access simple without lingering background processes.
+- When operators need a single entry point, use `hotpass-operator wizard` (or the companion Docker image built from `Dockerfile.operator`). The wizard chains the credential capture, setup, and `.env` generation steps with sensible defaults so non-power users can get started quickly.
+
+---
+
 ## 2) Expected network calls (and domains to allowlist)
 
 ### 2.1 During setup (always on)

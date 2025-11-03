@@ -16,6 +16,7 @@ try:
         backfill,
         contracts,
         crawl,
+        credentials,
         ctx,
         dashboard,
         deploy,
@@ -57,6 +58,7 @@ except ModuleNotFoundError:  # pragma: no cover - safety net for entry point exe
         backfill,
         contracts,
         crawl,
+        credentials,
         ctx,
         dashboard,
         deploy,
@@ -112,6 +114,7 @@ def build_parser() -> argparse.ArgumentParser:
     builder.register(explain_provenance.register())
     builder.register(qa.register())
     builder.register(contracts.register())
+    builder.register(credentials.register())
     builder.register(imports.register())
     builder.register(inventory.register())
     builder.register(plan.register())

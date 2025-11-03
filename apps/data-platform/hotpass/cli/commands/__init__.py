@@ -5,6 +5,7 @@ __all__ = [
     "aws",
     "backfill",
     "contracts",
+    "credentials",
     "crawl",
     "ctx",
     "dashboard",

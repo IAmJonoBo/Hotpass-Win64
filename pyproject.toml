@@ -111,6 +111,7 @@ docs = [
 [project.scripts]
 hotpass = "hotpass.cli:main"
 hotpass-enhanced = "hotpass.cli_enhanced:main"
+hotpass-operator = "hotpass.operator_cli:main"
 
 
 [tool.ruff]
@@ -121,6 +122,9 @@ src = ["apps/data-platform", "ops"]
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP"]
 ignore = ["E203"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["hotpass", "ops"]
 
 [tool.ruff.format]
 quote-style = "double"

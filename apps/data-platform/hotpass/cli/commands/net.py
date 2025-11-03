@@ -5,8 +5,12 @@ from __future__ import annotations
 import argparse
 import os
 import subprocess  # nosec B404 - tunnel management requires subprocess control
+import time
 from datetime import UTC, datetime
 from typing import cast
+
+from rich.console import Console
+from rich.table import Table
 
 from ops.net.tunnels import (
     TunnelSession,
@@ -19,8 +23,6 @@ from ops.net.tunnels import (
     save_sessions,
     terminate_pid,
 )
-from rich.console import Console
-from rich.table import Table
 
 from ..builder import CLICommand, CommandHandler, SharedParsers
 from ..configuration import CLIProfile
@@ -30,6 +32,100 @@ DEFAULT_PREFECT_REMOTE_HOST = "prefect.staging.internal"
 DEFAULT_MARQUEZ_REMOTE_HOST = "marquez.staging.internal"
 DEFAULT_PREFECT_REMOTE_PORT = 4200
 DEFAULT_MARQUEZ_REMOTE_PORT = 5000
+
+
+def _configure_tunnel_parser(
+    parser: argparse.ArgumentParser,
+    *,
+    include_detach: bool,
+) -> None:
+    parser.add_argument(
+        "--via",
+        choices={"ssh-bastion", "ssm"},
+        default="ssh-bastion",
+        help="Tunnel mechanism to use",
+    )
+    parser.add_argument(
+        "--host",
+        help="Bastion host (for ssh-bastion) or SSM target instance ID (for ssm)",
+    )
+    parser.add_argument(
+        "--ssh-user",
+        default=os.environ.get(
+            "HOTPASS_BASTION_USER", os.environ.get("USER", "ec2-user")
+        ),
+        help="SSH user for bastion hops",
+    )
+    parser.add_argument(
+        "--prefect-host",
+        default=os.environ.get(
+            "HOTPASS_PREFECT_REMOTE_HOST", DEFAULT_PREFECT_REMOTE_HOST
+        ),
+        help="Remote Prefect host to forward",
+    )
+    parser.add_argument(
+        "--prefect-port",
+        type=int,
+        default=4200,
+        help="Local Prefect port",
+    )
+    parser.add_argument(
+        "--prefect-remote-port",
+        type=int,
+        default=DEFAULT_PREFECT_REMOTE_PORT,
+        help="Remote Prefect port",
+    )
+    parser.add_argument(
+        "--marquez-host",
+        default=os.environ.get(
+            "HOTPASS_MARQUEZ_REMOTE_HOST", DEFAULT_MARQUEZ_REMOTE_HOST
+        ),
+        help="Remote Marquez host to forward",
+    )
+    parser.add_argument(
+        "--marquez-port",
+        type=int,
+        default=5000,
+        help="Local Marquez port",
+    )
+    parser.add_argument(
+        "--marquez-remote-port",
+        type=int,
+        default=DEFAULT_MARQUEZ_REMOTE_PORT,
+        help="Remote Marquez port",
+    )
+    parser.add_argument(
+        "--no-marquez",
+        action="store_true",
+        help="Skip forwarding Marquez UI/API",
+    )
+    parser.add_argument(
+        "--label",
+        help="Label to associate with the tunnel session",
+    )
+    if include_detach:
+        parser.add_argument(
+            "--detach",
+            action="store_true",
+            help="Run the tunnel in the background and remember the PID",
+        )
+    parser.add_argument(
+        "--auto-port",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Automatically pick the next free port if the requested port is in use",
+    )
+    parser.add_argument(
+        "--ssh-option",
+        action="append",
+        dest="ssh_options",
+        help="Extra -o options to pass to ssh (repeatable)",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Print the tunnel command without executing it",
+    )
 
 
 def build(
@@ -53,87 +149,16 @@ def build(
         help="Start a tunnel session",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    up_parser.add_argument(
-        "--via",
-        choices={"ssh-bastion", "ssm"},
-        default="ssh-bastion",
-        help="Tunnel mechanism to use",
-    )
-    up_parser.add_argument(
-        "--host",
-        help="Bastion host (for ssh-bastion) or SSM target instance ID (for ssm)",
-    )
-    up_parser.add_argument(
-        "--ssh-user",
-        default=os.environ.get("HOTPASS_BASTION_USER", os.environ.get("USER", "ec2-user")),
-        help="SSH user for bastion hops",
-    )
-    up_parser.add_argument(
-        "--prefect-host",
-        default=os.environ.get("HOTPASS_PREFECT_REMOTE_HOST", DEFAULT_PREFECT_REMOTE_HOST),
-        help="Remote Prefect host to forward",
-    )
-    up_parser.add_argument(
-        "--prefect-port",
-        type=int,
-        default=4200,
-        help="Local Prefect port",
-    )
-    up_parser.add_argument(
-        "--prefect-remote-port",
-        type=int,
-        default=DEFAULT_PREFECT_REMOTE_PORT,
-        help="Remote Prefect port",
-    )
-    up_parser.add_argument(
-        "--marquez-host",
-        default=os.environ.get("HOTPASS_MARQUEZ_REMOTE_HOST", DEFAULT_MARQUEZ_REMOTE_HOST),
-        help="Remote Marquez host to forward",
-    )
-    up_parser.add_argument(
-        "--marquez-port",
-        type=int,
-        default=5000,
-        help="Local Marquez port",
-    )
-    up_parser.add_argument(
-        "--marquez-remote-port",
-        type=int,
-        default=DEFAULT_MARQUEZ_REMOTE_PORT,
-        help="Remote Marquez port",
-    )
-    up_parser.add_argument(
-        "--no-marquez",
-        action="store_true",
-        help="Skip forwarding Marquez UI/API",
-    )
-    up_parser.add_argument(
-        "--label",
-        help="Label to associate with the tunnel session",
-    )
-    up_parser.add_argument(
-        "--detach",
-        action="store_true",
-        help="Run the tunnel in the background and remember the PID",
-    )
-    up_parser.add_argument(
-        "--auto-port",
-        action=argparse.BooleanOptionalAction,
-        default=True,
-        help="Automatically pick the next free port if the requested port is in use",
-    )
-    up_parser.add_argument(
-        "--ssh-option",
-        action="append",
-        dest="ssh_options",
-        help="Extra -o options to pass to ssh (repeatable)",
-    )
-    up_parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Print the tunnel command without executing it",
-    )
+    _configure_tunnel_parser(up_parser, include_detach=True)
     up_parser.set_defaults(handler=_handle_up)
+
+    lease_parser = net_subparsers.add_parser(
+        "lease",
+        help="Start a tunnel that is torn down when the CLI exits",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    _configure_tunnel_parser(lease_parser, include_detach=False)
+    lease_parser.set_defaults(handler=_handle_lease)
 
     down_parser = net_subparsers.add_parser(
         "down",
@@ -174,7 +199,9 @@ def _dispatch(namespace: argparse.Namespace, profile: CLIProfile | None) -> int:
     _ = profile  # network commands are environment specific
     raw_handler = getattr(namespace, "handler", None)
     if not callable(raw_handler):
-        Console().print("[red]No net subcommand specified (use 'hotpass net --help').[/red]")
+        Console().print(
+            "[red]No net subcommand specified (use 'hotpass net --help').[/red]"
+        )
         return 1
     handler = cast(CommandHandler, raw_handler)
     result = handler(namespace, profile)
@@ -324,12 +351,14 @@ def _handle_up(args: argparse.Namespace, profile: CLIProfile | None) -> int:
 
     if args.detach:
         try:
-            proc = subprocess.Popen(  # nosec B603 - command is explicit and shell disabled
-                command,
-                stdin=subprocess.DEVNULL,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.STDOUT,
-                start_new_session=True,
+            proc = (
+                subprocess.Popen(  # nosec B603 - command is explicit and shell disabled
+                    command,
+                    stdin=subprocess.DEVNULL,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.STDOUT,
+                    start_new_session=True,
+                )
             )
         except FileNotFoundError as exc:
             console.print(f"[red]Failed to start tunnel: {exc}[/red]")
@@ -361,6 +390,44 @@ def _handle_up(args: argparse.Namespace, profile: CLIProfile | None) -> int:
     return 0
 
 
+def _handle_lease(args: argparse.Namespace, profile: CLIProfile | None) -> int:
+    _ = profile
+    console = Console()
+    lease_args = argparse.Namespace(**vars(args))
+    lease_args.detach = True
+    lease_args.dry_run = getattr(args, "dry_run", False)
+    if not getattr(lease_args, "label", None):
+        lease_args.label = datetime.now(tz=UTC).strftime("lease-%Y%m%dT%H%M%SZ")
+
+    console.print(
+        "[cyan]Opening managed tunnel lease. The session stops automatically when you exit.[/cyan]"
+    )
+    exit_code = _handle_up(lease_args, profile)
+    if exit_code != 0:
+        return exit_code
+
+    if lease_args.dry_run:
+        return 0
+
+    console.print(
+        "[green]Tunnel active. Press Ctrl+C or close the terminal to stop.[/green]"
+    )
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        console.print("\n[yellow]Stopping tunnel lease...[/yellow]")
+    finally:
+        down_args = argparse.Namespace(label=lease_args.label, all=False)
+        down_result = _handle_down(down_args, profile)
+        if down_result != 0:
+            console.print(
+                "[red]Automatic tunnel teardown failed.[/red] "
+                f"Run 'hotpass net down --label {lease_args.label}' manually."
+            )
+    return 0
+
+
 def _handle_down(args: argparse.Namespace, profile: CLIProfile | None) -> int:
     _ = profile
     console = Console()
@@ -373,7 +440,9 @@ def _handle_down(args: argparse.Namespace, profile: CLIProfile | None) -> int:
         targets = sessions
     else:
         if not args.label:
-            console.print("[red]Specify --label or use --all to terminate all sessions.[/red]")
+            console.print(
+                "[red]Specify --label or use --all to terminate all sessions.[/red]"
+            )
             return 1
         targets = [session for session in sessions if session.label == args.label]
         if not targets:
@@ -394,7 +463,9 @@ def _handle_down(args: argparse.Namespace, profile: CLIProfile | None) -> int:
             continue
         if is_process_alive(pid):
             terminate_pid(pid)
-            console.print(f"[green]Terminated tunnel '{session.label}' (PID {pid}).[/green]")
+            console.print(
+                f"[green]Terminated tunnel '{session.label}' (PID {pid}).[/green]"
+            )
         else:
             console.print(
                 f"[yellow]Tunnel '{session.label}' already inactive (PID {pid} "

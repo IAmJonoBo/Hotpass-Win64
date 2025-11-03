@@ -22,6 +22,7 @@ apps/data-platform/hotpass/geospatial.py
 apps/data-platform/hotpass/lineage.py
 apps/data-platform/hotpass/normalization.py
 apps/data-platform/hotpass/observability.py
+apps/data-platform/hotpass/operator_cli.py
 apps/data-platform/hotpass/optimize.py
 apps/data-platform/hotpass/orchestration.py
 apps/data-platform/hotpass/pipeline_enhanced.py
@@ -55,6 +56,7 @@ apps/data-platform/hotpass/cli/commands/aws.py
 apps/data-platform/hotpass/cli/commands/backfill.py
 apps/data-platform/hotpass/cli/commands/contracts.py
 apps/data-platform/hotpass/cli/commands/crawl.py
+apps/data-platform/hotpass/cli/commands/credentials.py
 apps/data-platform/hotpass/cli/commands/ctx.py
 apps/data-platform/hotpass/cli/commands/dashboard.py
 apps/data-platform/hotpass/cli/commands/deploy.py

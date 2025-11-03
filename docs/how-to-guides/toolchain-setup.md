@@ -84,7 +84,36 @@ Return to the repository root after installing browsers.
 
 Resolve any warnings before you commit; the docs workflow enforces the same command.
 
-## 5. Keep dependencies up to date
+## 5. Capture credentials and tunnels
+
+1. Run the credential wizard to bootstrap AWS, Marquez, and Prefect access:
+
+   ```bash
+   uv run hotpass credentials wizard
+   ```
+
+   - The wizard can open provider portals in your browser, execute `aws sso login`, and (optionally) store API keys in `.hotpass/credentials.json` (the file is git-ignored and locked to `chmod 600`).
+   - Use `uv run hotpass credentials show` to verify what is stored, or `uv run hotpass credentials clear --providers aws` when you rotate keys.
+
+2. Generate an environment file that reuses the saved secrets when needed:
+
+   ```bash
+   uv run hotpass env --target staging --include-credentials
+   ```
+
+   By default the `env` command omits secrets; the `--include-credentials` flag injects stored `AWS_*`, `MARQUEZ_API_KEY`, and `PREFECT_API_KEY` values alongside the Prefect/OpenLineage URLs derived from your tunnels.
+
+3. Establish temporary tunnels with automatic teardown when you need VPN-style access:
+
+   ```bash
+   uv run hotpass net lease --via ssh-bastion --host bastion.example.com
+   ```
+
+   Lease mode launches the tunnel in the background and closes it when you exit the command, so you do not have to remember to run `hotpass net down` manually.
+
+4. Prefer `hotpass-operator wizard --assume-yes` (or the container built from `Dockerfile.operator`) when you on-board a new operator laptop. It chains the credential wizard, setup plan, and `.env` generation into a single guided pass.
+
+## 6. Keep dependencies up to date
 
 - When `uv.lock` changes on `main`, rerun `make sync EXTRAS="dev orchestration"` and restart your shell session.
 - Web dependencies change less frequently, but the CI cache invalidates when `package-lock.json` updates. Re-run `make web-ui-install` after you pull those changes.
