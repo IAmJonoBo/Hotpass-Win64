@@ -44,7 +44,9 @@ def validate_arc_manifests(root: Path) -> list[str]:
                     errors.append("RunnerScaleSet missing serviceAccountName")
             if kind == "HorizontalRunnerAutoscaler":
                 spec = doc.get("spec", {})
-                if spec.get("scaleTargetRef", {}).get("name") != doc.get("metadata", {}).get("name"):
+                if spec.get("scaleTargetRef", {}).get("name") != doc.get("metadata", {}).get(
+                    "name"
+                ):
                     errors.append("HorizontalRunnerAutoscaler scaleTargetRef must reference itself")
 
     if not config_path.exists():
@@ -86,7 +88,9 @@ def validate_llm_config(path: Path) -> list[str]:
                 continue
             for field in ("name", "label", "kind"):
                 if not provider.get(field):
-                    errors.append(f"Provider '{provider.get('name', f'#{index}')}' missing field: {field}")
+                    errors.append(
+                        f"Provider '{provider.get('name', f'#{index}')}' missing field: {field}"
+                    )
             if provider.get("kind") == "api" and not provider.get("api_key_env"):
                 errors.append(f"API provider '{provider.get('name')}' missing api_key_env")
 
@@ -99,7 +103,9 @@ def validate_llm_config(path: Path) -> list[str]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--arc-root", type=Path, required=True, help="Path to ARC manifest directory")
+    parser.add_argument(
+        "--arc-root", type=Path, required=True, help="Path to ARC manifest directory"
+    )
     parser.add_argument("--llm-config", type=Path, required=True, help="Path to llm-providers.yaml")
     parser.add_argument(
         "--output",

@@ -1,5 +1,20 @@
 # Hotpass Changelog
 
+## 2025-11-19 — Inventory feature rollout (v0.2.0)
+
+### Inventory orchestration
+- Finalised the `hotpass.inventory` backend module with schema coercion, cache validation, and manifest normalisation so YAML manifests with implicit dates parse reliably and reuse cached summaries safely.
+- Added configuration guards for `HOTPASS_INVENTORY_PATH` and cache TTL overrides, surfacing clear errors when misconfigured in CLI or service environments.
+
+### Operator workflows
+- Extended the unified CLI with table output tests and documentation so `hotpass inventory list`/`status` integrate into quality gates and AGENT workflows.
+- Instrumented the Express `/api/inventory` endpoint with cache invalidation helpers and exported server handles, enabling integration tests to validate JSON payloads and degraded responses.
+
+### Web experience
+- Bumped the Governance UI version banner and added vitest + supertest coverage around `/api/inventory` to ensure the React inventory page always receives normalised snapshots.
+
+### Release management
+- Bumped project, documentation, telemetry, and UI package versions to `0.2.0` and recorded the rollout details here.
 ## 2025-11-03 — Import assist enhancements and run telemetry
 
 ### Dashboard & operator workflows

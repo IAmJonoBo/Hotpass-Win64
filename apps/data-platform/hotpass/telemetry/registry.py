@@ -21,7 +21,7 @@ class TelemetryConfig:
     service_name: str
     environment: str | None = None
     exporters: tuple[str, ...] = ("console",)
-    service_version: str = "0.1.0"
+    service_version: str = "0.2.0"
     resource_attributes: Mapping[str, str | None] = field(default_factory=dict)
     exporter_settings: Mapping[str, Mapping[str, Any]] = field(default_factory=dict)
 

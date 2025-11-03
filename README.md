@@ -36,7 +36,15 @@ Hotpass is stewarded by n00tropic to prove that an open, automation-friendly dat
    The overview command lists the core verbs (`refine`, `enrich`, `qa`, `contracts`) and reports the
    installed extras/profile set so agents and operators can plan the next steps.
 
-3. Run the refinement pipeline against the bundled fixtures:
+3. Inspect the governed asset inventory and feature readiness:
+
+   ```bash
+   uv run hotpass inventory status
+   ```
+
+   Add `--json` to integrate with automation or generate quick reports.
+
+4. Run the refinement pipeline against the bundled fixtures:
 
    ```bash
    uv run hotpass refine \
@@ -49,7 +57,7 @@ Hotpass is stewarded by n00tropic to prove that an open, automation-friendly dat
    The command writes refined outputs to `dist/refined.xlsx` and publishes the
    latest Great Expectations Data Docs under `dist/data-docs/`.
 
-4. Optional: enrich the refined workbook deterministically (network off by default):
+5. Optional: enrich the refined workbook deterministically (network off by default):
 
    ```bash
    uv run hotpass enrich \
@@ -59,14 +67,14 @@ Hotpass is stewarded by n00tropic to prove that an open, automation-friendly dat
      --allow-network=false
    ```
 
-5. Optional: regenerate validation reports explicitly while exploring the
+6. Optional: regenerate validation reports explicitly while exploring the
    dataset contracts:
 
    ```bash
    uv run python ops/validation/refresh_data_docs.py
    ```
 
-6. Optional: build an adaptive research plan for a specific entity (offline-first):
+7. Optional: build an adaptive research plan for a specific entity (offline-first):
 
    ```bash
    uv run hotpass plan research \\
@@ -147,6 +155,12 @@ The CLI now provides one-command automation for tunnels, AWS identity checks, co
   ```bash
   hotpass env --target staging
   ```
+
+## Inventory configuration
+
+- `HOTPASS_INVENTORY_PATH` — override the path to `data/inventory/asset-register.yaml` when packaging or sourcing manifests externally.
+- `HOTPASS_INVENTORY_FEATURE_STATUS_PATH` — override the feature status metadata file consumed by `hotpass inventory status` and `/api/inventory`.
+- `HOTPASS_INVENTORY_CACHE_TTL` / `HOTPASS_INVENTORY_CACHE_TTL_MS` — adjust cache TTL (seconds or milliseconds, non-negative integers) shared by the CLI and web API.
 
 ### Keep uv caches on an external SSD
 

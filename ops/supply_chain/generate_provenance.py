@@ -62,7 +62,9 @@ def generate_provenance(output_dir: Path, filename: str = "provenance.json") -> 
 def main() -> None:
     import argparse
 
-    parser = argparse.ArgumentParser(description="Generate a SLSA provenance statement for build artefacts.")
+    parser = argparse.ArgumentParser(
+        description="Generate a SLSA provenance statement for build artefacts."
+    )
     parser.add_argument(
         "--output-dir",
         type=Path,

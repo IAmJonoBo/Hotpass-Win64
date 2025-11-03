@@ -21,6 +21,21 @@
 - [x] Ensure documentation build/test pipeline and CI checks
   - notes: Added make docs target (HTML build with optional linkcheck) and ran Sphinx builds to validate output.
   - checks: tests=not-run, lint=pass, type=not-run, sec=pass, build=pass
+
+## 2025-11-03 (branch: work, pr: n/a, actor: codex)
+
+- [x] Restore IMPLEMENTATION_PLAN.md to satisfy QG-5 baseline check
+  - notes: Recreated IMPLEMENTATION_PLAN.md with sprint breakdown and delivery milestones.
+  - checks: tests=not-run, lint=not-run, type=not-run, sec=not-run, build=not-run
+- [x] Inventory feature parity across backend, frontend, and CLI
+  - notes: Landed backend models/service, CLI commands, Express endpoint, and frontend inventory views.
+  - checks: tests=pass, lint=fail, type=not-run, sec=fail, build=pass
+- [x] Document inventory configuration, environment variables, and rollout steps
+  - notes: Updated README, docs reference, and configuration sections for the inventory workflow.
+  - checks: tests=not-run, lint=not-run, type=not-run, sec=not-run, build=not-run
+- [x] Bump version and changelog once inventory feature ships
+  - notes: Incremented version across pyproject, docs, telemetry registry, and CHANGELOG v0.2.0 entry.
+  - checks: tests=not-run, lint=not-run, type=not-run, sec=not-run, build=not-run
 ## 2025-11-03 (branch: work, pr: n/a, actor: codex)
 - [x] Map research/backfill integration points for SearXNG adoption
   - notes: Reviewed `apps/data-platform/hotpass/research/orchestrator.py` flow and introduced SearXNG planning step feeding crawler targets.

@@ -1,7 +1,7 @@
 {
   "name": "hotpass-web-ui",
   "private": true,
-  "version": "0.1.1",
+  "version": "0.2.0",
   "type": "module",
   "scripts": {
     "prebuild": "node scripts/sync-tools.js",
@@ -76,6 +76,7 @@
     "typescript": "^5.9.3",
     "vite": "^7.1.12",
     "vitest": "^4.0.6",
-    "wait-on": "^9.0.1"
+    "wait-on": "^9.0.1",
+    "supertest": "^7.1.1"
   }
 }

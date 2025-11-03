@@ -25,6 +25,7 @@ else:
 
         def verify(self) -> Any: ...
 
+
 try:
     from ops.arc.verify_runner_lifecycle import AwsIdentityVerifier as _AwsIdentityVerifier
 except ModuleNotFoundError:  # pragma: no cover - defensive guard

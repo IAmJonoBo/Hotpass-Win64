@@ -1,0 +1,22 @@
+---
+requirements:
+  - id: backend-service
+    surface: backend
+    description: Inventory manifest loader, validator, and cache
+    status: implemented
+    detail: hotpass.inventory.service.InventoryService validates the YAML manifest and caches summaries.
+  - id: cli-surface
+    surface: cli
+    description: hotpass inventory command exposes asset summaries and status reporting
+    status: implemented
+    detail: Use `hotpass inventory list` and `hotpass inventory status` for operators and CI checks.
+  - id: web-api
+    surface: frontend-api
+    description: Express server publishes /api/inventory for the Governance UI
+    status: implemented
+    detail: apps/web-ui/server/index.mjs parses the manifest with caching and returns summary metrics.
+  - id: governance-ui
+    surface: frontend
+    description: Governance Inventory page renders asset register and requirement health
+    status: implemented
+    detail: Accessible from the sidebar at Governance → Inventory with filtering and status callouts.

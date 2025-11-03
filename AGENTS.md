@@ -558,7 +558,10 @@ uv run hotpass contracts emit \
   --format yaml \
   --output ./contracts/aviation.yaml
 
-# 6. Review provenance in enriched file
+# 6. Inspect inventory readiness across surfaces
+uv run hotpass inventory status --json
+
+# 7. Review provenance in enriched file
 # (Check columns: provenance_source, provenance_timestamp, provenance_confidence)
 ```
 
