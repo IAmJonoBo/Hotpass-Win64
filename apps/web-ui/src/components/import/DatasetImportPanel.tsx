@@ -279,7 +279,7 @@ export function DatasetImportPanel({ flowRuns, hilApprovals, isLoadingRuns, onOp
       }
 
       throw new Error('Missing token in response')
-    } catch (fetchError) {
+    } catch {
       if (!opts?.silent) {
         setCsrfError('Unable to initialise secure session. Please refresh and try again.')
       }

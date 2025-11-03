@@ -12,18 +12,24 @@ interface ModalProps {
 }
 
 export function Modal({ open, onOpenChange, children, initialFocusRef }: ModalProps) {
-  const [mounted, setMounted] = React.useState(false)
-  const modalRoot = React.useRef<HTMLElement | null>(null)
+  const [portalNode, setPortalNode] = React.useState<HTMLElement | null>(null)
   const contentRef = React.useRef<HTMLDivElement | null>(null)
 
   React.useEffect(() => {
-    modalRoot.current = document.getElementById('hotpass-modal-root') ?? (() => {
-      const element = document.createElement('div')
-      element.id = 'hotpass-modal-root'
-      document.body.appendChild(element)
-      return element
-    })()
-    setMounted(true)
+    let node = document.getElementById('hotpass-modal-root') as HTMLElement | null
+    let created = false
+    if (!node) {
+      node = document.createElement('div')
+      node.id = 'hotpass-modal-root'
+      document.body.appendChild(node)
+      created = true
+    }
+    setPortalNode(node)
+    return () => {
+      if (created && node?.parentNode) {
+        node.parentNode.removeChild(node)
+      }
+    }
   }, [])
 
   React.useEffect(() => {
@@ -76,7 +82,7 @@ export function Modal({ open, onOpenChange, children, initialFocusRef }: ModalPr
     }
   }, [open])
 
-  if (!mounted || !modalRoot.current || !open) {
+  if (!portalNode || !open) {
     return null
   }
 
@@ -99,7 +105,7 @@ export function Modal({ open, onOpenChange, children, initialFocusRef }: ModalPr
         </div>
       </div>
     ),
-    modalRoot.current
+    portalNode
   )
 }
 

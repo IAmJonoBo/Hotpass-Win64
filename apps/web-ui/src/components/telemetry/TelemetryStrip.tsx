@@ -20,10 +20,10 @@ interface TelemetryStripProps {
 type TelemetryJob = {
   id?: string
   status?: string
-  updatedAt?: string
-  completedAt?: string
-  startedAt?: string
-  createdAt?: string
+  updatedAt?: string | Date
+  completedAt?: string | Date
+  startedAt?: string | Date
+  createdAt?: string | Date
   label?: string
   metadata?: Record<string, unknown>
 }

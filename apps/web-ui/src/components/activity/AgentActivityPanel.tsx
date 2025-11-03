@@ -4,7 +4,7 @@
  * Side panel showing recent agent actions and tool calls with live updates.
  */
 
-import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { formatDistanceToNow } from 'date-fns'
 import { Activity, Wrench, MessageSquare, CheckCircle, XCircle, CloudUpload } from 'lucide-react'
@@ -88,7 +88,8 @@ export function AgentActivityPanel({ open, onOpenChange }: AgentActivityPanelPro
       try {
         const payload = JSON.parse(event.data) as { event?: ActivityEvent }
         if (payload?.event) {
-          setActivityEvents(prev => mergeActivityEvents([payload.event], prev))
+          const nextEvent = payload.event
+          setActivityEvents(prev => mergeActivityEvents([nextEvent], prev))
         }
       } catch (parseError) {
         console.warn('Failed to parse activity event', parseError)
@@ -115,65 +116,65 @@ export function AgentActivityPanel({ open, onOpenChange }: AgentActivityPanelPro
 
     return () => {
       closed = true
+      source.removeEventListener('snapshot', handleSnapshot)
+      source.removeEventListener('activity', handleActivity)
       source.close()
     }
   }, [open, addFeedback])
 
-  const mappedEvents = useMemo(() => {
-    const now = Date.now()
-    return activityEvents.map((event) => {
-      const category = (event.category || event.type || 'general').toString().toLowerCase()
-      const status = (event.status || '').toString().toLowerCase()
-      const baseSuccess =
-        typeof event.success === 'boolean'
-          ? event.success
-          : !['failed', 'errored', 'rejected', 'failed-to-start'].includes(status)
+  const highlightCutoff = Date.now() - HIGHLIGHT_WINDOW_MS
+  const mappedEvents = activityEvents.map((event) => {
+    const category = (event.category || event.type || 'general').toString().toLowerCase()
+    const status = (event.status || '').toString().toLowerCase()
+    const baseSuccess =
+      typeof event.success === 'boolean'
+        ? event.success
+        : !['failed', 'errored', 'rejected', 'failed-to-start'].includes(status)
 
-      const timestamp = new Date(event.timestamp)
-      const isRecent = now - timestamp.getTime() <= HIGHLIGHT_WINDOW_MS
+    const timestamp = new Date(event.timestamp)
+    const isRecent = timestamp.getTime() >= highlightCutoff
 
-      let icon = Activity
-      if (category === 'hil') icon = CheckCircle
-      else if (category === 'import') icon = CloudUpload
-      else if (category === 'assistant' || category === 'chat') icon = MessageSquare
-      else if (category === 'tool' || category === 'command') icon = Wrench
+    let icon = Activity
+    if (category === 'hil') icon = CheckCircle
+    else if (category === 'import') icon = CloudUpload
+    else if (category === 'assistant' || category === 'chat') icon = MessageSquare
+    else if (category === 'tool' || category === 'command') icon = Wrench
 
-      let title = event.message
-      if (!title) {
-        if (category === 'hil' && event.runId) {
-          title = `${event.status ?? 'Updated'} ${event.runId}`
-        } else if (category === 'import' && event.label) {
-          title = `${event.action ? `${event.action} – ` : ''}${event.label}`
-        } else if (event.action) {
-          title = `${event.action} ${event.runId ?? event.jobId ?? ''}`.trim()
-        } else {
-          title = category.charAt(0).toUpperCase() + category.slice(1)
-        }
+    let title = event.message
+    if (!title) {
+      if (category === 'hil' && event.runId) {
+        title = `${event.status ?? 'Updated'} ${event.runId}`
+      } else if (category === 'import' && event.label) {
+        title = `${event.action ? `${event.action} – ` : ''}${event.label}`
+      } else if (event.action) {
+        title = `${event.action} ${event.runId ?? event.jobId ?? ''}`.trim()
+      } else {
+        title = category.charAt(0).toUpperCase() + category.slice(1)
       }
+    }
 
-      const detailParts: string[] = []
-      if (event.operator) {
-        detailParts.push(event.operator)
-      }
-      if (event.runId && category !== 'hil') {
-        detailParts.push(event.runId)
-      }
-      if (event.jobId) {
-        detailParts.push(event.jobId)
-      }
+    const detailParts: string[] = []
+    if (event.operator) {
+      detailParts.push(event.operator)
+    }
+    if (event.runId && category !== 'hil') {
+      detailParts.push(event.runId)
+    }
+    if (event.jobId) {
+      detailParts.push(event.jobId)
+    }
 
-      return {
-        raw: event,
-        icon,
-        title,
-        detailParts,
-        success: baseSuccess,
-        category,
-        timestamp,
-        isRecent,
-      }
-    })
-  }, [activityEvents])
+    return {
+      raw: event,
+      icon,
+      title,
+      detailParts,
+      success: baseSuccess,
+      category,
+      timestamp,
+      isRecent,
+    }
+  })
 
   const isInitialLoading = isLoading && activityEvents.length === 0 && sseStatus !== 'open'
 

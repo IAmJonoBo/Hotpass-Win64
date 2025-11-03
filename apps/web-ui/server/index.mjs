@@ -60,6 +60,8 @@ async function appendActivityEvent(event) {
   return event
 }
 
+const isRecord = (value) => typeof value === 'object' && value !== null && !Array.isArray(value)
+
 app.disable('x-powered-by')
 app.use(helmet({ contentSecurityPolicy: false }))
 app.use(compression())

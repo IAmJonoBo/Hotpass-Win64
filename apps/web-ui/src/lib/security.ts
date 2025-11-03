@@ -9,6 +9,7 @@ export interface SanitisedUrlResult {
 }
 
 const SAFE_SEARCH_PATTERN = /[^\w\s:/@.-]/gu
+// eslint-disable-next-line no-control-regex
 const CONTROL_CHARS = /[\u0000-\u001f\u007f]/gu
 
 export function sanitizeSearchTerm(input: string, maxLength = 120): string {
@@ -37,7 +38,7 @@ export function sanitizeUrlInput(raw: string, { allowEmpty = true }: { allowEmpt
       return { value: normalised, valid: false, reason: 'URL is too long.' }
     }
     return { value: normalised, valid: true }
-  } catch (error) {
+  } catch {
     return { value, valid: false, reason: 'Invalid URL format.' }
   }
 }

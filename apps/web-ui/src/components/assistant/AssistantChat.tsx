@@ -78,7 +78,9 @@ function buildSuggestionList(contract: Array<{ name?: string }>): string[] {
     'list lineage namespace=hotpass',
     'open run RUN_ID',
   ]
-  const contractNames = contract.map(tool => tool.name).filter(Boolean)
+  const contractNames = contract
+    .map(tool => tool.name)
+    .filter((name): name is string => typeof name === 'string' && name.length > 0)
   return Array.from(new Set([...base, ...contractNames]))
 }
 
@@ -383,31 +385,38 @@ export function AssistantChat({ className, initialMessage }: AssistantChatProps)
                   Tool: {message.toolCall.tool}
                 </Badge>
               )}
-              {message.toolCall?.result?.data && isCommandToolResultData(message.toolCall.result.data) && (
+              {(() => {
+                const commandLinks = (() => {
+                  const data = message.toolCall?.result?.data
+                  return isCommandToolResultData(data) ? data : null
+                })()
+                if (!commandLinks) return null
+                return (
                 <div className="mt-2 w-full rounded-lg border border-dashed border-muted-foreground/40 bg-background/80 p-3 text-xs space-y-2">
                   <div className="font-medium">
-                    Command job {message.toolCall.result.data.jobId}
+                        Command job {commandLinks.jobId}
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <Button
                       type="button"
-                      size="xs"
+                      size="sm"
                       variant="outline"
-                      onClick={() => window.open(message.toolCall!.result!.data.statusUrl, '_blank', 'noreferrer')}
+                      onClick={() => window.open(commandLinks.statusUrl, '_blank', 'noreferrer')}
                     >
                       View status
                     </Button>
                     <Button
                       type="button"
-                      size="xs"
+                      size="sm"
                       variant="outline"
-                      onClick={() => window.open(message.toolCall!.result!.data.logUrl, '_blank', 'noreferrer')}
+                      onClick={() => window.open(commandLinks.logUrl, '_blank', 'noreferrer')}
                     >
                       Stream logs
                     </Button>
                   </div>
                 </div>
-              )}
+                )
+              })()}
             </div>
             {message.role === 'user' && (
               <div className="flex-shrink-0">
