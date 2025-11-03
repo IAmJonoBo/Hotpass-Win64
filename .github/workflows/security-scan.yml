@@ -8,6 +8,7 @@ on:
 permissions:
   contents: read
   security-events: write
+  pull-requests: read
 
 jobs:
   security-suite:
@@ -17,6 +18,8 @@ jobs:
 
       - name: Gitleaks
         uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           config-path: .gitleaks.toml
           additional-args: '--verbose'
