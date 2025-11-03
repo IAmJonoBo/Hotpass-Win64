@@ -36,9 +36,10 @@ jobs:
           HOTPASS_UV_EXTRAS: ${{ env.UV_EXTRAS }}
         run: bash ops/uv_sync_extras.sh
 
-      - name: Ruff lint (changed files only)
+      - name: Ruff lint (changed files only - non-blocking)
         run: |
-          # TODO: Remove once lint violations are fixed; run on all files with: uv run ruff check
+          # TODO: Make this blocking and check all files once lint violations are fixed
+          # Currently checking only changed files and non-blocking to avoid failing on existing violations
           CHANGED_FILES=$(git diff --name-only --diff-filter=ACMRT origin/main...HEAD | grep '\.py$' || true)
           if [ -n "$CHANGED_FILES" ]; then
             echo "Checking changed Python files:"
@@ -48,9 +49,10 @@ jobs:
             echo "No Python files changed"
           fi
 
-      - name: Ruff formatting check (changed files only)
+      - name: Ruff formatting check (changed files only - non-blocking)
         run: |
-          # TODO: Remove once formatting is fixed; run on all files with: uv run ruff format --check
+          # TODO: Make this blocking and check all files once formatting is fixed
+          # Currently checking only changed files and non-blocking to avoid failing on existing violations
           CHANGED_FILES=$(git diff --name-only --diff-filter=ACMRT origin/main...HEAD | grep '\.py$' || true)
           if [ -n "$CHANGED_FILES" ]; then
             echo "Checking format of changed Python files:"
