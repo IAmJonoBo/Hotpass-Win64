@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils'
 import { useApproveRun, useRejectRun, useGetRunApproval, useGetRunHistory } from '@/store/hilStore'
 import type { PrefectFlowRun, QAResult } from '@/types'
 import { useAuth } from '@/auth'
+import { useFeedback } from '@/components/feedback/FeedbackProvider'
 
 interface ApprovalPanelProps {
   open: boolean
@@ -44,6 +45,7 @@ export function ApprovalPanel({
   const rejectRun = useRejectRun()
 
   const { user, storageReady, hasRole } = useAuth()
+  const { addFeedback } = useFeedback()
 
   const operator = useMemo(
     () => user?.email || user?.name || user?.id || 'unknown-operator',
@@ -60,6 +62,11 @@ export function ApprovalPanel({
   const handleError = (message: string, cause?: unknown) => {
     console.error(message, cause)
     setError(message)
+    addFeedback({
+      variant: 'error',
+      title: 'Approval action failed',
+      description: message,
+    })
   }
 
   const handleApprove = async () => {
@@ -75,6 +82,11 @@ export function ApprovalPanel({
       })
       setComment('')
       setError(null)
+      addFeedback({
+        variant: 'success',
+        title: 'Run approved',
+        description: `Run ${run.name ?? run.id} approved successfully.`,
+      })
       onOpenChange(false)
     } catch (err) {
       handleError('Failed to approve run. Secure storage may be unavailable.', err)
@@ -102,6 +114,11 @@ export function ApprovalPanel({
       setComment('')
       setReason('')
       setError(null)
+      addFeedback({
+        variant: 'warning',
+        title: 'Run rejected',
+        description: `Run ${run.name ?? run.id} marked for follow-up.`,
+      })
       onOpenChange(false)
     } catch (err) {
       handleError('Failed to reject run. Secure storage may be unavailable.', err)

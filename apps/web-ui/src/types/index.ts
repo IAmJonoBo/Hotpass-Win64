@@ -216,6 +216,21 @@ export interface PipelineRunResponse {
   }
 }
 
+export interface CommandJob {
+  id: string
+  status: 'queued' | 'running' | 'succeeded' | 'failed'
+  label?: string
+  command?: string[]
+  cwd?: string
+  createdAt?: string
+  updatedAt?: string
+  startedAt?: string
+  completedAt?: string
+  metadata?: Record<string, unknown>
+  exitCode?: number | null
+  error?: string | null
+}
+
 // Hotpass-specific types
 
 export interface HotpassRun {

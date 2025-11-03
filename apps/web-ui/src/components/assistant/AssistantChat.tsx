@@ -1,7 +1,7 @@
 /**
  * Assistant Chat Console
  *
- * Interactive chat interface for the Hotpass assistant with tool execution capabilities.
+ * Interactive chat interface for the Hotpass assistant with tool execution and streaming feedback.
  */
 
 import { useState, useRef, useEffect } from 'react'
@@ -12,10 +12,20 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
-import { executeTool, toolContract, refreshToolContract, type ToolResult, type ToolCall } from '@/agent/tools'
+import {
+  executeTool,
+  toolContract,
+  refreshToolContract,
+  type ToolResult,
+  type ToolCall,
+  type CommandToolResultData,
+} from '@/agent/tools'
 import { useQuery } from '@tanstack/react-query'
 import { prefectApi } from '@/api/prefect'
 import { useLineageTelemetry } from '@/hooks/useLineageTelemetry'
+import { useFeedback } from '@/components/feedback/FeedbackProvider'
+
+const COMMAND_TOOL_NAMES = new Set(['runRefine', 'runEnrich', 'runQa', 'runPlanResearch', 'runContracts'])
 
 export interface ChatMessage {
   id: string
@@ -30,12 +40,54 @@ interface AssistantChatProps {
   initialMessage?: string
 }
 
+function isCommandToolResultData(data: unknown): data is CommandToolResultData {
+  if (!data || typeof data !== 'object') return false
+  const candidate = data as Record<string, unknown>
+  return (
+    typeof candidate.jobId === 'string' &&
+    typeof candidate.statusUrl === 'string' &&
+    typeof candidate.logUrl === 'string'
+  )
+}
+
+function extractProfile(text: string): string | undefined {
+  const match = text.match(/profile(?:=|\s+)([a-z0-9_-]+)/i)
+  return match?.[1]
+}
+
+function extractDataset(text: string): string | undefined {
+  const match = text.match(/dataset(?:=|\s+)(\S+)/i)
+  return match?.[1]
+}
+
+function extractRowId(text: string): number | undefined {
+  const match = text.match(/row(?:\s+id)?(?:=|#|\s+)(\d+)/i)
+  if (!match?.[1]) return undefined
+  const parsed = Number.parseInt(match[1], 10)
+  return Number.isFinite(parsed) ? parsed : undefined
+}
+
+function buildSuggestionList(contract: Array<{ name?: string }>): string[] {
+  const base = [
+    'run refine profile=aviation',
+    'run enrich allow network',
+    'run qa target=all',
+    'plan research row 5 dataset=./dist/refined.xlsx',
+    'run contracts profile=generic',
+    'list flows',
+    'list lineage namespace=hotpass',
+    'open run RUN_ID',
+  ]
+  const contractNames = contract.map(tool => tool.name).filter(Boolean)
+  return Array.from(new Set([...base, ...contractNames]))
+}
+
 export function AssistantChat({ className, initialMessage }: AssistantChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'welcome',
       role: 'assistant',
-      content: 'Hello! I can help you with Hotpass operations. Try asking me to list flows, check lineage, or open a specific run.',
+      content: 'Hello! I can help you with Hotpass operations. Try asking me to run refine, trigger QA, plan research, or list flows.',
       timestamp: new Date(),
     },
   ])
@@ -44,6 +96,7 @@ export function AssistantChat({ className, initialMessage }: AssistantChatProps)
   const [lastToolCall, setLastToolCall] = useState<ToolCall | null>(null)
   const [contract, setContract] = useState(toolContract)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const { addFeedback } = useFeedback()
 
   // Fetch telemetry data
   const { data: flowRuns = [] } = useQuery({
@@ -55,7 +108,7 @@ export function AssistantChat({ className, initialMessage }: AssistantChatProps)
         return []
       }
     },
-    refetchInterval: 15000, // Refresh every 15 seconds
+    refetchInterval: 15_000,
   })
 
   const lastPollTime = new Date()
@@ -82,10 +135,9 @@ export function AssistantChat({ className, initialMessage }: AssistantChatProps)
   }, [])
 
   const handleSendMessage = async (messageText?: string) => {
-    const text = messageText || input.trim()
+    const text = messageText ?? input.trim()
     if (!text) return
 
-    // Add user message
     const userMessage: ChatMessage = {
       id: `user-${Date.now()}`,
       role: 'user',
@@ -96,39 +148,125 @@ export function AssistantChat({ className, initialMessage }: AssistantChatProps)
     setInput('')
     setIsProcessing(true)
 
-    // Simple command parsing and tool execution
-    let toolResult: ToolResult | null = null
+    const lowerText = text.toLowerCase()
+    const profile = extractProfile(text)
+    const dataset = extractDataset(text)
+    const rowId = extractRowId(text)
+    const allowNetwork = lowerText.includes('allow network') || lowerText.includes('with network')
+    const disableNetwork = lowerText.includes('no network') || lowerText.includes('offline')
+    const networkFlag = allowNetwork && !disableNetwork
+    const qaTargetMatch = text.match(/run qa\s+([a-z-]+)/i)
+    const formatMatch = text.match(/format[:=\s]+([a-z]+)/i)
+    const outputMatch = text.match(/output(?:-path)?[:=\s]+(\S+)/i)
+    const inputMatch = text.match(/input(?:-dir)?[:=\s]+(\S+)/i)
+    const runIdMatch = text.match(/run[:\s]+(\S+)/i)
+
     let toolName = ''
-    let toolArgs: Record<string, unknown> = {}
+    const toolArgs: Record<string, unknown> = {}
+
+    if (lowerText.includes('run refine')) {
+      toolName = 'runRefine'
+      if (profile) toolArgs.profile = profile
+      if (inputMatch?.[1]) toolArgs.inputDir = inputMatch[1]
+      if (outputMatch?.[1]) toolArgs.outputPath = outputMatch[1]
+      if (lowerText.includes('no archive')) toolArgs.archive = false
+    } else if (lowerText.includes('run enrich') || lowerText.includes('run enrichment')) {
+      toolName = 'runEnrich'
+      if (profile) toolArgs.profile = profile
+      if (dataset) toolArgs.input = dataset
+      if (outputMatch?.[1]) toolArgs.output = outputMatch[1]
+      if (networkFlag) toolArgs.allowNetwork = true
+    } else if (lowerText.includes('run qa')) {
+      toolName = 'runQa'
+      if (qaTargetMatch?.[1]) {
+        toolArgs.target = qaTargetMatch[1]
+      }
+    } else if (lowerText.includes('plan research')) {
+      toolName = 'runPlanResearch'
+      if (dataset) toolArgs.dataset = dataset
+      if (typeof rowId === 'number') toolArgs.rowId = rowId
+      if (networkFlag) toolArgs.allowNetwork = true
+    } else if (lowerText.includes('run contract') || lowerText.includes('run contracts') || lowerText.includes('emit contract')) {
+      toolName = 'runContracts'
+      if (profile) toolArgs.profile = profile
+      if (formatMatch?.[1]) toolArgs.format = formatMatch[1].toLowerCase()
+      if (outputMatch?.[1]) toolArgs.output = outputMatch[1]
+    } else if (lowerText.includes('list flows') || lowerText.includes('show flows')) {
+      toolName = 'listFlows'
+    } else if (lowerText.includes('list lineage') || lowerText.includes('show lineage')) {
+      toolName = 'listLineage'
+      const namespaceMatch = text.match(/namespace[:\s]+([\w-]+)/i)
+      if (namespaceMatch?.[1]) {
+        toolArgs.namespace = namespaceMatch[1]
+      }
+    } else if ((lowerText.includes('open run') || lowerText.includes('show run')) && runIdMatch?.[1]) {
+      toolName = 'openRun'
+      toolArgs.runId = runIdMatch[1]
+    } else if (lowerText.includes('get runs') || lowerText.includes('flow runs')) {
+      toolName = 'getFlowRuns'
+    }
+
+    const isCommandTool = COMMAND_TOOL_NAMES.has(toolName)
+    let pendingAssistantId: string | null = null
+    let pendingToolCallId: string | null = null
+
+    if (toolName && isCommandTool) {
+      pendingAssistantId = `assistant-pending-${Date.now()}`
+      pendingToolCallId = `tool-${Date.now()}`
+      setMessages(prev => [
+        ...prev,
+        {
+          id: pendingAssistantId!,
+          role: 'assistant',
+          content: `Running ${toolName}…`,
+          timestamp: new Date(),
+          toolCall: {
+            id: pendingToolCallId!,
+            tool: toolName,
+            timestamp: new Date(),
+          },
+        },
+      ])
+    }
+
+    const updateAssistantMessage = (content: string, toolCall?: ToolCall) => {
+      if (pendingAssistantId) {
+        setMessages(prev =>
+          prev.map(message =>
+            message.id === pendingAssistantId
+              ? {
+                  ...message,
+                  content,
+                  timestamp: new Date(),
+                  toolCall: toolCall ?? message.toolCall,
+                }
+              : message,
+          ),
+        )
+      } else {
+        setMessages(prev => [
+          ...prev,
+          {
+            id: `assistant-${Date.now()}`,
+            role: 'assistant',
+            content,
+            timestamp: new Date(),
+            toolCall,
+          },
+        ])
+      }
+    }
 
     try {
-      const lowerText = text.toLowerCase()
-
-      if (lowerText.includes('list flows') || lowerText.includes('show flows')) {
-        toolName = 'listFlows'
-        toolResult = await executeTool('listFlows')
-      } else if (lowerText.includes('list lineage') || lowerText.includes('show lineage')) {
-        toolName = 'listLineage'
-        const namespaceMatch = text.match(/namespace[:\s]+(\w+)/i)
-        toolArgs = namespaceMatch ? { namespace: namespaceMatch[1] } : {}
-        toolResult = await executeTool('listLineage', toolArgs)
-      } else if (lowerText.includes('open run') || lowerText.includes('show run')) {
-        toolName = 'openRun'
-        const runIdMatch = text.match(/run[:\s]+(\S+)/i)
-        if (runIdMatch) {
-          toolArgs = { runId: runIdMatch[1] }
-          toolResult = await executeTool('openRun', toolArgs)
-        }
-      } else if (lowerText.includes('get runs') || lowerText.includes('flow runs')) {
-        toolName = 'getFlowRuns'
-        toolResult = await executeTool('getFlowRuns')
+      let toolResult: ToolResult | null = null
+      if (toolName) {
+        toolResult = await executeTool(toolName, toolArgs)
       }
 
-      // Create tool call record
       const toolCall: ToolCall | undefined = toolResult
         ? {
-            id: `tool-${Date.now()}`,
-            tool: toolName,
+            id: pendingToolCallId ?? `tool-${Date.now()}`,
+            tool: toolName || 'unknown',
             timestamp: new Date(),
             result: toolResult,
           }
@@ -138,11 +276,12 @@ export function AssistantChat({ className, initialMessage }: AssistantChatProps)
         setLastToolCall(toolCall)
       }
 
-      // Generate assistant response
       let responseContent = ''
+
       if (toolResult) {
         if (toolResult.success) {
           responseContent = `✓ ${toolResult.message}`
+
           if (toolName === 'listFlows' && toolResult.data) {
             const flows = toolResult.data as { name: string }[]
             responseContent += `\n\nAvailable flows:\n${flows.map(f => `• ${f.name}`).join('\n')}`
@@ -155,36 +294,34 @@ export function AssistantChat({ className, initialMessage }: AssistantChatProps)
           } else if (toolName === 'getFlowRuns' && toolResult.data) {
             const runs = toolResult.data as { name: string; state_name: string }[]
             responseContent += `\n\nRecent runs:\n${runs.slice(0, 5).map(r => `• ${r.name} - ${r.state_name}`).join('\n')}`
+          } else if (isCommandTool && toolResult.data && isCommandToolResultData(toolResult.data)) {
+            responseContent += `\n\nJob ${toolResult.data.jobId} queued. Use the links below to monitor progress.`
           }
         } else {
           responseContent = `✗ ${toolResult.message}`
           if (toolResult.error) {
             responseContent += `\n\nError: ${toolResult.error}`
           }
+          addFeedback({
+            variant: 'error',
+            title: `${toolName || 'Tool'} failed`,
+            description: toolResult.error ?? toolResult.message,
+          })
         }
       } else {
-        const suggestions = contract
-          .map(tool => `• ${tool.name} — ${tool.method} ${tool.path}`)
-          .join('\n')
-        responseContent = `I understand you want help, but I didn't recognize a specific command. Available tools:\n${suggestions}`
+        const suggestions = buildSuggestionList(contract)
+        responseContent = `I understand you want help, but I didn't recognise a specific command.\nTry:\n${suggestions.map(item => `• ${item}`).join('\n')}`
       }
 
-      const assistantMessage: ChatMessage = {
-        id: `assistant-${Date.now()}`,
-        role: 'assistant',
-        content: responseContent,
-        timestamp: new Date(),
-        toolCall,
-      }
-      setMessages(prev => [...prev, assistantMessage])
+      updateAssistantMessage(responseContent, toolCall)
     } catch (error) {
-      const errorMessage: ChatMessage = {
-        id: `error-${Date.now()}`,
-        role: 'assistant',
-        content: `Error: ${error instanceof Error ? error.message : 'Unknown error occurred'}`,
-        timestamp: new Date(),
-      }
-      setMessages(prev => [...prev, errorMessage])
+      const message = error instanceof Error ? error.message : 'Unknown error occurred'
+      addFeedback({
+        variant: 'error',
+        title: 'Assistant error',
+        description: message,
+      })
+      updateAssistantMessage(`Error: ${message}`)
     } finally {
       setIsProcessing(false)
     }
@@ -246,6 +383,31 @@ export function AssistantChat({ className, initialMessage }: AssistantChatProps)
                   Tool: {message.toolCall.tool}
                 </Badge>
               )}
+              {message.toolCall?.result?.data && isCommandToolResultData(message.toolCall.result.data) && (
+                <div className="mt-2 w-full rounded-lg border border-dashed border-muted-foreground/40 bg-background/80 p-3 text-xs space-y-2">
+                  <div className="font-medium">
+                    Command job {message.toolCall.result.data.jobId}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      size="xs"
+                      variant="outline"
+                      onClick={() => window.open(message.toolCall!.result!.data.statusUrl, '_blank', 'noreferrer')}
+                    >
+                      View status
+                    </Button>
+                    <Button
+                      type="button"
+                      size="xs"
+                      variant="outline"
+                      onClick={() => window.open(message.toolCall!.result!.data.logUrl, '_blank', 'noreferrer')}
+                    >
+                      Stream logs
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
             {message.role === 'user' && (
               <div className="flex-shrink-0">
@@ -288,7 +450,7 @@ export function AssistantChat({ className, initialMessage }: AssistantChatProps)
         {/* Input */}
         <div className="flex gap-2 w-full">
           <Input
-            placeholder="Ask me about flows, lineage, or runs..."
+            placeholder="Ask me to run refine, plan research, or list flows..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={handleKeyPress}

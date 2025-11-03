@@ -12,6 +12,7 @@ import os from 'os'
 import fs from 'fs'
 import { copyFile, mkdir, mkdtemp, readdir, rm, rename, stat } from 'fs/promises'
 import crypto from 'crypto'
+import { EventEmitter } from 'events'
 import {
   createCommandJob,
   createJobId,
@@ -22,7 +23,7 @@ import {
   subscribeToJob,
 } from './job-runner.js'
 import {
-  appendActivityEvent,
+  appendActivityEvent as persistActivityEvent,
   readActivityLog,
   readHilApprovals,
   readHilAudit,
@@ -45,6 +46,19 @@ const IMPORT_ROOT = process.env.HOTPASS_IMPORT_ROOT || path.join(process.cwd(), 
 const MAX_IMPORT_FILE_SIZE = Number.parseInt(process.env.HOTPASS_IMPORT_MAX_FILE_SIZE ?? `${1024 * 1024 * 1024}`, 10)
 const MAX_IMPORT_FILES = Number.parseInt(process.env.HOTPASS_IMPORT_MAX_FILES ?? '10', 10)
 const PIPELINE_RUN_LIMIT = Number.parseInt(process.env.HOTPASS_PIPELINE_RUN_LIMIT ?? '100', 10)
+
+const activityEmitter = new EventEmitter()
+activityEmitter.setMaxListeners(0)
+
+const emitActivityEvent = (event) => {
+  activityEmitter.emit('event', event)
+}
+
+async function appendActivityEvent(event) {
+  await persistActivityEvent(event)
+  emitActivityEvent(event)
+  return event
+}
 
 app.disable('x-powered-by')
 app.use(helmet({ contentSecurityPolicy: false }))
@@ -877,6 +891,43 @@ app.get('/api/activity', async (req, res) => {
     console.error('[activity] failed to read log', error)
     sendError(res, 500, 'Failed to read activity log', { message: error.message })
   }
+})
+
+app.get('/api/activity/events', async (req, res) => {
+  const limit = parseLimitParam(req.query.limit) ?? 50
+
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    Connection: 'keep-alive',
+  })
+
+  try {
+    const events = await readActivityLog()
+    const snapshot = events.slice(0, limit)
+    res.write('event: snapshot\n')
+    res.write(`data: ${JSON.stringify({ events: snapshot })}\n\n`)
+  } catch (error) {
+    console.error('[activity] failed to stream snapshot', error)
+    res.write('event: error\n')
+    res.write(`data: ${JSON.stringify({ message: 'Failed to load activity history' })}\n\n`)
+  }
+
+  const listener = (event) => {
+    res.write('event: activity\n')
+    res.write(`data: ${JSON.stringify({ event })}\n\n`)
+  }
+
+  activityEmitter.on('event', listener)
+
+  const keepAlive = setInterval(() => {
+    res.write(': keep-alive\n\n')
+  }, 25_000)
+
+  req.on('close', () => {
+    clearInterval(keepAlive)
+    activityEmitter.off('event', listener)
+  })
 })
 
 app.post('/api/hil/approvals', csrfProtection, async (req, res) => {

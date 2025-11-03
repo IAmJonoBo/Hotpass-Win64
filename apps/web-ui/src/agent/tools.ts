@@ -1,11 +1,14 @@
 /**
- * Agent Tools - Wrappers for Prefect and Marquez API operations
+ * Agent Tools - Wrappers for Prefect, Marquez, and Hotpass CLI operations.
  *
- * These tools are invoked by the assistant to interact with the Hotpass platform.
+ * These helpers are invoked by the assistant to interact with backend services
+ * and to trigger long-running CLI jobs through the command runner.
  */
 
 import { prefectApi } from '@/api/prefect'
 import { marquezApi } from '@/api/marquez'
+import { runCommandJob, buildCommandJobLinks, type CommandJobLinks } from '@/api/commands'
+import type { CommandJob } from '@/types'
 import { getCachedToolContract, loadToolContract, type ToolDefinition } from './contract'
 
 export interface ToolResult {
@@ -22,6 +25,14 @@ export interface ToolCall {
   result?: ToolResult
 }
 
+export interface CommandToolResultData extends CommandJobLinks {
+  job: CommandJob
+  label?: string
+}
+
+const DEFAULT_PROFILE = 'generic'
+const DEFAULT_REFINED_PATH = './dist/refined.xlsx'
+
 export const toolContract: ToolDefinition[] = getCachedToolContract()
 
 export async function refreshToolContract(): Promise<ToolDefinition[]> {
@@ -29,7 +40,46 @@ export async function refreshToolContract(): Promise<ToolDefinition[]> {
 }
 
 /**
- * List all available Prefect flows
+ * Shared helper to normalise command job responses for assistant UI.
+ */
+function formatCommandResult(job: CommandJob, label: string): ToolResult {
+  const links = buildCommandJobLinks(job.id)
+  return {
+    success: true,
+    data: {
+      job,
+      label,
+      ...links,
+    } satisfies CommandToolResultData,
+    message: `${label} dispatched. Job ${job.id} queued.`,
+  }
+}
+
+async function triggerCommandTool(
+  command: string[],
+  label: string,
+  metadata?: Record<string, unknown>,
+  env?: Record<string, string>,
+): Promise<ToolResult> {
+  try {
+    const job = await runCommandJob({
+      command,
+      label,
+      metadata,
+      env,
+    })
+    return formatCommandResult(job, label)
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      message: `Failed to start "${label}"`,
+    }
+  }
+}
+
+/**
+ * List all available Prefect flows.
  */
 export async function listFlows(): Promise<ToolResult> {
   try {
@@ -49,7 +99,7 @@ export async function listFlows(): Promise<ToolResult> {
 }
 
 /**
- * List lineage for a given namespace from Marquez
+ * List lineage for a given namespace from Marquez.
  */
 export async function listLineage(namespace: string = 'hotpass'): Promise<ToolResult> {
   try {
@@ -69,8 +119,7 @@ export async function listLineage(namespace: string = 'hotpass'): Promise<ToolRe
 }
 
 /**
- * Navigate to a specific run details page
- * @returns Navigation intent rather than actual navigation
+ * Navigate to a specific run details page (navigation intent).
  */
 export function openRun(runId: string): ToolResult {
   return {
@@ -81,7 +130,7 @@ export function openRun(runId: string): ToolResult {
 }
 
 /**
- * Get flow runs from Prefect
+ * Get flow runs from Prefect.
  */
 export async function getFlowRuns(limit: number = 50): Promise<ToolResult> {
   try {
@@ -100,12 +149,173 @@ export async function getFlowRuns(limit: number = 50): Promise<ToolResult> {
   }
 }
 
+export interface RunRefineOptions {
+  profile?: string
+  inputDir?: string
+  outputPath?: string
+  archive?: boolean
+}
+
+export async function runRefine(options: RunRefineOptions = {}): Promise<ToolResult> {
+  const {
+    profile = DEFAULT_PROFILE,
+    inputDir = './data',
+    outputPath = DEFAULT_REFINED_PATH,
+    archive = true,
+  } = options
+
+  const command = [
+    'uv',
+    'run',
+    'hotpass',
+    'refine',
+    '--input-dir',
+    inputDir,
+    '--output-path',
+    outputPath,
+    '--profile',
+    profile,
+  ]
+  if (archive) {
+    command.push('--archive')
+  }
+
+  return triggerCommandTool(command, `Refine (${profile})`, {
+    tool: 'runRefine',
+    profile,
+    inputDir,
+    outputPath,
+    archive,
+  })
+}
+
+export interface RunEnrichOptions {
+  profile?: string
+  input?: string
+  output?: string
+  allowNetwork?: boolean
+}
+
+export async function runEnrich(options: RunEnrichOptions = {}): Promise<ToolResult> {
+  const {
+    profile = DEFAULT_PROFILE,
+    input = DEFAULT_REFINED_PATH,
+    output = './dist/enriched.xlsx',
+    allowNetwork = false,
+  } = options
+
+  const command = [
+    'uv',
+    'run',
+    'hotpass',
+    'enrich',
+    '--input',
+    input,
+    '--output',
+    output,
+    '--profile',
+    profile,
+    '--allow-network',
+    allowNetwork ? 'true' : 'false',
+  ]
+
+  return triggerCommandTool(command, `Enrich (${profile})`, {
+    tool: 'runEnrich',
+    profile,
+    input,
+    output,
+    allowNetwork,
+  })
+}
+
+export interface RunQaOptions {
+  target?: string
+}
+
+export async function runQa(options: RunQaOptions = {}): Promise<ToolResult> {
+  const target = options.target ?? 'all'
+  const command = ['uv', 'run', 'hotpass', 'qa', target]
+
+  return triggerCommandTool(command, `QA – ${target}`, {
+    tool: 'runQa',
+    target,
+  })
+}
+
+export interface RunPlanResearchOptions {
+  dataset?: string
+  rowId?: number
+  allowNetwork?: boolean
+}
+
+export async function runPlanResearch(options: RunPlanResearchOptions = {}): Promise<ToolResult> {
+  const {
+    dataset = DEFAULT_REFINED_PATH,
+    rowId = 0,
+    allowNetwork = false,
+  } = options
+
+  const command = [
+    'uv',
+    'run',
+    'hotpass',
+    'plan',
+    'research',
+    '--dataset',
+    dataset,
+    '--row-id',
+    rowId.toString(),
+    '--allow-network',
+    allowNetwork ? 'true' : 'false',
+  ]
+
+  return triggerCommandTool(command, 'Plan research', {
+    tool: 'runPlanResearch',
+    dataset,
+    rowId,
+    allowNetwork,
+  })
+}
+
+export interface RunContractsOptions {
+  profile?: string
+  format?: 'yaml' | 'json'
+  output?: string
+}
+
+export async function runContracts(options: RunContractsOptions = {}): Promise<ToolResult> {
+  const profile = options.profile ?? DEFAULT_PROFILE
+  const format = options.format ?? 'yaml'
+  const output = options.output ?? `./contracts/${profile}.${format}`
+
+  const command = [
+    'uv',
+    'run',
+    'hotpass',
+    'contracts',
+    'emit',
+    '--profile',
+    profile,
+    '--format',
+    format,
+    '--output',
+    output,
+  ]
+
+  return triggerCommandTool(command, `Contracts (${profile})`, {
+    tool: 'runContracts',
+    profile,
+    format,
+    output,
+  })
+}
+
 /**
- * Execute a tool by name with arguments
+ * Execute a tool by name with arguments.
  */
 export async function executeTool(
   toolName: string,
-  args: Record<string, unknown> = {}
+  args: Record<string, unknown> = {},
 ): Promise<ToolResult> {
   switch (toolName) {
     case 'listFlows':
@@ -116,6 +326,16 @@ export async function executeTool(
       return openRun(args.runId as string)
     case 'getFlowRuns':
       return getFlowRuns(args.limit as number)
+    case 'runRefine':
+      return runRefine(args as RunRefineOptions)
+    case 'runEnrich':
+      return runEnrich(args as RunEnrichOptions)
+    case 'runQa':
+      return runQa(args as RunQaOptions)
+    case 'runPlanResearch':
+      return runPlanResearch(args as RunPlanResearchOptions)
+    case 'runContracts':
+      return runContracts(args as RunContractsOptions)
     default:
       return {
         success: false,

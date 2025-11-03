@@ -1,10 +1,9 @@
 import type { HILApproval, HILAuditEntry } from '@/types'
+import { ensureCsrfToken } from './csrf'
 
 const jsonHeaders: HeadersInit = {
   Accept: 'application/json',
 }
-
-let cachedCsrfToken: string | null = null
 
 const handleResponse = async <T>(response: Response): Promise<T> => {
   if (!response.ok) {
@@ -50,23 +49,6 @@ export async function fetchHilAudit(limit?: number): Promise<HILAuditEntry[]> {
     return payload.entries
   }
   return []
-}
-
-async function ensureCsrfToken(): Promise<string> {
-  if (cachedCsrfToken) {
-    return cachedCsrfToken
-  }
-  const response = await fetch('/telemetry/operator-feedback/csrf', {
-    method: 'GET',
-    headers: jsonHeaders,
-    credentials: 'include',
-  })
-  const payload = await handleResponse<{ token?: string }>(response)
-  if (!payload?.token) {
-    throw new Error('Failed to initialise secure session')
-  }
-  cachedCsrfToken = payload.token
-  return cachedCsrfToken
 }
 
 interface SubmitApprovalOptions {

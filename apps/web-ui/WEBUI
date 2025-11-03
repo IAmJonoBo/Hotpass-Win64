@@ -43,20 +43,20 @@
 - [x] `TelemetryStrip` → surface backend job/command failures.
 - [x] `PipelineActivityPanel` (replaces LiveRefinementPanel) → consume `/api/runs/recent` (React Query polling/SSE fallback), show real data-docs link.
 - [x] PipelineActivityPanel → highlight newly arriving runs/logs for <=2 s (background tint + fade) to emphasise real-time work.
-- [ ] `AgentActivityPanel` → subscribe to `/api/activity`.
-- [ ] `useHILApprovals` / `ApprovalPanel` → swap to new REST endpoints.
+- [x] `AgentActivityPanel` → subscribe to `/api/activity`.
+- [x] `useHILApprovals` / `ApprovalPanel` → swap to new REST endpoints.
 - [x] `TelemetryStrip` → include backend job/command failures.
 
 ### 2.2 Assistant tool expansion (`src/agent/tools.ts`)
 
-- [ ] Add wrappers: `runRefine`, `runEnrich`, `runQa`, `runPlanResearch`, `runContracts`.
-- [ ] Return `{jobId, statusUrl, logUrl}` for UI to render.
-- [ ] Update chat UI to stream tool responses & link to logs/RunDetails.
+- [x] Add wrappers: `runRefine`, `runEnrich`, `runQa`, `runPlanResearch`, `runContracts`.
+- [x] Return `{jobId, statusUrl, logUrl}` for UI to render.
+- [x] Update chat UI to stream tool responses & link to logs/RunDetails.
 
 ### 2.3 Error handling
 
-- [ ] Create shared toast/banner system (reuse `ApiBanner` variants).
-- [ ] Surface inline errors for uploads, approvals, assistant failures (imports already emit banners; approvals/activity pending).
+- [x] Create shared toast/banner system (reuse `ApiBanner` variants).
+- [x] Surface inline errors for uploads, approvals, assistant failures (imports already emit banners; approvals/activity pending).
 
 ---
 

@@ -1,10 +1,10 @@
 /**
  * Agent Activity Panel
  *
- * Side panel showing recent agent actions and tool calls.
+ * Side panel showing recent agent actions and tool calls with live updates.
  */
 
-import { Fragment, useMemo } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { formatDistanceToNow } from 'date-fns'
 import { Activity, Wrench, MessageSquare, CheckCircle, XCircle, CloudUpload } from 'lucide-react'
@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { fetchActivityEvents } from '@/api/activity'
 import type { ActivityEvent } from '@/types'
+import { useFeedback } from '@/components/feedback/FeedbackProvider'
 
 const REFRESH_INTERVAL = 15_000
 const ACTIVITY_LIMIT = 50
@@ -24,6 +25,14 @@ interface AgentActivityPanelProps {
 }
 
 export function AgentActivityPanel({ open, onOpenChange }: AgentActivityPanelProps) {
+  const { addFeedback } = useFeedback()
+  const [activityEvents, setActivityEvents] = useState<ActivityEvent[]>([])
+  const [sseStatus, setSseStatus] = useState<'idle' | 'connecting' | 'open' | 'error'>('idle')
+  const [sseError, setSseError] = useState<string | null>(null)
+  const sseErrorAnnouncedRef = useRef(false)
+
+  const pollingEnabled = !open || sseStatus !== 'open'
+
   const {
     data: events = [],
     isLoading,
@@ -32,12 +41,87 @@ export function AgentActivityPanel({ open, onOpenChange }: AgentActivityPanelPro
   } = useQuery<ActivityEvent[]>({
     queryKey: ['activity', { limit: ACTIVITY_LIMIT }],
     queryFn: () => fetchActivityEvents(ACTIVITY_LIMIT),
-    refetchInterval: REFRESH_INTERVAL,
+    refetchInterval: pollingEnabled ? REFRESH_INTERVAL : false,
   })
+
+  useEffect(() => {
+    if (events.length > 0) {
+      setActivityEvents(prev => mergeActivityEvents(events, prev))
+    } else if (!open && events.length === 0) {
+      setActivityEvents(events)
+    }
+  }, [events, open])
+
+  useEffect(() => {
+    if (!open) {
+      setSseStatus('idle')
+      setSseError(null)
+      sseErrorAnnouncedRef.current = false
+      return
+    }
+
+    let closed = false
+    setSseStatus('connecting')
+    setSseError(null)
+
+    const source = new EventSource(`/api/activity/events?limit=${ACTIVITY_LIMIT}`)
+
+    source.onopen = () => {
+      if (!closed) {
+        setSseStatus('open')
+        sseErrorAnnouncedRef.current = false
+      }
+    }
+
+    const handleSnapshot = (event: MessageEvent) => {
+      try {
+        const payload = JSON.parse(event.data) as { events?: ActivityEvent[] }
+        if (Array.isArray(payload?.events)) {
+          setActivityEvents(prev => mergeActivityEvents(payload.events ?? [], prev))
+        }
+      } catch (parseError) {
+        console.warn('Failed to parse activity snapshot', parseError)
+      }
+    }
+
+    const handleActivity = (event: MessageEvent) => {
+      try {
+        const payload = JSON.parse(event.data) as { event?: ActivityEvent }
+        if (payload?.event) {
+          setActivityEvents(prev => mergeActivityEvents([payload.event], prev))
+        }
+      } catch (parseError) {
+        console.warn('Failed to parse activity event', parseError)
+      }
+    }
+
+    source.addEventListener('snapshot', handleSnapshot)
+    source.addEventListener('activity', handleActivity)
+
+    source.onerror = () => {
+      if (closed) return
+      setSseStatus('error')
+      setSseError('Live updates unavailable; falling back to polling every 15 seconds.')
+      if (!sseErrorAnnouncedRef.current) {
+        addFeedback({
+          variant: 'warning',
+          title: 'Live activity stream degraded',
+          description: 'Realtime updates are temporarily unavailable. Falling back to periodic refresh.',
+        })
+        sseErrorAnnouncedRef.current = true
+      }
+      source.close()
+    }
+
+    return () => {
+      closed = true
+      source.close()
+    }
+  }, [open, addFeedback])
 
   const mappedEvents = useMemo(() => {
     const now = Date.now()
-    return events.map((event) => {
+    return activityEvents.map((event) => {
       const category = (event.category || event.type || 'general').toString().toLowerCase()
       const status = (event.status || '').toString().toLowerCase()
       const baseSuccess =
@@ -89,7 +173,9 @@ export function AgentActivityPanel({ open, onOpenChange }: AgentActivityPanelPro
         isRecent,
       }
     })
-  }, [events])
+  }, [activityEvents])
+
+  const isInitialLoading = isLoading && activityEvents.length === 0 && sseStatus !== 'open'
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -101,12 +187,17 @@ export function AgentActivityPanel({ open, onOpenChange }: AgentActivityPanelPro
           </div>
         </SheetHeader>
         <SheetBody>
-          {isError && (
+          {(isError || sseError) && (
             <div className="mb-4 rounded-lg border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-700 dark:text-red-400">
-              {error instanceof Error ? error.message : 'Unable to load activity events.'}
+              {isError && (error instanceof Error ? error.message : 'Unable to load activity events.')}
+              {sseError && (
+                <div className="mt-1 text-xs text-red-600 dark:text-red-300">
+                  {sseError}
+                </div>
+              )}
             </div>
           )}
-          {isLoading && (
+          {isInitialLoading && (
             <div className="space-y-2 text-xs text-muted-foreground">
               Loading recent activity…
             </div>
@@ -167,7 +258,7 @@ export function AgentActivityPanel({ open, onOpenChange }: AgentActivityPanelPro
             })}
           </div>
 
-          {!isLoading && mappedEvents.length === 0 && (
+          {!isInitialLoading && mappedEvents.length === 0 && (
             <div className="flex items-center justify-center py-12 text-center">
               <div>
                 <Activity className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
@@ -179,4 +270,30 @@ export function AgentActivityPanel({ open, onOpenChange }: AgentActivityPanelPro
       </SheetContent>
     </Sheet>
   )
+}
+
+function mergeActivityEvents(
+  incoming: ActivityEvent[],
+  existing: ActivityEvent[],
+): ActivityEvent[] {
+  if (!Array.isArray(incoming) || incoming.length === 0) {
+    return existing
+  }
+
+  const map = new Map<string, ActivityEvent>()
+  const combined = [...incoming, ...existing]
+
+  for (const event of combined) {
+    if (event && event.id && !map.has(event.id)) {
+      map.set(event.id, event)
+    }
+  }
+
+  return Array.from(map.values())
+    .sort((a, b) => {
+      const timeA = new Date(a.timestamp ?? 0).getTime()
+      const timeB = new Date(b.timestamp ?? 0).getTime()
+      return timeB - timeA
+    })
+    .slice(0, ACTIVITY_LIMIT)
 }
