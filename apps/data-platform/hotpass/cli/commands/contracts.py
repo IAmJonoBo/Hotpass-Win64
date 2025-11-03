@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import sys
 from pathlib import Path
 from typing import Any
 
@@ -77,6 +76,7 @@ def register() -> CLICommand:
 def _command_handler(namespace: argparse.Namespace, profile: CLIProfile | None) -> int:
     """Handle the contracts command execution."""
     console = Console()
+    err_console = Console(stderr=True)
 
     # Get profile name from CLI profile
     profile_name = "generic"
@@ -86,24 +86,28 @@ def _command_handler(namespace: argparse.Namespace, profile: CLIProfile | None) 
     # Load profile
     try:
         industry_profile = load_industry_profile(profile_name)
-        console.print(
+        err_console.print(
             f"[cyan]Loading profile:[/cyan] {industry_profile.display_name}",
-            file=sys.stderr,
         )
     except Exception as e:
-        console.print(f"[red]Error loading profile:[/red] {e}", file=sys.stderr)
+        err_console.print(f"[red]Error loading profile:[/red] {e}")
         return 1
 
     if namespace.action == "emit":
-        return emit_contracts(namespace, industry_profile, console)
+        return emit_contracts(namespace, industry_profile, console, err_console)
     elif namespace.action == "validate":
-        return validate_contracts(namespace, industry_profile, console)
+        return validate_contracts(namespace, industry_profile, console, err_console)
     else:
-        console.print(f"[red]Unknown action:[/red] {namespace.action}", file=sys.stderr)
+        err_console.print(f"[red]Unknown action:[/red] {namespace.action}")
         return 1
 
 
-def emit_contracts(namespace: argparse.Namespace, industry_profile: Any, console: Console) -> int:
+def emit_contracts(
+    namespace: argparse.Namespace,
+    industry_profile: Any,
+    console: Console,
+    err_console: Console,
+) -> int:
     """Emit data contracts for the profile."""
     try:
         # Build contract structure
@@ -153,22 +157,25 @@ def emit_contracts(namespace: argparse.Namespace, industry_profile: Any, console
             output_path = Path(namespace.output)
             output_path.parent.mkdir(parents=True, exist_ok=True)
             output_path.write_text(output_text)
-            console.print(f"[green]✓[/green] Contract written to {output_path}", file=sys.stderr)
+            err_console.print(f"[green]✓[/green] Contract written to {output_path}")
         else:
             console.print(output_text)
 
         return 0
 
     except Exception as e:
-        console.print(f"[red]Error emitting contract:[/red] {e}", file=sys.stderr)
+        err_console.print(f"[red]Error emitting contract:[/red] {e}")
         return 1
 
 
 def validate_contracts(
-    namespace: argparse.Namespace, industry_profile: Any, console: Console
+    namespace: argparse.Namespace,
+    industry_profile: Any,
+    console: Console,
+    err_console: Console,
 ) -> int:
     """Validate existing contracts against the profile."""
-    console.print("[yellow]Contract validation not yet implemented[/yellow]", file=sys.stderr)
+    err_console.print("[yellow]Contract validation not yet implemented[/yellow]")
     return 0
 
 

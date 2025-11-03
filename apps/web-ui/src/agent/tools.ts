@@ -32,6 +32,7 @@ export interface CommandToolResultData extends CommandJobLinks {
 
 const DEFAULT_PROFILE = 'generic'
 const DEFAULT_REFINED_PATH = './dist/refined.xlsx'
+const PROFILE_SEARCH_PATH = './apps/data-platform/hotpass/profiles'
 
 export const toolContract: ToolDefinition[] = getCachedToolContract()
 
@@ -176,6 +177,7 @@ export async function runRefine(options: RunRefineOptions = {}): Promise<ToolRes
     '--profile',
     profile,
   ]
+  command.push('--profile-search-path', PROFILE_SEARCH_PATH)
   if (archive) {
     command.push('--archive')
   }
@@ -215,9 +217,11 @@ export async function runEnrich(options: RunEnrichOptions = {}): Promise<ToolRes
     output,
     '--profile',
     profile,
-    '--allow-network',
-    allowNetwork ? 'true' : 'false',
   ]
+  command.push('--profile-search-path', PROFILE_SEARCH_PATH)
+  if (allowNetwork) {
+    command.push('--allow-network', 'true')
+  }
 
   return triggerCommandTool(command, `Enrich (${profile})`, {
     tool: 'runEnrich',
@@ -234,7 +238,15 @@ export interface RunQaOptions {
 
 export async function runQa(options: RunQaOptions = {}): Promise<ToolResult> {
   const target = options.target ?? 'all'
-  const command = ['uv', 'run', 'hotpass', 'qa', target]
+  const command = [
+    'uv',
+    'run',
+    'hotpass',
+    'qa',
+    target,
+    '--profile-search-path',
+    PROFILE_SEARCH_PATH,
+  ]
 
   return triggerCommandTool(command, `QA – ${target}`, {
     tool: 'runQa',
@@ -265,9 +277,10 @@ export async function runPlanResearch(options: RunPlanResearchOptions = {}): Pro
     dataset,
     '--row-id',
     rowId.toString(),
-    '--allow-network',
-    allowNetwork ? 'true' : 'false',
   ]
+  if (allowNetwork) {
+    command.push('--allow-network', 'true')
+  }
 
   return triggerCommandTool(command, 'Plan research', {
     tool: 'runPlanResearch',
@@ -300,6 +313,8 @@ export async function runContracts(options: RunContractsOptions = {}): Promise<T
     format,
     '--output',
     output,
+    '--profile-search-path',
+    PROFILE_SEARCH_PATH,
   ]
 
   return triggerCommandTool(command, `Contracts (${profile})`, {
