@@ -103,7 +103,11 @@ Follow these steps to refine, enrich, and validate a workbook end-to-end.
 uv run python -m hotpass.mcp.server
 ```
 
-Available tools: `hotpass.refine`, `hotpass.enrich`, `hotpass.qa`, `hotpass.explain_provenance`, `hotpass.crawl` (network guarded). Discover tools via `{"jsonrpc":"2.0","id":1,"method":"tools/list"}` and call with JSON payloads.
+Available tools: `hotpass.refine`, `hotpass.enrich`, `hotpass.qa`, `hotpass.explain_provenance`, `hotpass.setup`, `hotpass.net`, `hotpass.ctx`, `hotpass.env`, `hotpass.aws`, `hotpass.arc`, `hotpass.plan.research`, `hotpass.crawl`, `hotpass.search.intelligent`, `hotpass.crawl.coordinate`, `hotpass.pipeline.supervise`, `hotpass.agent.workflow`, and `hotpass.ta.check`. Discover tools via `{"jsonrpc":"2.0","id":1,"method":"tools/list"}` and call with JSON payloads.
+
+Roles gate which tools are visible. The bundled policy ships with `admin`, `operator`, `researcher`, and `observer` roles. Override the active role per request by setting `{"role": "researcher"}` in the JSON-RPC params or by adding `"_role": "researcher"` inside the `arguments` object. Configure global defaults with `HOTPASS_MCP_DEFAULT_ROLE`, supply JSON via `HOTPASS_MCP_POLICY_JSON`, or point `HOTPASS_MCP_POLICY_FILE` at a YAML/JSON policy file.
+
+To extend the surface, publish a module that exposes `register_mcp_tools(server)` and list it in `HOTPASS_MCP_PLUGINS`, or ship a Python entry point under `hotpass.mcp_tools`. The callback receives the live `HotpassMCPServer` instance so plugins can call `server.register_tool(...)` and `server.register_role(...)` safely.
 
 ### Choosing the Right Test Tier
 
@@ -152,7 +156,19 @@ Smoke executes Ruff lint, the Python smoke marker set, coverage export, and Vite
 | `hotpass.enrich`             | Deterministic / network enrichment  | `input_path`, `output_path`, `profile`, `allow_network` |
 | `hotpass.qa`                 | Quality checks                      | `target` (`all`, `fitness`, `profiles`, `docs`, `ta`)   |
 | `hotpass.explain_provenance` | Row-level provenance                | `dataset_path`, `row_id`                                |
-| `hotpass.crawl`              | Research crawl (requires approvals) | `query_or_url`, `profile`, `allow_network`              |
+| `hotpass.setup`              | Guided setup wizard                 | `preset`, `host`, `skip_steps`, `execute`, `assume_yes` |
+| `hotpass.net`                | Tunnel lifecycle management         | `action`, `host`, `via`, `label`, `detach`              |
+| `hotpass.ctx`                | Prefect/Kubernetes context helper   | `action`, `prefect_profile`, `eks_cluster`, `dry_run`   |
+| `hotpass.env`                | Emit `.env` files                   | `target`, `prefect_url`, `allow_network`, `force`       |
+| `hotpass.aws`                | AWS identity/cluster checks         | `profile`, `region`, `eks_cluster`, `output`            |
+| `hotpass.arc`                | ARC runner verification             | `owner`, `repository`, `scale_set`, `snapshot`, `output` |
+| `hotpass.plan.research`      | Deterministic + network planning    | `profile`, `dataset_path`, `row_id`, `entity`, `allow_network` |
+| `hotpass.crawl`              | Research crawl (requires approvals) | `query_or_url`, `profile`, `backend`, `allow_network`   |
+| `hotpass.search.intelligent` | Generate intelligent search plan    | `profile`, `dataset_path`, `row_id`, `query`, `urls`    |
+| `hotpass.crawl.coordinate`   | Produce crawl coordination schedule | `profile`, `backend`, `dataset_path`, `urls`, `allow_network` |
+| `hotpass.pipeline.supervise` | Inspect pipeline health             | `pipeline` (snapshot mapping)                           |
+| `hotpass.agent.workflow`     | Simulate agent workflow             | `profile`, `row`, `urls`, `pipeline_snapshot`, `crawl_backend` |
+| `hotpass.ta.check`           | Technical acceptance gates          | `gate` (`1`–`5`)                                        |
 
 ### Essential Environment Variables
 
@@ -193,6 +209,7 @@ Smoke executes Ruff lint, the Python smoke marker set, coverage export, and Vite
 - [Engineering › Testing strategy](engineering/testing.md)
 - [UPGRADE.md](../UPGRADE.md) – release requirements
 - [`tools.json`](../tools.json) – MCP tool contract
+- [MCP extension points](reference/mcp-extension-points.md)
 - [Quality Gate tests](../tests/cli/test_quality_gates.py)
 
 For questions or updates, ping `#hotpass-platform` or open a documentation issue.

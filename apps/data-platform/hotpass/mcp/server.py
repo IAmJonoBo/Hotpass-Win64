@@ -7,18 +7,30 @@ as tools that can be called by AI assistants like GitHub Copilot and Codex.
 from __future__ import annotations
 
 import asyncio
+import importlib
 import json
 import logging
 import os
 import sys
+from collections import OrderedDict
+from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass
+from importlib import metadata
 from pathlib import Path
 from typing import Any
 
 import pandas as pd
 
 from hotpass.config import IndustryProfile, get_default_profile, load_industry_profile
+from hotpass.mcp.access import RoleDefinition, RolePolicy
+from hotpass.mcp.harness import AgentWorkflowHarness
+from hotpass.pipeline_supervision import PipelineSnapshot, PipelineSupervisor
 from hotpass.research import ResearchContext, ResearchOrchestrator
+
+try:  # pragma: no cover - optional dependency for policy overrides
+    import yaml
+except Exception:  # pragma: no cover - PyYAML may be absent
+    yaml = None  # type: ignore[assignment]
 
 # Configure logging
 logging.basicConfig(
@@ -54,17 +66,132 @@ class MCPResponse:
     id: int | str | None = None
 
 
+ToolHandler = Callable[[dict[str, Any]], Awaitable[dict[str, Any]]]
+
+
+@dataclass(slots=True)
+class RegisteredTool:
+    """Internal representation of a registered MCP tool."""
+
+    definition: MCPTool
+    handler: ToolHandler
+    roles: frozenset[str] | None = None
+
+
+DEFAULT_ROLE_POLICY: Mapping[str, object] = {
+    "roles": {
+        "admin": {
+            "description": "Full access to all MCP tools",
+            "allow": ["*"],
+        },
+        "operator": {
+            "description": "Operate pipelines and infrastructure",
+            "inherits": ["observer"],
+            "allow": [
+                "hotpass.refine",
+                "hotpass.enrich",
+                "hotpass.qa",
+                "hotpass.setup",
+                "hotpass.net",
+                "hotpass.ctx",
+                "hotpass.env",
+                "hotpass.aws",
+                "hotpass.arc",
+                "hotpass.explain_provenance",
+                "hotpass.plan.research",
+                "hotpass.crawl",
+                "hotpass.crawl.coordinate",
+                "hotpass.search.intelligent",
+                "hotpass.pipeline.supervise",
+                "hotpass.ta.check",
+                "hotpass.agent.workflow",
+            ],
+        },
+        "researcher": {
+            "description": "Plan and execute research flows",
+            "inherits": ["observer"],
+            "allow": [
+                "hotpass.plan.research",
+                "hotpass.search.intelligent",
+                "hotpass.crawl",
+                "hotpass.crawl.coordinate",
+                "hotpass.pipeline.supervise",
+                "hotpass.explain_provenance",
+            ],
+        },
+        "observer": {
+            "description": "Read-only tooling",
+            "allow": [
+                "hotpass.qa",
+                "hotpass.ta.check",
+                "hotpass.explain_provenance",
+            ],
+        },
+    },
+    "default_role": "operator",
+}
+
+
 class HotpassMCPServer:
     """MCP stdio server for Hotpass operations."""
 
     def __init__(self) -> None:
         """Initialize the MCP server."""
-        self.tools = self._register_tools()
-        logger.info(f"Initialized Hotpass MCP server with {len(self.tools)} tools")
 
-    def _register_tools(self) -> list[MCPTool]:
+        self._tool_registry: OrderedDict[str, RegisteredTool] = OrderedDict()
+        self.tools: list[MCPTool] = []
+        self._research_orchestrator = ResearchOrchestrator()
+        self._pipeline_supervisor = PipelineSupervisor()
+        self._workflow_harness = AgentWorkflowHarness(
+            self._research_orchestrator, self._pipeline_supervisor
+        )
+
+        policy_payload = self._load_policy_payload()
+        default_role = os.getenv("HOTPASS_MCP_DEFAULT_ROLE")
+        self.role_policy = RolePolicy.from_payload(policy_payload, default_role)
+
+        self._register_tools()
+        self._load_plugins()
+
+        logger.info("Initialized Hotpass MCP server with %s tools", len(self.tools))
+
+    def register_tool(
+        self,
+        tool: MCPTool,
+        handler: ToolHandler,
+        *,
+        roles: Sequence[str] | None = None,
+    ) -> None:
+        """Register a tool and optionally constrain the roles that may call it."""
+
+        permitted_roles = tuple(
+            role for role in (roles or ()) if role in self.role_policy.roles
+        )
+        registered = RegisteredTool(
+            tool,
+            handler,
+            frozenset(permitted_roles) or None,
+        )
+        self._tool_registry[tool.name] = registered
+        self.role_policy.register_tool_override(
+            tool.name, permitted_roles if permitted_roles else None
+        )
+        self._sync_tool_index()
+
+    def register_role(self, definition: RoleDefinition) -> None:
+        """Register or override a role definition."""
+
+        self.role_policy.roles[definition.name] = definition
+
+    def _sync_tool_index(self) -> None:
+        """Synchronise the externally-visible tool list with the registry."""
+
+        self.tools = [entry.definition for entry in self._tool_registry.values()]
+
+    def _register_tools(self) -> None:
         """Register all available MCP tools."""
-        return [
+
+        self.register_tool(
             MCPTool(
                 name="hotpass.refine",
                 description="Run the Hotpass refinement pipeline to clean and normalize data",
@@ -73,9 +200,7 @@ class HotpassMCPServer:
                     "properties": {
                         "input_path": {
                             "type": "string",
-                            "description": (
-                                "Path to input directory or file containing data to refine"
-                            ),
+                            "description": "Path to input directory or file containing data to refine",
                         },
                         "output_path": {
                             "type": "string",
@@ -95,12 +220,13 @@ class HotpassMCPServer:
                     "required": ["input_path", "output_path"],
                 },
             ),
+            self._run_refine,
+        )
+
+        self.register_tool(
             MCPTool(
                 name="hotpass.enrich",
-                description=(
-                    "Enrich refined data with additional information from "
-                    "deterministic and optional network sources"
-                ),
+                description="Enrich refined data with deterministic and optional network sources",
                 input_schema={
                     "type": "object",
                     "properties": {
@@ -119,15 +245,17 @@ class HotpassMCPServer:
                         },
                         "allow_network": {
                             "type": "boolean",
-                            "description": (
-                                "Whether to allow network-based enrichment (defaults to env vars)"
-                            ),
+                            "description": "Whether to allow network-based enrichment",
                             "default": False,
                         },
                     },
                     "required": ["input_path", "output_path"],
                 },
             ),
+            self._run_enrich,
+        )
+
+        self.register_tool(
             MCPTool(
                 name="hotpass.qa",
                 description="Run quality assurance checks and validation",
@@ -152,6 +280,10 @@ class HotpassMCPServer:
                     },
                 },
             ),
+            self._run_qa,
+        )
+
+        self.register_tool(
             MCPTool(
                 name="hotpass.explain_provenance",
                 description="Explain data provenance for a specific row or dataset",
@@ -170,6 +302,10 @@ class HotpassMCPServer:
                     "required": ["row_id", "dataset_path"],
                 },
             ),
+            self._explain_provenance,
+        )
+
+        self.register_tool(
             MCPTool(
                 name="hotpass.setup",
                 description="Run the Hotpass guided setup wizard (dry-run or execute)",
@@ -193,7 +329,7 @@ class HotpassMCPServer:
                         "via": {
                             "type": "string",
                             "enum": ["ssh-bastion", "ssm"],
-                            "description": "Tunnel mechanism (ssh-bastion or ssm)",
+                            "description": "Tunnel mechanism",
                         },
                         "label": {
                             "type": "string",
@@ -203,98 +339,34 @@ class HotpassMCPServer:
                             "type": "array",
                             "items": {
                                 "type": "string",
-                                "enum": [
-                                    "deps",
-                                    "prereqs",
-                                    "tunnels",
-                                    "aws",
-                                    "ctx",
-                                    "env",
-                                    "arc",
-                                ],
+                                "enum": ["deps", "prereqs", "tunnels", "aws", "ctx", "env", "arc"],
                             },
-                            "description": "Skip the listed stages in the wizard",
                         },
-                        "aws_profile": {
-                            "type": "string",
-                            "description": "AWS CLI profile to use",
-                        },
-                        "aws_region": {
-                            "type": "string",
-                            "description": "AWS region override",
-                        },
-                        "eks_cluster": {
-                            "type": "string",
-                            "description": "Cluster name forwarded to hotpass ctx/aws",
-                        },
-                        "kube_context": {
-                            "type": "string",
-                            "description": "Alias assigned to kubeconfig context",
-                        },
-                        "namespace": {
-                            "type": "string",
-                            "description": "Namespace recorded with context metadata",
-                        },
-                        "prefect_profile": {
-                            "type": "string",
-                            "description": "Prefect profile configured by the wizard",
-                        },
-                        "prefect_url": {
-                            "type": "string",
-                            "description": "Override Prefect API URL",
-                        },
-                        "env_target": {
-                            "type": "string",
-                            "description": "Target environment passed to hotpass env",
-                        },
-                        "allow_network": {
-                            "type": "boolean",
-                            "description": "Generate env flags for network enrichment",
-                            "default": False,
-                        },
-                        "force_env": {
-                            "type": "boolean",
-                            "description": "Overwrite existing env files",
-                            "default": False,
-                        },
-                        "arc_owner": {
-                            "type": "string",
-                            "description": "GitHub owner used in ARC verification",
-                        },
-                        "arc_repository": {
-                            "type": "string",
-                            "description": "Repository name used in ARC verification",
-                        },
-                        "arc_scale_set": {
-                            "type": "string",
-                            "description": "RunnerScaleSet name used in ARC verification",
-                        },
-                        "arc_namespace": {
-                            "type": "string",
-                            "description": "Namespace passed to hotpass arc",
-                        },
-                        "arc_snapshot": {
-                            "type": "string",
-                            "description": "Optional snapshot path for ARC verification",
-                        },
-                        "dry_run": {
-                            "type": "boolean",
-                            "description": "Render the wizard plan without executing",
-                            "default": True,
-                        },
-                        "execute": {
-                            "type": "boolean",
-                            "description": "Execute the plan with --execute --assume-yes",
-                            "default": False,
-                        },
-                        "assume_yes": {
-                            "type": "boolean",
-                            "description": "Pass --assume-yes to suppress prompts",
-                            "default": True,
-                        },
+                        "aws_profile": {"type": "string"},
+                        "aws_region": {"type": "string"},
+                        "eks_cluster": {"type": "string"},
+                        "kube_context": {"type": "string"},
+                        "namespace": {"type": "string"},
+                        "prefect_profile": {"type": "string"},
+                        "prefect_url": {"type": "string"},
+                        "env_target": {"type": "string"},
+                        "allow_network": {"type": "boolean", "default": False},
+                        "force_env": {"type": "boolean", "default": False},
+                        "arc_owner": {"type": "string"},
+                        "arc_repository": {"type": "string"},
+                        "arc_scale_set": {"type": "string"},
+                        "arc_namespace": {"type": "string"},
+                        "arc_snapshot": {"type": "string"},
+                        "dry_run": {"type": "boolean", "default": True},
+                        "execute": {"type": "boolean", "default": False},
+                        "assume_yes": {"type": "boolean", "default": True},
                     },
                 },
             ),
+            self._run_setup,
+        )
+
+        self.register_tool(
             MCPTool(
                 name="hotpass.net",
                 description="Manage SSH/SSM tunnels via the hotpass net command",
@@ -311,48 +383,23 @@ class HotpassMCPServer:
                             "enum": ["ssh-bastion", "ssm"],
                             "description": "Tunnel mechanism for 'up'",
                         },
-                        "host": {
-                            "type": "string",
-                            "description": "Bastion host or SSM target for 'up'",
-                        },
-                        "label": {
-                            "type": "string",
-                            "description": "Label identifying the tunnel session",
-                        },
-                        "all": {
-                            "type": "boolean",
-                            "description": "Terminate all sessions when action=down",
-                        },
-                        "detach": {
-                            "type": "boolean",
-                            "description": "Run tunnels in the background (action=up)",
-                            "default": True,
-                        },
-                        "auto_port": {
-                            "type": "boolean",
-                            "description": "Allow auto port selection when action=up",
-                        },
-                        "prefect_port": {
-                            "type": "integer",
-                            "description": "Local Prefect port override",
-                        },
-                        "marquez_port": {
-                            "type": "integer",
-                            "description": "Local Marquez port override",
-                        },
-                        "no_marquez": {
-                            "type": "boolean",
-                            "description": "Skip Marquez forwarding",
-                        },
-                        "dry_run": {
-                            "type": "boolean",
-                            "description": "Print command without executing",
-                            "default": False,
-                        },
+                        "host": {"type": "string"},
+                        "label": {"type": "string"},
+                        "all": {"type": "boolean"},
+                        "detach": {"type": "boolean", "default": True},
+                        "auto_port": {"type": "boolean"},
+                        "prefect_port": {"type": "integer"},
+                        "marquez_port": {"type": "integer"},
+                        "no_marquez": {"type": "boolean"},
+                        "dry_run": {"type": "boolean", "default": False},
                     },
                     "required": ["action"],
                 },
             ),
+            self._run_net,
+        )
+
+        self.register_tool(
             MCPTool(
                 name="hotpass.ctx",
                 description="Bootstrap or list Prefect/Kubernetes contexts",
@@ -362,45 +409,23 @@ class HotpassMCPServer:
                         "action": {
                             "type": "string",
                             "enum": ["init", "list"],
-                            "description": "ctx subcommand to run",
                             "default": "init",
                         },
-                        "prefect_profile": {
-                            "type": "string",
-                            "description": "Prefect profile name (action=init)",
-                        },
-                        "prefect_url": {
-                            "type": "string",
-                            "description": "Prefect API URL override",
-                        },
-                        "eks_cluster": {
-                            "type": "string",
-                            "description": "Cluster name for kubeconfig updates",
-                        },
-                        "kube_context": {
-                            "type": "string",
-                            "description": "Alias assigned to kubeconfig context",
-                        },
-                        "namespace": {
-                            "type": "string",
-                            "description": "Namespace recorded alongside the context",
-                        },
-                        "no_prefect": {
-                            "type": "boolean",
-                            "description": "Skip Prefect profile creation",
-                        },
-                        "no_kube": {
-                            "type": "boolean",
-                            "description": "Skip kubeconfig updates",
-                        },
-                        "dry_run": {
-                            "type": "boolean",
-                            "description": "Print commands without executing them",
-                            "default": False,
-                        },
+                        "prefect_profile": {"type": "string"},
+                        "prefect_url": {"type": "string"},
+                        "eks_cluster": {"type": "string"},
+                        "kube_context": {"type": "string"},
+                        "namespace": {"type": "string"},
+                        "no_prefect": {"type": "boolean"},
+                        "no_kube": {"type": "boolean"},
+                        "dry_run": {"type": "boolean", "default": False},
                     },
                 },
             ),
+            self._run_ctx,
+        )
+
+        self.register_tool(
             MCPTool(
                 name="hotpass.env",
                 description="Generate .env files aligned with current tunnels/contexts",
@@ -412,133 +437,72 @@ class HotpassMCPServer:
                             "description": "Environment name (produces .env.<target>)",
                             "default": "staging",
                         },
-                        "prefect_url": {
-                            "type": "string",
-                            "description": "Override Prefect API URL",
-                        },
-                        "openlineage_url": {
-                            "type": "string",
-                            "description": "Override OpenLineage API URL",
-                        },
-                        "allow_network": {
-                            "type": "boolean",
-                            "description": "Enable network enrichment flags",
-                            "default": False,
-                        },
-                        "force": {
-                            "type": "boolean",
-                            "description": "Overwrite existing files",
-                            "default": False,
-                        },
-                        "dry_run": {
-                            "type": "boolean",
-                            "description": "Preview the file without writing it",
-                            "default": False,
-                        },
+                        "prefect_url": {"type": "string"},
+                        "openlineage_url": {"type": "string"},
+                        "allow_network": {"type": "boolean", "default": False},
+                        "force": {"type": "boolean", "default": False},
+                        "dry_run": {"type": "boolean", "default": False},
                     },
                 },
             ),
+            self._run_env,
+        )
+
+        self.register_tool(
             MCPTool(
                 name="hotpass.aws",
                 description="Verify AWS identity and optional EKS connectivity",
                 input_schema={
                     "type": "object",
                     "properties": {
-                        "profile": {
-                            "type": "string",
-                            "description": "AWS CLI profile to use",
-                        },
-                        "region": {
-                            "type": "string",
-                            "description": "AWS region override",
-                        },
-                        "eks_cluster": {
-                            "type": "string",
-                            "description": "Cluster passed to --eks-cluster",
-                        },
-                        "verify_kubeconfig": {
-                            "type": "boolean",
-                            "description": "Run aws eks update-kubeconfig",
-                            "default": False,
-                        },
-                        "kube_context": {
-                            "type": "string",
-                            "description": "Alias for kubeconfig context",
-                        },
-                        "kubeconfig": {
-                            "type": "string",
-                            "description": "Path to kubeconfig file to update",
-                        },
+                        "profile": {"type": "string"},
+                        "region": {"type": "string"},
+                        "eks_cluster": {"type": "string"},
+                        "verify_kubeconfig": {"type": "boolean", "default": False},
+                        "kube_context": {"type": "string"},
+                        "kubeconfig": {"type": "string"},
                         "output": {
                             "type": "string",
                             "enum": ["text", "json"],
-                            "description": "Render mode",
                             "default": "text",
                         },
-                        "dry_run": {
-                            "type": "boolean",
-                            "description": "Print commands without executing",
-                            "default": False,
-                        },
+                        "dry_run": {"type": "boolean", "default": False},
                     },
                 },
             ),
+            self._run_aws,
+        )
+
+        self.register_tool(
             MCPTool(
                 name="hotpass.arc",
                 description="Verify ARC runner lifecycle via CLI wrapper",
                 input_schema={
                     "type": "object",
                     "properties": {
-                        "owner": {"type": "string", "description": "Repository owner"},
-                        "repository": {
-                            "type": "string",
-                            "description": "Repository name",
-                        },
-                        "scale_set": {
-                            "type": "string",
-                            "description": "RunnerScaleSet to verify",
-                        },
-                        "namespace": {
-                            "type": "string",
-                            "description": "Kubernetes namespace",
-                            "default": "arc-runners",
-                        },
-                        "aws_region": {
-                            "type": "string",
-                            "description": "AWS region override",
-                        },
-                        "aws_profile": {
-                            "type": "string",
-                            "description": "AWS profile override",
-                        },
-                        "snapshot": {
-                            "type": "string",
-                            "description": "Snapshot JSON for offline rehearsal",
-                        },
-                        "verify_oidc": {
-                            "type": "boolean",
-                            "description": "Enable AWS identity verification",
-                            "default": False,
-                        },
+                        "owner": {"type": "string"},
+                        "repository": {"type": "string"},
+                        "scale_set": {"type": "string"},
+                        "namespace": {"type": "string", "default": "arc-runners"},
+                        "aws_region": {"type": "string"},
+                        "aws_profile": {"type": "string"},
+                        "snapshot": {"type": "string"},
+                        "verify_oidc": {"type": "boolean", "default": False},
                         "output": {
                             "type": "string",
                             "enum": ["text", "json"],
                             "default": "text",
                         },
-                        "store_summary": {
-                            "type": "boolean",
-                            "description": "Persist results under .hotpass/arc/",
-                            "default": False,
-                        },
-                        "dry_run": {
-                            "type": "boolean",
-                            "description": "Print command without executing",
-                            "default": False,
-                        },
+                        "store_summary": {"type": "boolean", "default": False},
+                        "dry_run": {"type": "boolean", "default": False},
                     },
                     "required": ["owner", "repository", "scale_set"],
                 },
             ),
+            self._run_arc,
+        )
+
+        self.register_tool(
             MCPTool(
                 name="hotpass.plan.research",
                 description="Plan deterministic and network research for an entity",
@@ -583,6 +547,9 @@ class HotpassMCPServer:
                     },
                 },
             ),
+            self._run_plan_research,
+        )
+        self.register_tool(
             MCPTool(
                 name="hotpass.crawl",
                 description="Execute research crawler (requires network permission)",
@@ -604,10 +571,18 @@ class HotpassMCPServer:
                             "description": "Backend to use for crawling",
                             "default": "deterministic",
                         },
+                        "allow_network": {
+                            "type": "boolean",
+                            "description": "Enable network access during the crawl",
+                            "default": False,
+                        },
                     },
                     "required": ["query_or_url"],
                 },
             ),
+            self._run_crawl,
+        )
+        self.register_tool(
             MCPTool(
                 name="hotpass.ta.check",
                 description="Run Technical Acceptance checks (all quality gates)",
@@ -622,36 +597,196 @@ class HotpassMCPServer:
                     },
                 },
             ),
-        ]
+            self._run_ta_check,
+        )
+
+        self.register_tool(
+            MCPTool(
+                name="hotpass.search.intelligent",
+                description="Generate intelligent search strategies without executing the pipeline",
+                input_schema={
+                    "type": "object",
+                    "properties": {
+                        "profile": {"type": "string", "default": "generic"},
+                        "dataset_path": {"type": "string"},
+                        "row_id": {"type": "string"},
+                        "entity": {"type": "string"},
+                        "query": {"type": "string"},
+                        "urls": {"type": "array", "items": {"type": "string"}},
+                        "allow_network": {"type": "boolean", "default": False},
+                        "row": {"type": "object"},
+                    },
+                },
+            ),
+            self._run_intelligent_search,
+        )
+
+        self.register_tool(
+            MCPTool(
+                name="hotpass.crawl.coordinate",
+                description="Produce a crawl coordination schedule for agents",
+                input_schema={
+                    "type": "object",
+                    "properties": {
+                        "profile": {"type": "string", "default": "generic"},
+                        "dataset_path": {"type": "string"},
+                        "row_id": {"type": "string"},
+                        "entity": {"type": "string"},
+                        "query": {"type": "string"},
+                        "urls": {"type": "array", "items": {"type": "string"}},
+                        "allow_network": {"type": "boolean", "default": False},
+                        "backend": {
+                            "type": "string",
+                            "enum": ["deterministic", "research"],
+                            "default": "deterministic",
+                        },
+                        "row": {"type": "object"},
+                    },
+                },
+            ),
+            self._run_coordinate_crawl,
+        )
+
+        self.register_tool(
+            MCPTool(
+                name="hotpass.pipeline.supervise",
+                description="Analyse pipeline snapshots and surface supervision guidance",
+                input_schema={
+                    "type": "object",
+                    "properties": {
+                        "pipeline": {"type": "object"},
+                    },
+                },
+            ),
+            self._run_pipeline_supervision,
+        )
+
+        self.register_tool(
+            MCPTool(
+                name="hotpass.agent.workflow",
+                description="Simulate an autonomous agent workflow end-to-end",
+                input_schema={
+                    "type": "object",
+                    "properties": {
+                        "profile": {"type": "string", "default": "generic"},
+                        "dataset_path": {"type": "string"},
+                        "row_id": {"type": "string"},
+                        "entity": {"type": "string"},
+                        "query": {"type": "string"},
+                        "urls": {"type": "array", "items": {"type": "string"}},
+                        "allow_network": {"type": "boolean", "default": False},
+                        "row": {"type": "object"},
+                        "pipeline_snapshot": {"type": "object"},
+                        "crawl_backend": {
+                            "type": "string",
+                            "enum": ["deterministic", "research"],
+                            "default": "deterministic",
+                        },
+                    },
+                },
+            ),
+            self._run_agent_workflow,
+        )
+
+    def _load_policy_payload(self) -> Mapping[str, object]:
+        policy_file = os.getenv("HOTPASS_MCP_POLICY_FILE")
+        if policy_file:
+            path = Path(policy_file)
+            if path.exists():
+                try:
+                    text = path.read_text(encoding="utf-8")
+                    if path.suffix.lower() in {".yml", ".yaml"} and yaml is not None:
+                        loaded = yaml.safe_load(text) or {}
+                    else:
+                        loaded = json.loads(text)
+                    if isinstance(loaded, Mapping):
+                        return loaded
+                except Exception:
+                    logger.warning("Failed to load role policy from %s", policy_file, exc_info=True)
+
+        env_payload = os.getenv("HOTPASS_MCP_POLICY_JSON")
+        if env_payload:
+            try:
+                loaded_env = json.loads(env_payload)
+                if isinstance(loaded_env, Mapping):
+                    return loaded_env
+            except json.JSONDecodeError:
+                logger.warning("Invalid HOTPASS_MCP_POLICY_JSON payload", exc_info=True)
+
+        return DEFAULT_ROLE_POLICY
+
+    def _register_plugin(self, plugin: Any) -> None:
+        register = getattr(plugin, "register_mcp_tools", None)
+        if callable(register):
+            register(self)
+
+    def _load_plugins(self) -> None:
+        modules = os.getenv("HOTPASS_MCP_PLUGINS", "")
+        for name in modules.split(","):
+            module_name = name.strip()
+            if not module_name:
+                continue
+            try:
+                plugin_module = importlib.import_module(module_name)
+            except Exception:
+                logger.warning("Failed to import MCP plugin module %s", module_name, exc_info=True)
+                continue
+            self._register_plugin(plugin_module)
+
+        try:
+            for entry_point in metadata.entry_points().select(group="hotpass.mcp_tools"):
+                try:
+                    plugin = entry_point.load()
+                except Exception:
+                    logger.warning("Failed to load MCP plugin entry point %s", entry_point.name, exc_info=True)
+                    continue
+                self._register_plugin(plugin)
+        except Exception:
+            logger.debug("No MCP plugin entry points discovered", exc_info=True)
 
     async def handle_request(self, request: MCPRequest) -> MCPResponse:
         """Handle an incoming MCP request."""
         try:
+            params = request.params or {}
+            if not isinstance(params, Mapping):
+                params = {}
+
             if request.method == "tools/list":
-                return MCPResponse(
-                    result={
-                        "tools": [
-                            {
-                                "name": tool.name,
-                                "description": tool.description,
-                                "inputSchema": tool.input_schema,
-                            }
-                            for tool in self.tools
-                        ]
-                    },
-                    id=request.id,
-                )
+                role, _ = self._resolve_role(params, None)
+                visible_tools = [
+                    {
+                        "name": tool.name,
+                        "description": tool.description,
+                        "inputSchema": tool.input_schema,
+                    }
+                    for tool in self.tools
+                    if self.role_policy.is_allowed(role, tool.name)
+                ]
+                return MCPResponse(result={"tools": visible_tools}, id=request.id)
 
             elif request.method == "tools/call":
-                tool_name = request.params.get("name")
-                tool_args = request.params.get("arguments", {})
+                tool_name = params.get("name")
+                raw_arguments = params.get("arguments", {})
+                tool_args = dict(raw_arguments) if isinstance(raw_arguments, Mapping) else {}
 
-                # Ensure tool_name is a string
                 if not isinstance(tool_name, str):
                     return MCPResponse(
                         error={
                             "code": -32602,
                             "message": "Invalid params: tool name must be a string",
+                        },
+                        id=request.id,
+                    )
+
+                role, tool_args = self._resolve_role(params, tool_args)
+                tool_args = tool_args or {}
+                if not self.role_policy.is_allowed(role, tool_name):
+                    return MCPResponse(
+                        error={
+                            "code": 403,
+                            "message": (
+                                f"Role '{role or self.role_policy.default_role}' is not permitted to call {tool_name}"
+                            ),
                         },
                         id=request.id,
                     )
@@ -677,36 +812,13 @@ class HotpassMCPServer:
 
     async def _execute_tool(self, tool_name: str, args: dict[str, Any]) -> dict[str, Any]:
         """Execute a Hotpass tool."""
-        logger.info(f"Executing tool: {tool_name} with args: {args}")
+        logger.info("Executing tool %s", tool_name)
 
-        if tool_name == "hotpass.refine":
-            return await self._run_refine(args)
-        elif tool_name == "hotpass.enrich":
-            return await self._run_enrich(args)
-        elif tool_name == "hotpass.qa":
-            return await self._run_qa(args)
-        elif tool_name == "hotpass.setup":
-            return await self._run_setup(args)
-        elif tool_name == "hotpass.net":
-            return await self._run_net(args)
-        elif tool_name == "hotpass.ctx":
-            return await self._run_ctx(args)
-        elif tool_name == "hotpass.env":
-            return await self._run_env(args)
-        elif tool_name == "hotpass.aws":
-            return await self._run_aws(args)
-        elif tool_name == "hotpass.arc":
-            return await self._run_arc(args)
-        elif tool_name == "hotpass.explain_provenance":
-            return await self._explain_provenance(args)
-        elif tool_name == "hotpass.plan.research":
-            return await self._run_plan_research(args)
-        elif tool_name == "hotpass.crawl":
-            return await self._run_crawl(args)
-        elif tool_name == "hotpass.ta.check":
-            return await self._run_ta_check(args)
-        else:
+        entry = self._tool_registry.get(tool_name)
+        if entry is None:
             raise ValueError(f"Unknown tool: {tool_name}")
+
+        return await entry.handler(args)
 
     async def _run_refine(self, args: dict[str, Any]) -> dict[str, Any]:
         """Run the refine command."""
@@ -843,9 +955,7 @@ class HotpassMCPServer:
                 "error": f"Failed to explain provenance: {str(e)}",
             }
 
-    async def _run_plan_research(self, args: dict[str, Any]) -> dict[str, Any]:
-        """Plan deterministic and network research using the orchestrator."""
-
+    def _build_research_context(self, args: Mapping[str, Any]) -> ResearchContext:
         profile_name = args.get("profile") or "generic"
         profile = self._load_industry_profile(profile_name)
 
@@ -857,17 +967,51 @@ class HotpassMCPServer:
         if row is None and isinstance(args.get("row"), dict):
             row = pd.Series(args["row"])
 
-        context = ResearchContext(
+        urls = args.get("urls")
+        if not isinstance(urls, list):
+            urls = []
+
+        return ResearchContext(
             profile=profile,
             row=row,
             entity_name=args.get("entity"),
             query=args.get("query"),
-            urls=args.get("urls", []),
+            urls=urls,
             allow_network=bool(args.get("allow_network", False)),
         )
 
-        orchestrator = ResearchOrchestrator()
-        outcome = orchestrator.plan(context)
+    def _resolve_role(
+        self,
+        params: Mapping[str, Any] | None,
+        arguments: Mapping[str, Any] | None,
+    ) -> tuple[str | None, dict[str, Any] | None]:
+        candidate: str | None = None
+        if params and isinstance(params, Mapping):
+            value = params.get("role")
+            if isinstance(value, str) and value.strip():
+                candidate = value.strip()
+
+        sanitised: dict[str, Any] | None = None
+        if arguments and isinstance(arguments, Mapping):
+            sanitised = dict(arguments)
+            override = sanitised.pop("_role", None)
+            if isinstance(override, str) and override.strip():
+                candidate = override.strip()
+
+        if candidate:
+            return candidate, sanitised
+
+        env_role = os.getenv("HOTPASS_MCP_ROLE")
+        if env_role:
+            return env_role, sanitised
+
+        return None, sanitised
+
+    async def _run_plan_research(self, args: dict[str, Any]) -> dict[str, Any]:
+        """Plan deterministic and network research using the orchestrator."""
+
+        context = self._build_research_context(args)
+        outcome = self._research_orchestrator.plan(context)
         return {
             "success": outcome.success,
             "outcome": outcome.to_dict(),
@@ -883,20 +1027,68 @@ class HotpassMCPServer:
                 "error": "query_or_url must be a non-empty string",
             }
 
-        profile_name = args.get("profile") or "generic"
-        profile = self._load_industry_profile(profile_name)
-        allow_network = bool(args.get("allow_network", False))
-
-        orchestrator = ResearchOrchestrator()
-        outcome = orchestrator.crawl(
-            profile=profile,
+        context = self._build_research_context(args)
+        outcome = self._research_orchestrator.crawl(
+            profile=context.profile,
             query_or_url=query_or_url,
-            allow_network=allow_network,
+            allow_network=context.allow_network,
         )
 
         return {
             "success": outcome.success,
             "outcome": outcome.to_dict(),
+        }
+
+    async def _run_intelligent_search(self, args: dict[str, Any]) -> dict[str, Any]:
+        """Return an intelligent search strategy for the supplied context."""
+
+        context = self._build_research_context(args)
+        strategy = self._research_orchestrator.intelligent_search(context)
+        return {
+            "success": True,
+            "strategy": strategy.to_dict(),
+        }
+
+    async def _run_coordinate_crawl(self, args: dict[str, Any]) -> dict[str, Any]:
+        """Return a crawl coordination schedule without executing network requests."""
+
+        backend = args.get("backend") or "deterministic"
+        context = self._build_research_context(args)
+        schedule = self._research_orchestrator.coordinate_crawl(context, backend=backend)
+        return {
+            "success": True,
+            "schedule": schedule.to_dict(),
+        }
+
+    async def _run_pipeline_supervision(self, args: dict[str, Any]) -> dict[str, Any]:
+        """Analyse a pipeline snapshot and return supervision guidance."""
+
+        snapshot_payload = args.get("pipeline") or {}
+        if isinstance(snapshot_payload, Mapping):
+            snapshot = PipelineSnapshot.from_payload(snapshot_payload)
+        else:
+            snapshot = PipelineSnapshot(name="pipeline", runs=(), tasks=(), metrics={})
+
+        report = self._pipeline_supervisor.inspect(snapshot)
+        return {
+            "success": True,
+            "report": report.to_dict(),
+        }
+
+    async def _run_agent_workflow(self, args: dict[str, Any]) -> dict[str, Any]:
+        """Simulate an autonomous workflow combining search, crawl, and supervision."""
+
+        context = self._build_research_context(args)
+        snapshot_payload = args.get("pipeline_snapshot")
+        backend = args.get("crawl_backend") or "deterministic"
+        report = self._workflow_harness.simulate(
+            context,
+            pipeline_snapshot=snapshot_payload if isinstance(snapshot_payload, Mapping) else None,
+            crawl_backend=backend,
+        )
+        return {
+            "success": True,
+            "report": report.to_dict(),
         }
 
     async def _run_setup(self, args: dict[str, Any]) -> dict[str, Any]:
