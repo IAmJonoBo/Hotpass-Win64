@@ -801,7 +801,8 @@ class ResearchOrchestrator:
 
         _append(plan.query)
         _append(plan.entity_name)
-        _append(plan.entity_slug.replace("-", " "))
+        if plan.entity_slug is not None:
+            _append(plan.entity_slug.replace("-", " "))
         if plan.row is not None:
             _append(plan.row.get("organization_name"))
             website_value = plan.row.get("website")
