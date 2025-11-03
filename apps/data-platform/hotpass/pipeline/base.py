@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import random
 from collections.abc import Mapping
+from dataclasses import asdict
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
@@ -13,6 +14,7 @@ if TYPE_CHECKING:
 
 from ..domain.party import PartyStore
 from ..pipeline_reporting import generate_recommendations
+from ..imports.preprocess import apply_import_preprocessing
 from .aggregation import aggregate_records
 from .config import SSOT_COLUMNS, PipelineConfig, PipelineResult, QualityReport, initialise_config
 from .enrichment import collect_intent_signals
@@ -104,6 +106,22 @@ def execute_pipeline(config: PipelineConfig) -> PipelineResult:
     metrics["load_seconds"] = load_seconds
     if load_seconds > 0 and not combined.empty:
         metrics["load_rows_per_second"] = len(combined) / load_seconds
+
+    if not combined.empty:
+        combined, preprocess_issues = apply_import_preprocessing(config, combined)
+        if preprocess_issues:
+            metrics["import_preprocess_issues"] = [asdict(issue) for issue in preprocess_issues]
+            if config.enable_audit_trail:
+                audit_trail.append(
+                    {
+                        "timestamp": time_fn(),
+                        "event": "import_preprocess",
+                        "details": {
+                            "issue_count": len(preprocess_issues),
+                            "issues": [asdict(issue) for issue in preprocess_issues],
+                        },
+                    }
+                )
 
     if config.pii_redaction.enabled:
         combined, initial_redactions = apply_redaction(config, combined)

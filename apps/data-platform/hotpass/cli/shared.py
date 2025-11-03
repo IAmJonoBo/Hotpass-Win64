@@ -185,6 +185,12 @@ def make_pipeline_parser() -> argparse.ArgumentParser:
         help="Maximum number of prospects to include in the daily list",
     )
     parser.add_argument(
+        "--import-config",
+        type=Path,
+        dest="import_config_path",
+        help="Path to JSON/TOML configuration describing import mappings and rules",
+    )
+    parser.add_argument(
         "--intent-webhook",
         dest="intent_webhooks",
         action="append",

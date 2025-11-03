@@ -58,18 +58,28 @@
 - [x] Create shared toast/banner system (reuse `ApiBanner` variants).
 - [x] Surface inline errors for uploads, approvals, assistant failures (imports already emit banners; approvals/activity pending).
 
+### 2.4 Smart import discovery (wizard foundation)
+
+- [ ] Ship `importsApi.profileWorkbook` (POST `/api/imports/profile`) returning typed `ImportProfile`/`SheetProfile` models.
+- [ ] Expose `useImportProfile` (React Query mutation) and `useStoredProfiles` (query) for DatasetImport + wizard flows.
+- [ ] Introduce `ImportProfilePreview` inside `DatasetImportPanel` (sheet cards, column stats, issue list, join-key badges).
+- [ ] Provide “Download profiling JSON” + “Attach to next run” actions (copy payload into job metadata/archive).
+- [ ] Persist profiles under `.hotpass/ui/import-profiles/` and promote the selected one to `dist/import/<job-id>/profile.json` when a run starts.
+
 ---
 
 ## Stage 4 – Engineer view & log streaming
 
 ### 3.1 Dashboard (operator-first)
 
-- [ ] Guided ingest wizard (dropzone + status timeline).
-- [ ] “Latest refined workbook” card, “Data quality” summary chip.
-- [ ] Live processing widget showing: current workbook name, sheet count, processed rows, auto-fixes, errors needing review, and session duration (updated every 200–500 ms).
-- [ ] Optional "cell spotlight" panel that shows the most recently processed cell (e.g. Sheet2!D14) and rule applied ("Normalised country code").
-- [ ] Pending approvals panel (link to RunDetails).
-- [ ] Inline help links (HelpCenter anchors).
+- [ ] Create `SmartImportWizard` route (`/imports/wizard`) with stepper (Upload → Profile review → Mapping → Rule toggles → Summary).
+- [ ] Add `LatestRefinedWorkbookCard` + `DataQualityChip` components sourced from recent run summaries.
+- [ ] Implement `LiveProcessingWidget` (current workbook, sheet count, rows processed, autofixes, errors, session timer; 200–500 ms refresh).
+- [ ] Build optional `CellSpotlight` panel highlighting most recent fix (e.g. Sheet2!D14 + rule).
+- [ ] Surface `PendingApprovalsPanel` (links to `RunDetails` with HIL context).
+- [ ] Wire inline help anchors into HelpCenter (`helpContent.ts`).
+
+> Dependencies: profiling API/hooks from Stage 3.4, template CRUD (Stage 3.5), persisted profile payloads (Stage 3.4).
 
 ### 3.2 RunDetails (technical depth)
 
@@ -90,6 +100,14 @@
 
 - [ ] Replace “copy command” with invocation via `/api/commands/run`.
 - [ ] Provide log modal with tail + download.
+
+### 3.5 Template management & consolidation preview
+
+- [ ] Ship `/api/imports/templates` CRUD in `server/index.mjs` + storage (list/create/update/delete named templates).
+- [ ] Build `TemplatePicker` + `TemplateManagerDrawer` components (integrate with wizard + assistant actions).
+- [ ] Implement wizard `MappingStep` + `RuleToggleStep` consuming profiling defaults + template overrides.
+- [ ] Add `ConsolidationPreview` (master/entities/contacts/addresses tabs + download).
+- [ ] Provide “Export template JSON” action (writes into `dist/import/templates/<name>.json`).
 
 ---
 
@@ -127,6 +145,12 @@
 - [ ] Buttons that trigger long-running jobs should show in-button progress (spinner + "Working…") for first 1–2 s and then hand over to the live processing panel. Avoid only-global toasts.
 - [ ] Activity feed entries should be timestamped in SAST (UTC+2) and badge for 3 s when new.
 - [ ] All animations ≤200 ms; no opacity-only animations—combine slight translate to convey direction.
+
+### 5.5 Template-aware assistant actions
+
+- [ ] Allow assistant to list/import templates and trigger runs with `--import-template`.
+- [ ] Surface profiling summaries and outstanding issues inside chat responses.
+- [ ] Provide “dry-run” / “preview fixes” assistant command before executing imports.
 
 ---
 

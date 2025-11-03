@@ -40,6 +40,8 @@ class SheetProfile:
   rows: int
   columns: list[ColumnProfile]
   sample_rows: list[dict[str, Any]]
+  role: str = "unknown"
+  join_keys: list[str] = field(default_factory=list)
   issues: list[Issue] = field(default_factory=list)
 
 
@@ -119,12 +121,17 @@ def profile_workbook(
     else:
       sample_records = []
 
+    role = _classify_sheet(sheet_df.columns.astype(str))
+    join_keys = _infer_join_keys(sheet_df.columns.astype(str))
+
     sheets.append(
         SheetProfile(
             name=sheet_name,
             rows=int(sheet_df.shape[0]),
             columns=column_profiles,
             sample_rows=sample_records,
+            role=role,
+            join_keys=join_keys,
             issues=sheet_issues,
         )
     )
@@ -262,8 +269,50 @@ def _sheet_to_dict(sheet: SheetProfile) -> dict[str, Any]:
           for column in sheet.columns
       ],
       "sample_rows": sheet.sample_rows,
+      "role": sheet.role,
+      "join_keys": sheet.join_keys,
       "issues": [_issue_to_dict(issue) for issue in sheet.issues],
   }
+
+
+def _classify_sheet(columns: Iterable[str]) -> str:
+  lowered = [str(col).strip().lower() for col in columns]
+  meaningful = [name for name in lowered if name and not name.startswith('unnamed')]
+  if not meaningful:
+    return "reference"
+
+  contains = lambda keyword: any(keyword in name for name in meaningful)
+
+  if contains("email") and (contains("phone") or contains("cell") or contains("contact")):
+    return "contacts"
+  if contains("address") or contains("airport"):
+    return "addresses"
+  if contains("note") or contains("issue") or contains("comments"):
+    return "notes"
+  transactional_hints = {"order", "invoice", "amount", "captured"}
+  if any(any(hint in name for hint in transactional_hints) for name in meaningful):
+    return "transactions"
+  reference_hints = {"category", "status", "priority", "lookup", "code"}
+  if len(meaningful) <= 4 and all(any(hint in name for hint in reference_hints) for name in meaningful):
+    return "reference"
+  return "master"
+
+
+def _infer_join_keys(columns: Iterable[str]) -> list[str]:
+  join_keys = []
+  for name in columns:
+    lowered = str(name).strip().lower()
+    if not lowered:
+      continue
+    if lowered in {"id", "identifier", "record id"}:
+      join_keys.append(name)
+      continue
+    if lowered.endswith("_id") or lowered.endswith(" id"):
+      join_keys.append(name)
+      continue
+    if lowered in {"c_id", "company id", "organisation id", "organization id"}:
+      join_keys.append(name)
+  return join_keys
 
 
 def _safe_string(value: Any) -> str:

@@ -13,6 +13,7 @@ import fs from 'fs'
 import { copyFile, mkdir, mkdtemp, readdir, rm, rename, stat } from 'fs/promises'
 import crypto from 'crypto'
 import { EventEmitter } from 'events'
+import { spawn } from 'child_process'
 import {
   createCommandJob,
   createJobId,
@@ -29,6 +30,14 @@ import {
   readHilAudit,
   writeHilApprovals,
   writeHilAudit,
+  listImportProfiles,
+  readImportProfile,
+  writeImportProfile,
+  deleteImportProfile,
+  listImportTemplates,
+  readImportTemplate,
+  writeImportTemplate,
+  deleteImportTemplate,
 } from './storage.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -424,6 +433,313 @@ const normaliseActionFilter = (input) => {
     .filter(Boolean)
   return cleaned.length > 0 ? new Set(cleaned) : null
 }
+
+const extractJsonPayload = (raw) => {
+  const start = raw.indexOf('{')
+  const end = raw.lastIndexOf('}')
+  if (start === -1 || end === -1 || end < start) {
+    throw new Error('Profiler did not return valid JSON output')
+  }
+  const snippet = raw.slice(start, end + 1)
+  return JSON.parse(snippet)
+}
+
+const runImportProfiler = (workbookPath, { sampleRows, maxRows }) =>
+  new Promise((resolve, reject) => {
+    const args = ['run', 'hotpass', 'imports', 'profile', '--workbook', workbookPath]
+    if (Number.isFinite(sampleRows) && sampleRows > 0) {
+      args.push('--sample-rows', String(sampleRows))
+    }
+    if (Number.isFinite(maxRows) && maxRows > 0) {
+      args.push('--max-rows', String(maxRows))
+    }
+
+    const child = spawn('uv', args, {
+      cwd: process.cwd(),
+      env: process.env,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    })
+
+    let stdout = ''
+    let stderr = ''
+
+    child.stdout.on('data', (chunk) => {
+      stdout += chunk.toString()
+    })
+
+    child.stderr.on('data', (chunk) => {
+      stderr += chunk.toString()
+    })
+
+    child.on('error', (error) => {
+      reject(new Error(`Profiler failed to start: ${error.message}`))
+    })
+
+    child.on('close', (code) => {
+      if (code !== 0) {
+        reject(new Error(stderr.trim() || `Profiler exited with code ${code}`))
+        return
+      }
+      try {
+        resolve(extractJsonPayload(stdout))
+      } catch (error) {
+        reject(new Error(`Failed to parse profiler output: ${error.message}`))
+      }
+    })
+  })
+
+app.post('/api/imports/profile', async (req, res) => {
+  const parseInteger = (value, fallback) => {
+    if (value === undefined || value === null) return fallback
+    const parsed = Number.parseInt(Array.isArray(value) ? value[0] : value, 10)
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      return fallback
+    }
+    return parsed
+  }
+
+  const sampleRows = parseInteger(req.query.sampleRows, 5)
+  const maxRows = req.query.maxRows !== undefined ? parseInteger(req.query.maxRows, undefined) : undefined
+
+  const profileAndRespond = async (workbookPath) => {
+    try {
+      const stats = await stat(workbookPath)
+      if (!stats.isFile()) {
+        return sendError(res, 400, 'Workbook must be a file')
+      }
+      const profile = await runImportProfiler(workbookPath, { sampleRows, maxRows })
+      res.json({ profile })
+    } catch (error) {
+      console.error('[imports] profiling failed', error)
+      if (error.code === 'ENOENT') {
+        sendError(res, 404, 'Workbook not found')
+      } else {
+        sendError(res, 500, 'Failed to profile workbook', { message: error.message })
+      }
+    }
+  }
+
+  if (req.is('application/json')) {
+    const workbookPath = req.body?.workbookPath
+    if (!workbookPath || typeof workbookPath !== 'string') {
+      return sendError(res, 400, 'workbookPath is required in JSON payload')
+    }
+    const resolved = path.resolve(process.cwd(), workbookPath)
+    if (!resolved.startsWith(process.cwd())) {
+      return sendError(res, 400, 'workbookPath must be within the project directory')
+    }
+    return profileAndRespond(resolved)
+  }
+
+  const contentType = req.headers['content-type'] ?? ''
+  if (!contentType.includes('multipart/form-data')) {
+    return sendError(res, 415, 'Unsupported content type. Use multipart/form-data or JSON.')
+  }
+
+  let tempDir
+  try {
+    tempDir = await mkdtemp(path.join(os.tmpdir(), 'hotpass-profile-'))
+  } catch (error) {
+    console.error('[imports] failed to allocate temp directory', error)
+    return sendError(res, 500, 'Unable to initialise upload workspace', { message: error.message })
+  }
+
+  let uploadedPath = null
+  let streamError = null
+
+  const busboy = Busboy({ headers: req.headers })
+
+  busboy.on('file', (_fieldname, file, filename) => {
+    if (uploadedPath) {
+      file.resume()
+      return
+    }
+    const safeName = path.basename(filename || 'workbook.xlsx')
+    uploadedPath = path.join(tempDir, safeName)
+    const writeStream = fs.createWriteStream(uploadedPath)
+    writeStream.on('error', (error) => {
+      streamError = error
+      file.resume()
+    })
+    file.pipe(writeStream)
+  })
+
+  busboy.on('error', (error) => {
+    streamError = error
+  })
+
+  busboy.on('finish', async () => {
+    try {
+      if (streamError) {
+        console.error('[imports] upload failed', streamError)
+        sendError(res, 400, 'Failed to receive workbook', { message: streamError.message })
+        return
+      }
+      if (!uploadedPath) {
+        sendError(res, 400, 'No workbook file was uploaded')
+        return
+      }
+      await profileAndRespond(uploadedPath)
+    } finally {
+      await rm(tempDir, { recursive: true, force: true }).catch(() => {})
+    }
+  })
+
+  req.pipe(busboy)
+})
+
+app.get('/api/imports/profiles', async (_req, res) => {
+  try {
+    const profiles = await listImportProfiles()
+    res.json({ profiles })
+  } catch (error) {
+    console.error('[imports] failed to list profiles', error)
+    sendError(res, 500, 'Unable to load stored profiles', { message: error.message })
+  }
+})
+
+app.get('/api/imports/profiles/:id', async (req, res) => {
+  const { id } = req.params
+  try {
+    const profile = await readImportProfile(id)
+    if (!profile) {
+      return sendError(res, 404, 'Profile not found')
+    }
+    res.json(profile)
+  } catch (error) {
+    console.error('[imports] failed to read profile', error)
+    sendError(res, 500, 'Unable to load stored profile', { message: error.message })
+  }
+})
+
+app.post('/api/imports/profiles', csrfProtection, async (req, res) => {
+  if (!isRecord(req.body) || !isRecord(req.body.profile)) {
+    return sendError(res, 400, 'profile payload is required')
+  }
+  const entry = {
+    id: typeof req.body.id === 'string' ? req.body.id : undefined,
+    profile: req.body.profile,
+    source: typeof req.body.source === 'string' ? req.body.source : 'upload',
+    workbookPath: typeof req.body.workbookPath === 'string' ? req.body.workbookPath : undefined,
+    description: typeof req.body.description === 'string' ? req.body.description : undefined,
+    tags: Array.isArray(req.body.tags) ? req.body.tags : undefined,
+  }
+  try {
+    const stored = await writeImportProfile(entry)
+    res.status(201).json(stored)
+  } catch (error) {
+    console.error('[imports] failed to persist profile', error)
+    sendError(res, 500, 'Unable to persist profile', { message: error.message })
+  }
+})
+
+app.delete('/api/imports/profiles/:id', csrfProtection, async (req, res) => {
+  const { id } = req.params
+  try {
+    const deleted = await deleteImportProfile(id)
+    if (!deleted) {
+      return sendError(res, 404, 'Profile not found')
+    }
+    res.status(204).send()
+  } catch (error) {
+    console.error('[imports] failed to delete profile', error)
+    sendError(res, 500, 'Unable to delete profile', { message: error.message })
+  }
+})
+
+app.get('/api/imports/templates', async (_req, res) => {
+  try {
+    const templates = await listImportTemplates()
+    res.json({ templates })
+  } catch (error) {
+    console.error('[imports] failed to list templates', error)
+    sendError(res, 500, 'Unable to load templates', { message: error.message })
+  }
+})
+
+app.get('/api/imports/templates/:id', async (req, res) => {
+  const { id } = req.params
+  try {
+    const template = await readImportTemplate(id)
+    if (!template) {
+      return sendError(res, 404, 'Template not found')
+    }
+    res.json(template)
+  } catch (error) {
+    console.error('[imports] failed to read template', error)
+    sendError(res, 500, 'Unable to load template', { message: error.message })
+  }
+})
+
+const normaliseTemplatePayload = (payload) => {
+  if (!isRecord(payload)) {
+    throw new Error('Template payload must be an object')
+  }
+  return payload
+}
+
+app.post('/api/imports/templates', csrfProtection, async (req, res) => {
+  if (!isRecord(req.body)) {
+    return sendError(res, 400, 'Template body must be an object')
+  }
+  try {
+    const stored = await writeImportTemplate({
+      id: typeof req.body.id === 'string' ? req.body.id : undefined,
+      name: req.body.name,
+      description: typeof req.body.description === 'string' ? req.body.description : undefined,
+      profile: typeof req.body.profile === 'string' ? req.body.profile : undefined,
+      tags: Array.isArray(req.body.tags) ? req.body.tags : undefined,
+      payload: normaliseTemplatePayload(req.body.payload),
+    })
+    res.status(201).json(stored)
+  } catch (error) {
+    console.error('[imports] failed to persist template', error)
+    if (error.message === 'Template name is required' || error.message === 'Template payload must be an object') {
+      sendError(res, 422, error.message)
+    } else {
+      sendError(res, 500, 'Unable to persist template', { message: error.message })
+    }
+  }
+})
+
+app.put('/api/imports/templates/:id', csrfProtection, async (req, res) => {
+  if (!isRecord(req.body)) {
+    return sendError(res, 400, 'Template body must be an object')
+  }
+  const { id } = req.params
+  try {
+    const stored = await writeImportTemplate({
+      id,
+      name: req.body.name,
+      description: typeof req.body.description === 'string' ? req.body.description : undefined,
+      profile: typeof req.body.profile === 'string' ? req.body.profile : undefined,
+      tags: Array.isArray(req.body.tags) ? req.body.tags : undefined,
+      payload: normaliseTemplatePayload(req.body.payload),
+    })
+    res.json(stored)
+  } catch (error) {
+    console.error('[imports] failed to update template', error)
+    if (error.message === 'Template name is required' || error.message === 'Template payload must be an object') {
+      sendError(res, 422, error.message)
+    } else {
+      sendError(res, 500, 'Unable to update template', { message: error.message })
+    }
+  }
+})
+
+app.delete('/api/imports/templates/:id', csrfProtection, async (req, res) => {
+  const { id } = req.params
+  try {
+    const deleted = await deleteImportTemplate(id)
+    if (!deleted) {
+      return sendError(res, 404, 'Template not found')
+    }
+    res.status(204).send()
+  } catch (error) {
+    console.error('[imports] failed to delete template', error)
+    sendError(res, 500, 'Unable to delete template', { message: error.message })
+  }
+})
 
 app.post('/api/commands/run', csrfProtection, (req, res) => {
   const payload = req.body ?? {}

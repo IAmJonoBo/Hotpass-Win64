@@ -231,6 +231,71 @@ export interface CommandJob {
   error?: string | null
 }
 
+// Smart import profiling
+
+export type ImportIssueSeverity = 'info' | 'warning' | 'error'
+
+export interface ImportIssue {
+  severity: ImportIssueSeverity
+  message: string
+  code?: string | null
+  column?: string | null
+}
+
+export interface ImportColumnProfile {
+  name: string
+  inferredType: string
+  confidence: number
+  nullFraction: number
+  distinctValues: number
+  sampleValues: string[]
+  issues: ImportIssue[]
+}
+
+export interface ImportSheetProfile {
+  name: string
+  rows: number
+  columns: ImportColumnProfile[]
+  sampleRows: Array<Record<string, unknown>>
+  role: string
+  joinKeys: string[]
+  issues: ImportIssue[]
+}
+
+export interface ImportProfile {
+  workbook: string
+  sheets: ImportSheetProfile[]
+  issues: ImportIssue[]
+  generatedAt?: string
+}
+
+export interface StoredImportProfile {
+  id: string
+  createdAt: string
+  source: 'upload' | 'filesystem'
+  workbookPath?: string
+  profile: ImportProfile
+  tags?: string[]
+  description?: string
+}
+
+export interface ImportTemplatePayload {
+  import_mappings?: Array<Record<string, unknown>>
+  import_rules?: Array<Record<string, unknown>>
+  [key: string]: unknown
+}
+
+export interface ImportTemplate {
+  id: string
+  name: string
+  description?: string
+  profile?: string
+  tags?: string[]
+  createdAt: string
+  updatedAt: string
+  payload: ImportTemplatePayload
+}
+
 // Hotpass-specific types
 
 export interface HotpassRun {

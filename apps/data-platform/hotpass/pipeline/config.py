@@ -124,6 +124,8 @@ class PipelineConfig:
     since: datetime | None = None
     random_seed: int | None = None
     run_id: str | None = None
+    import_mappings: list[Mapping[str, Any]] = field(default_factory=list)
+    import_rules: list[Mapping[str, Any]] = field(default_factory=list)
 
 
 @dataclass

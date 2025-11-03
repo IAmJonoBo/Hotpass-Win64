@@ -308,6 +308,8 @@ class PipelineRuntimeConfig(BaseModel):
     crm_endpoint: str | None = None
     crm_token: str | None = None
     automation_http: AutomationHTTPSettings = Field(default_factory=AutomationHTTPSettings)
+    import_mappings: tuple[Mapping[str, Any], ...] = Field(default_factory=tuple)
+    import_rules: tuple[Mapping[str, Any], ...] = Field(default_factory=tuple)
 
     @field_validator("sensitive_fields", mode="before")
     @classmethod
@@ -641,6 +643,10 @@ class HotpassConfig(BaseModel):
             config.crm_endpoint = self.pipeline.crm_endpoint
         if self.pipeline.crm_token is not None:
             config.crm_token = self.pipeline.crm_token
+        if self.pipeline.import_mappings:
+            config.import_mappings = [dict(mapping) for mapping in self.pipeline.import_mappings]
+        if self.pipeline.import_rules:
+            config.import_rules = [dict(rule) for rule in self.pipeline.import_rules]
 
         if self.pipeline.qa_mode == "relaxed":
             config.enable_audit_trail = False

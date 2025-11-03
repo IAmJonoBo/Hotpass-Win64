@@ -428,6 +428,18 @@ def _resolve_options(namespace: argparse.Namespace, profile: CLIProfile | None) 
         pipeline_updates["crm_endpoint"] = namespace.crm_endpoint
     if getattr(namespace, "crm_token", None) is not None:
         pipeline_updates["crm_token"] = namespace.crm_token
+    if getattr(namespace, "import_config_path", None) is not None:
+        import_config_path = Path(namespace.import_config_path)
+        if not import_config_path.exists():
+            msg = f"Import configuration file not found: {import_config_path}"
+            raise FileNotFoundError(msg)
+        import_payload = load_config(import_config_path)
+        mappings = import_payload.get("import_mappings") or import_payload.get("mappings") or []
+        rules = import_payload.get("import_rules") or import_payload.get("rules") or []
+        if mappings:
+            pipeline_updates["import_mappings"] = list(mappings)
+        if rules:
+            pipeline_updates["import_rules"] = list(rules)
     if getattr(namespace, "automation_http_timeout", None) is not None:
         automation_http_updates["timeout"] = float(namespace.automation_http_timeout)
     if getattr(namespace, "automation_http_retries", None) is not None:
