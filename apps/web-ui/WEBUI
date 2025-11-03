@@ -37,6 +37,9 @@
 - [x] DatasetImportPanel → render live processing panel (rolling stage timeline + logs/artifacts) fed by granular SSE events.
 - [x] DatasetImportPanel → show milestone progress states (Upload → Refine → Complete) with real-time badges.
 - [x] DatasetImportPanel → expose detailed job insights (files, notes, artifacts, logs) while keeping simple queue view for operators.
+- [x] `LiveRefinementPanel` → fetch real Prefect runs, highlight new arrivals, surface notes/data docs, retain feedback entry.
+- [x] Activity feed wired to `/api/activity` (role-aware event display).
+- [ ] `TelemetryStrip` → surface backend job/command failures (pending).
 - [ ] `LiveRefinementPanel` → consume `/api/runs/recent` (React Query polling/SSE fallback), show real data-docs link.
 - [ ] LiveRefinementPanel → highlight newly arriving runs/logs for 2 s (background tint + fade) to emphasise real-time work.
 - [ ] `AgentActivityPanel` → subscribe to `/api/activity`.
@@ -50,7 +53,7 @@
 
 ### 2.3 Error handling
 - [ ] Create shared toast/banner system (reuse `ApiBanner` variants).
-- [ ] Surface inline errors for uploads, approvals, assistant failures.
+- [ ] Surface inline errors for uploads, approvals, assistant failures (imports already emit banners; approvals/activity pending).
 
 ---
 
