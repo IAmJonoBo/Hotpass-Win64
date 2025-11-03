@@ -426,55 +426,63 @@ const result = await callTool("hotpass.refine", {
 `dolphin-mcp` is a lightweight MCP client CLI that mirrors Copilot’s behaviour. Use it to debug tool responses or to exercise the Hotpass server without a Copilot session.
 
 1. **Prepare the environment**
-  ```bash
-  uv venv
-  export HOTPASS_UV_EXTRAS="dev orchestration enrichment"
-  bash ops/uv_sync_extras.sh
-  ```
-  The helper script installs the extras that keep CLI and MCP commands aligned.
-2. **Install the client**
-  ```bash
-  uv pip install dolphin-mcp lmstudio
-  ```
-  The optional `lmstudio` dependency is required because the client eagerly imports all providers.
-3. **Register the server** — create `.vscode/mcp.json` (or `.mcp.json` at the repo root) with:
-  ```json
-  {
-    "version": "0.1",
-    "servers": [
-     {
+
+```bash
+uv venv
+export HOTPASS_UV_EXTRAS="dev orchestration enrichment"
+bash ops/uv_sync_extras.sh
+```
+
+The helper script installs the extras that keep CLI and MCP commands aligned. 2. **Install the client**
+
+```bash
+uv pip install dolphin-mcp lmstudio
+```
+
+The optional `lmstudio` dependency is required because the client eagerly imports all providers. 3. **Register the server** — create `.vscode/mcp.json` (or `.mcp.json` at the repo root) with:
+
+```json
+{
+  "version": "0.1",
+  "servers": [
+    {
       "name": "hotpass",
       "command": ["uv", "run", "python", "-m", "hotpass.mcp.server"],
       "transport": "stdio",
       "env": {
         "HOTPASS_UV_EXTRAS": "dev orchestration enrichment"
       }
-     }
-    ]
-  }
-  ```
-  Keep the command in sync with this document so relative paths resolve.
-4. **Allow Copilot access** — ensure `.vscode/settings.json` contains `"chat.mcp.access": "all"` so the editor can talk to local servers.
-5. **Start the server**
-  ```bash
-  uv run python -m hotpass.mcp.server
-  ```
-  Start it from the repo root so `./data` and `./dist` resolve correctly.
-6. **Discover tools** — run `dolphin-mcp list --server hotpass` or `/mcp list` from Copilot; you should see `hotpass.refine`, `hotpass.enrich`, `hotpass.qa`, `hotpass.setup`, `hotpass.net`, `hotpass.ctx`, `hotpass.env`, `hotpass.aws`, `hotpass.arc`, `hotpass.explain_provenance`, `hotpass.plan.research`, `hotpass.crawl`, and `hotpass.ta.check`.
-7. **Test a call** — from Copilot chat ask, “Run hotpass.refine on ./data and write to ./dist/refined.xlsx with profile generic and archive=true.” From the CLI:
-  ```bash
-  dolphin-mcp chat --server hotpass --model ollama/llama3.1
-  ```
-  then enter:
-  ```
-  /call hotpass.refine input_dir=./data output_path=./dist/refined.xlsx profile=generic archive=true
-  ```
+    }
+  ]
+}
+```
+
+Keep the command in sync with this document so relative paths resolve. 4. **Allow Copilot access** — ensure `.vscode/settings.json` contains `"chat.mcp.access": "all"` so the editor can talk to local servers. 5. **Start the server**
+
+```bash
+uv run python -m hotpass.mcp.server
+```
+
+Start it from the repo root so `./data` and `./dist` resolve correctly. 6. **Discover tools** — run `dolphin-mcp list --server hotpass` or `/mcp list` from Copilot; you should see `hotpass.refine`, `hotpass.enrich`, `hotpass.qa`, `hotpass.setup`, `hotpass.net`, `hotpass.ctx`, `hotpass.env`, `hotpass.aws`, `hotpass.arc`, `hotpass.explain_provenance`, `hotpass.plan.research`, `hotpass.crawl`, and `hotpass.ta.check`. 7. **Test a call** — from Copilot chat ask, “Run hotpass.refine on ./data and write to ./dist/refined.xlsx with profile generic and archive=true.” From the CLI:
+
+```bash
+dolphin-mcp chat --server hotpass --model ollama/llama3.1
+```
+
+then enter:
+
+```
+/call hotpass.refine input_dir=./data output_path=./dist/refined.xlsx profile=generic archive=true
+```
+
 8. **Enable network research when required**
-  ```bash
-  export FEATURE_ENABLE_REMOTE_RESEARCH=1
-  export ALLOW_NETWORK_RESEARCH=1
-  ```
-  Set these before launching the server if you plan to call `hotpass.crawl` or network-backed enrichment.
+
+```bash
+export FEATURE_ENABLE_REMOTE_RESEARCH=1
+export ALLOW_NETWORK_RESEARCH=1
+```
+
+Set these before launching the server if you plan to call `hotpass.crawl` or network-backed enrichment.
 
 ### Automate setup with MCP
 
@@ -574,3 +582,18 @@ uv run hotpass inventory status --json
 - **docs/agent-instructions.md**: Comprehensive agent workflows and troubleshooting
 - **.github/copilot-instructions.md**: Project-wide guidance for all AI agents
 - **tests/cli/test_quality_gates.py**: Quality gate test implementations
+
+## MCP endpoints (authoritative)
+
+- **`workbook.describe`** — Returns sheet inventory (names, rows, columns). Example: `/mcp call workbook.describe path=./dist/refined.xlsx`.
+- **`workbook.read_cell`** — Resolves selectors like `C7`, `R7C3`, or field matches and emits GE status with Data Docs link. Example: `/mcp call workbook.read_cell path=./dist/refined.xlsx sheet=Contacts selector.a1=C7`.
+- **`workbook.search`** — Performs filtered row lookups with regex predicates and returns selected columns plus validation stats. Example: `/mcp call workbook.search path=./dist/refined.xlsx sheet=Contacts where[0].field=Role where[0].regex='(?i)CEO|Managing Director' select[]=Name select[]=Work Email limit=10`.
+- **`workbook.explain_cell`** — Extends `read_cell` with lineage nodes and provenance bundle from Marquez. Example: `/mcp call workbook.explain_cell path=./dist/refined.xlsx sheet=Contacts selector.a1=C7`.
+- **`research.resolve_company`** — Clusters SearXNG results, confirms jurisdiction, and surfaces official sources before any crawl. Example: `/mcp call research.resolve_company query="Absolute Aviation" country_hint=ZA`.
+- **`research.plan`** — Produces offline enrichment/crawl plan with cache hits, estimated calls, and throttling schedule; wait for operator “Proceed”. Example: `/mcp call research.plan sheet=Targets region=ZA`.
+- **`research.site_manifest`** — Reads robots.txt and sitemaps to list allowed contact/about endpoints. Example: `/mcp call research.site_manifest base_url=https://example.com`.
+- **`research.fetch_contacts`** — Retrieves publicly posted contacts once `allow_network=true` is authorised. Example: `/mcp call research.fetch_contacts company_id=abs-za-001 fields[]=switchboard`.
+- **`contact.normalise`** — Normalises phones to E.164 and validates email syntax. Example: `/mcp call contact.normalise phone="+27 11 111 1111" email=info@example.com region=ZA`.
+- **`qa.latest`** — Summarises the latest Prefect QA run with suite-level outcomes and Data Docs URLs. Example: `/mcp call qa.latest kind=refine`.
+- **`qa.coverage_report`** — Returns completeness metrics for key fields on refined assets. Example: `/mcp call qa.coverage_report dataset=contacts_refined.xlsx`.
+- **`lineage.graph`** — Generates Marquez subgraphs with deep links for data lineage review. Example: `/mcp call lineage.graph dataset=contacts_refined.xlsx`.

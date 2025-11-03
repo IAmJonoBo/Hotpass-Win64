@@ -6,25 +6,34 @@
 - [x] Documentation updated (Diátaxis + TechDocs) — release notes captured in `docs/CHANGELOG.md`, roadmap metadata refreshed, and `IMPLEMENTATION_SUMMARY.md` addendum added.
 - [x] `Next_Steps.md` updated (new resolver remediation task + refreshed quality gate status).
 
+## Docs refresh checklist
+
+- [ ] Ran **Docs Refresh** workflow or `python scripts/docs_refresh.py`
+- [ ] GE Data Docs updated and linked in Next_Steps.md / README
+- [ ] Marquez lineage snapshots updated in `docs/lineage/`
+- [ ] Research plans & site manifests (metadata only) under `docs/research/`
+
 ### What changed / Why
+
 - Drafted 2025-11-02 release notes covering UI guardrails, pipeline rehearsals, and security hardening so stakeholders have a single evidence trail for the programme review.
 - Tagged Phase 5 T5.5 as complete across roadmap artefacts with links to rehearsal logs in `dist/staging/` to confirm ARC + OIDC readiness.
 - Added an implementation addendum summarising the UI/pipeline/security work and baseline quality signals for quick context during sign-off.
 
 ### Coverage delta
+
 - Baseline coverage remains 72% (last green run: 2025-11-01). Current run blocked by `pip-audit` ↔ `cyclonedx-python-lib` resolver conflict; no coverage delta recorded.
 
 ## Testing
 
-| Category | Command | Status | Notes |
-| --- | --- | --- | --- |
-| Unit / Integration | `pytest tests --maxfail=1 --cov=hotpass --cov=apps --cov-report=term-missing` | ❌ | Fails at `tests/cli/test_explain_provenance.py` because `uv run hotpass explain-provenance` cannot resolve `pip-audit>=2.7.3` with `cyclonedx-python-lib>=11`. |
-| Lint | `ruff check`; `ruff format --check` | ⚠️ | Existing backlog (200+ diffs, 5 files needing format) unchanged; no auto-fixes applied. |
-| Type-check | `mypy apps/data-platform tests ops` | ⚠️ | 30 errors (missing stubs + scrapy imports) persist from backlog. |
-| Security (SAST) | `bandit -r apps/data-platform ops`; `detect-secrets scan apps/data-platform tests ops` | ⚠️ | Bandit reports known low severity subprocess usage; detect-secrets clean. |
-| Build / Supply-chain | `python -m build`; `python ops/supply_chain/generate_sbom.py --output dist/sbom/hotpass-sbom.json` | ✅ | Wheel + sdist build succeeded; SBOM regenerated under `dist/sbom/hotpass-sbom.json/`. |
-| Accessibility & Playwright | _Not rerun this pass_ | ℹ️ | Coverage captured in release artefacts (`apps/web-ui/tests/auth.spec.ts`); no regressions expected from documentation-only change. |
-| E2E / Prefect | _Deferred_ | ℹ️ | Staging access still pending; follow-up tracked in `Next_Steps.md` tasks. |
+| Category                   | Command                                                                                            | Status | Notes                                                                                                                                                          |
+| -------------------------- | -------------------------------------------------------------------------------------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Unit / Integration         | `pytest tests --maxfail=1 --cov=hotpass --cov=apps --cov-report=term-missing`                      | ❌     | Fails at `tests/cli/test_explain_provenance.py` because `uv run hotpass explain-provenance` cannot resolve `pip-audit>=2.7.3` with `cyclonedx-python-lib>=11`. |
+| Lint                       | `ruff check`; `ruff format --check`                                                                | ⚠️     | Existing backlog (200+ diffs, 5 files needing format) unchanged; no auto-fixes applied.                                                                        |
+| Type-check                 | `mypy apps/data-platform tests ops`                                                                | ⚠️     | 30 errors (missing stubs + scrapy imports) persist from backlog.                                                                                               |
+| Security (SAST)            | `bandit -r apps/data-platform ops`; `detect-secrets scan apps/data-platform tests ops`             | ⚠️     | Bandit reports known low severity subprocess usage; detect-secrets clean.                                                                                      |
+| Build / Supply-chain       | `python -m build`; `python ops/supply_chain/generate_sbom.py --output dist/sbom/hotpass-sbom.json` | ✅     | Wheel + sdist build succeeded; SBOM regenerated under `dist/sbom/hotpass-sbom.json/`.                                                                          |
+| Accessibility & Playwright | _Not rerun this pass_                                                                              | ℹ️     | Coverage captured in release artefacts (`apps/web-ui/tests/auth.spec.ts`); no regressions expected from documentation-only change.                             |
+| E2E / Prefect              | _Deferred_                                                                                         | ℹ️     | Staging access still pending; follow-up tracked in `Next_Steps.md` tasks.                                                                                      |
 
 ## Risk & mitigation
 
