@@ -49,6 +49,14 @@ import {
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
+await ensureDirectory(IMPORT_ROOT).catch((error) => {
+  console.warn('[bootstrap] unable to prepare import root', { IMPORT_ROOT, error })
+})
+
+await ensureDirectory(CONTRACTS_ROOT).catch((error) => {
+  console.warn('[bootstrap] unable to prepare contracts root', { CONTRACTS_ROOT, error })
+})
+
 const app = express()
 
 const port = process.env.PORT || 3000

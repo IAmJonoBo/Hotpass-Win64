@@ -70,11 +70,16 @@ This document summarizes the implementation of all 8 stages from DESIGN_REVIEW.m
 - `src/components/import/LiveProcessingWidget.tsx` - Real-time import telemetry widget
 - `src/components/hil/PendingApprovalsPanel.tsx` - HIL approvals dashboard panel
 - `src/components/import/CellSpotlight.tsx` - Highlights most recent cell-level fixes
+- `src/components/governance/ContractsExplorer.tsx` - Contracts inventory with downloads
+- `src/api/contracts.ts` - Client hook for contracts API
 
 **Modified Files:**
 - `src/pages/Dashboard.tsx` - Integrated live refinement panel, latest-refine summary card, pending approvals, and cell spotlight
 - `src/components/import/DatasetImportPanel.tsx` - Live import runner UI with in-flight telemetry and cell spotlight
 - `src/pages/RunDetails.tsx` - Supports deep links to open the approval panel and live log streaming
+- `src/components/Layout.tsx`, `HelpCenter.tsx` - Inline help anchors and topic presets
+- `apps/web-ui/server/index.mjs` - Contracts listing + log SSE endpoint
+- `apps/web-ui/README.md` - Environment variable documentation
 
 **Features:**
 - Table showing last 50 refined rows with status badges
@@ -90,6 +95,8 @@ This document summarizes the implementation of all 8 stages from DESIGN_REVIEW.m
 - Run Details query parameter `?hil=1` auto-opens the approval panel
 - Cell spotlight panel surfaces the latest auto-fix context during imports
 - Run Details streams live logs via SSE with real-time highlighting
+- Inline help anchors wire cards to topic-specific guidance
+- Contracts explorer lists `dist/contracts` artifacts with quick download and assistant prompts
 
 ### Stage 5 - Telemetry Strip ✅
 **New Files:**

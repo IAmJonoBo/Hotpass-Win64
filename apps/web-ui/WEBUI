@@ -62,9 +62,9 @@
 
 - [x] Ship `importsApi.profileWorkbook` (POST `/api/imports/profile`) returning typed `ImportProfile`/`SheetProfile` models.
 - [x] Expose `useImportProfile` (React Query mutation) and `useStoredProfiles` (query) for DatasetImport + wizard flows.
-- [x] Introduce `ImportProfilePreview` inside `DatasetImportPanel` (sheet cards, column stats, issue list, join-key badges).
-- [x] Provide “Download profiling JSON” + “Attach to next run” actions (copy payload into job metadata/archive).
-- [x] Persist profiles under `.hotpass/ui/import-profiles/` and promote the selected one to `dist/import/<job-id>/profile.json` when a run starts (profile.json artifact + job metadata).
+- [ ] Introduce `ImportProfilePreview` inside `DatasetImportPanel` (sheet cards, column stats, issue list, join-key badges).
+- [ ] Provide “Download profiling JSON” + “Attach to next run” actions (copy payload into job metadata/archive).
+- [x] Persist profiles under `.hotpass/ui/import-profiles/` and promote the selected one to `dist/import/<job-id>/profile.json` when a run starts. _(storage + REST scaffolding now in place; job pipeline hand-off still pending)_
 
 ---
 
@@ -72,19 +72,19 @@
 
 ### 3.1 Dashboard (operator-first)
 
-- [x] Create `SmartImportWizard` route (`/imports/wizard`) with stepper (Upload → Profile review → Mapping → Rule toggles → Summary).
-- [x] Add `LatestRefinedWorkbookCard` + `DataQualityChip` components sourced from recent run summaries.
-- [x] Implement `LiveProcessingWidget` (current workbook, sheet count, rows processed, autofixes, errors, session timer; 200–500 ms refresh).
-- [x] Build optional `CellSpotlight` panel highlighting most recent fix (e.g. Sheet2!D14 + rule).
-- [x] Surface `PendingApprovalsPanel` (links to `RunDetails` with HIL context).
+- [ ] Create `SmartImportWizard` route (`/imports/wizard`) with stepper (Upload → Profile review → Mapping → Rule toggles → Summary).
+- [ ] Add `LatestRefinedWorkbookCard` + `DataQualityChip` components sourced from recent run summaries.
+- [ ] Implement `LiveProcessingWidget` (current workbook, sheet count, rows processed, autofixes, errors, session timer; 200–500 ms refresh).
+- [ ] Build optional `CellSpotlight` panel highlighting most recent fix (e.g. Sheet2!D14 + rule).
+- [ ] Surface `PendingApprovalsPanel` (links to `RunDetails` with HIL context).
 - [ ] Wire inline help anchors into HelpCenter (`helpContent.ts`).
 
 > Dependencies: profiling API/hooks from Stage 3.4, template CRUD (Stage 3.5), persisted profile payloads (Stage 3.4).
 
 ### 3.2 RunDetails (technical depth)
 
-- [x] Stream live logs (SSE) with tail component.
-- [ ] New events (logs, cell-fixed, validation-failed) should briefly glow (≤200 ms) and then settle to normal state.
+- [ ] Stream live logs (SSE) with tail component.
+ ] New events (logs, cell-fixed, validation-failed) should briefly glow (≤200 ms) and then settle to normal state.
 - [ ] Provide link-back to source rule / contract when an auto-fix is displayed, so users can stay in-app (no hard context switch to docs).
 - [ ] QA viewer embedded from `dist/data-docs` (iframe) & JSON summary.
 - [ ] Buttons for `Re-run`, `Enrich`, `Plan research`, `Explain provenance`.
@@ -93,7 +93,7 @@
 ### 3.3 Research & governance
 
 - [ ] Add planner tab (form for `plan research`, results viewer).
-- [x] Contracts explorer (list YAML from `dist/contracts/` with download).
+- [ ] Contracts explorer (list YAML from `dist/contracts/` with download).
 - [ ] Data Docs global page or modal (link from sidebar).
 
 ### 3.4 Power tools
@@ -104,10 +104,10 @@
 ### 3.5 Template management & consolidation preview
 
 - [x] Ship `/api/imports/templates` CRUD in `server/index.mjs` + storage (list/create/update/delete named templates).
-- [x] Build `TemplatePicker` component (integrated with wizard scaffold) + `TemplateManagerDrawer` (create/update/delete flows).
-- [x] Implement wizard `MappingStep` + `RuleToggleStep` consuming profiling defaults + template overrides.
-- [x] Add `ConsolidationPreview` (master/entities/contacts/addresses tabs + download).
-- [x] Provide “Export template JSON” action (writes into `dist/import/templates/<name>.json`).
+- [ ] Build `TemplatePicker` + `TemplateManagerDrawer` components (integrate with wizard + assistant actions).
+- [ ] Implement wizard `MappingStep` + `RuleToggleStep` consuming profiling defaults + template overrides.
+- [ ] Add `ConsolidationPreview` (master/entities/contacts/addresses tabs + download).
+- [ ] Provide “Export template JSON” action (writes into `dist/import/templates/<name>.json`).
 
 ---
 

@@ -640,11 +640,38 @@ export function RunDetails() {
             <p className="text-xs text-muted-foreground">Approver role required.</p>
           )}
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Link to="/lineage">
             <Button variant="outline" disabled={showSkeleton}>View Lineage</Button>
           </Link>
-          <Button disabled={showSkeleton || !run}>Rerun Pipeline</Button>
+          <Button
+            variant="outline"
+            disabled={showSkeleton || !run}
+            onClick={() => openAssistant(`Re-run flow ${run?.flow_id ?? run?.name ?? runId}`)}
+          >
+            Rerun pipeline
+          </Button>
+          <Button
+            variant="outline"
+            disabled={showSkeleton || !run}
+            onClick={() => openAssistant(`Enrich dataset for run ${run?.id}`)}
+          >
+            Enrich
+          </Button>
+          <Button
+            variant="outline"
+            disabled={showSkeleton || !run}
+            onClick={() => openAssistant(`Plan research for run ${run?.id}`)}
+          >
+            Plan research
+          </Button>
+          <Button
+            variant="outline"
+            disabled={showSkeleton || !run}
+            onClick={() => openAssistant(`Explain provenance for run ${run?.id}`)}
+          >
+            Explain provenance
+          </Button>
         </div>
       </div>
 
