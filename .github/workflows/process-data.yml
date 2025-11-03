@@ -36,43 +36,11 @@ jobs:
           HOTPASS_UV_EXTRAS: ${{ env.UV_EXTRAS }}
         run: bash ops/uv_sync_extras.sh
 
-      - name: Ruff lint (changed files only - non-blocking)
-        run: |
-          # TODO: Make this blocking and check all files once lint violations are fixed
-          # Currently checking only changed files and non-blocking to avoid failing on existing violations
-          set +e
-          CHANGED_FILES=$(git diff --name-only --diff-filter=ACMRT origin/main...HEAD | grep '\.py$' || true)
-          if [ -n "$CHANGED_FILES" ]; then
-            echo "Checking changed Python files:"
-            echo "$CHANGED_FILES"
-            echo "$CHANGED_FILES" | xargs uv run ruff check
-            RUFF_EXIT=$?
-            if [ $RUFF_EXIT -ne 0 ]; then
-              echo "::warning::Ruff found issues in changed files (non-blocking)"
-            fi
-          else
-            echo "No Python files changed"
-          fi
-          set -e
+      - name: Ruff lint
+        run: uv run ruff check
 
-      - name: Ruff formatting check (changed files only - non-blocking)
-        run: |
-          # TODO: Make this blocking and check all files once formatting is fixed
-          # Currently checking only changed files and non-blocking to avoid failing on existing violations
-          set +e
-          CHANGED_FILES=$(git diff --name-only --diff-filter=ACMRT origin/main...HEAD | grep '\.py$' || true)
-          if [ -n "$CHANGED_FILES" ]; then
-            echo "Checking format of changed Python files:"
-            echo "$CHANGED_FILES"
-            echo "$CHANGED_FILES" | xargs uv run ruff format --check
-            RUFF_FMT_EXIT=$?
-            if [ $RUFF_FMT_EXIT -ne 0 ]; then
-              echo "::warning::Ruff found formatting issues in changed files (non-blocking)"
-            fi
-          else
-            echo "No Python files changed"
-          fi
-          set -e
+      - name: Ruff formatting check
+        run: uv run ruff format --check
 
       - name: Pytest
         run: uv run pytest

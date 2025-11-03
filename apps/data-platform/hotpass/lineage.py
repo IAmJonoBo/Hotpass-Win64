@@ -52,7 +52,9 @@ except metadata.PackageNotFoundError:  # pragma: no cover - during editable inst
     _HOTPASS_VERSION = "unknown"
 
 
-def _build_facet_block(facets: Mapping[str, Any] | None, producer: str) -> dict[str, Any]:
+def _build_facet_block(
+    facets: Mapping[str, Any] | None, producer: str
+) -> dict[str, Any]:
     if not facets:
         return {}
     cleaned: dict[str, Any] = {"_producer": producer}
@@ -76,9 +78,13 @@ class LineageEmitter:
         facets: Mapping[str, Any] | None = None,
     ) -> None:
         self.job_name = job_name
-        self.namespace = namespace or os.getenv("HOTPASS_LINEAGE_NAMESPACE", DEFAULT_NAMESPACE)
+        self.namespace = namespace or os.getenv(
+            "HOTPASS_LINEAGE_NAMESPACE", DEFAULT_NAMESPACE
+        )
         self.run_id = str(run_id or uuid4())
-        resolved_producer = producer or os.getenv("HOTPASS_LINEAGE_PRODUCER", DEFAULT_PRODUCER)
+        resolved_producer = producer or os.getenv(
+            "HOTPASS_LINEAGE_PRODUCER", DEFAULT_PRODUCER
+        )
         self.producer = str(resolved_producer)
         self._inputs: Sequence[Any] | None = None
         self._run_facets = _build_facet_block(facets, self.producer)
@@ -116,7 +122,9 @@ class LineageEmitter:
             producer=self.producer,
             eventType=RunState.START,
             run=Run(runId=self.run_id, facets=self._run_facets),
-            job=Job(namespace=self.namespace, name=self.job_name, facets=self._job_facets),
+            job=Job(
+                namespace=self.namespace, name=self.job_name, facets=self._job_facets
+            ),
             inputs=list(self._inputs),
             outputs=[],
         )
@@ -141,7 +149,9 @@ class LineageEmitter:
             producer=self.producer,
             eventType=RunState.COMPLETE,
             run=Run(runId=self.run_id, facets=self._run_facets),
-            job=Job(namespace=self.namespace, name=self.job_name, facets=self._job_facets),
+            job=Job(
+                namespace=self.namespace, name=self.job_name, facets=self._job_facets
+            ),
             inputs=list(self._inputs or []),
             outputs=self._build_datasets(outputs or (), OutputDataset),
         )
@@ -167,11 +177,15 @@ class LineageEmitter:
             producer=self.producer,
             eventType=RunState.FAIL,
             run=Run(runId=self.run_id, facets=self._run_facets),
-            job=Job(namespace=self.namespace, name=self.job_name, facets=self._job_facets),
+            job=Job(
+                namespace=self.namespace, name=self.job_name, facets=self._job_facets
+            ),
             inputs=list(self._inputs or []),
             outputs=self._build_datasets(outputs or (), OutputDataset),
         )
-        logger.debug("Emitting OpenLineage FAIL event for %s: %s", self.job_name, message)
+        logger.debug(
+            "Emitting OpenLineage FAIL event for %s: %s", self.job_name, message
+        )
         self._emit(event)
 
     def _initialise_client(self) -> Any | None:
