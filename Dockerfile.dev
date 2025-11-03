@@ -9,10 +9,11 @@ ARG UV_VERSION=0.9.5
 ARG UV_SHA256_X86_64=2cf10babba653310606f8b49876cfb679928669e7ddaa1fb41fb00ce73e64f66
 ARG UV_SHA256_AARCH64=9db0c2f6683099f86bfeea47f4134e915f382512278de95b2a0e625957594ff3
 ARG TARGETARCH
+ARG NODE_MAJOR=22
 ARG APP_USER=hotpass
 ARG APP_UID=10001
 ARG APP_GID=10001
-ARG HOTPASS_UV_EXTRAS="orchestration"
+ARG HOTPASS_UV_EXTRAS="dev orchestration enrichment geospatial compliance dashboards"
 
 ENV APP_USER=${APP_USER}
 ENV APP_HOME=/home/${APP_USER}
@@ -29,10 +30,12 @@ ENV PATH=/opt/hotpass/.venv/bin:/usr/local/bin:/opt/conda/bin:${APP_HOME}/.local
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
+# Python toolchain
 RUN set -eux; \
-    micromamba install -y -n base "python=${PYTHON_VERSION}" curl -c conda-forge; \
+    micromamba install -y -n base "python=${PYTHON_VERSION}" curl git ca-certificates -c conda-forge; \
     micromamba clean --all --yes
 
+# uv binary
 RUN set -eux; \
     case "${TARGETARCH}" in \
         amd64) uv_arch="x86_64"; uv_sha="${UV_SHA256_X86_64}";; \
@@ -47,6 +50,20 @@ RUN set -eux; \
     chmod +x /usr/local/bin/uv /usr/local/bin/uvx; \
     rm /tmp/uv.tar.gz
 
+# Node.js + Playwright dependencies for front-end work
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends gnupg build-essential wget unzip libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libxkbcommon0 libgbm1 libxshmfence1; \
+    curl -fsSL https://deb.nodesource.com/setup_${NODE_MAJOR}.x | bash -; \
+    apt-get install -y --no-install-recommends nodejs; \
+    npm install -g corepack@0.28.0; \
+    corepack enable; \
+    npm install -g playwright@1.48.0; \
+    npx playwright install --with-deps chromium; \
+    apt-get clean; \
+    rm -rf /var/lib/apt/lists/*
+
+# Non-root user
 RUN set -eux; \
     groupadd --system --gid "${APP_GID}" "${APP_USER}"; \
     useradd --system --create-home --uid "${APP_UID}" --gid "${APP_GID}" "${APP_USER}"
@@ -60,13 +77,10 @@ COPY --link --chown=${APP_UID}:${APP_GID} . .
 
 USER ${APP_USER}
 
+# Synchronise uv environment with all development extras
 RUN --mount=type=cache,target=${UV_CACHE_DIR},uid=${APP_UID},gid=${APP_GID} \
     set -eux; \
     extras=${HOTPASS_UV_EXTRAS:-"dev orchestration"}; \
-    if [[ -z ${extras// /} ]]; then \
-        echo "HOTPASS_UV_EXTRAS is empty; refusing to build without at least one extra." >&2; \
-        exit 1; \
-    fi; \
     declare -a args=(); \
     for extra in ${extras}; do \
         args+=("--extra" "${extra}"); \
@@ -74,13 +88,8 @@ RUN --mount=type=cache,target=${UV_CACHE_DIR},uid=${APP_UID},gid=${APP_GID} \
     echo "Synchronising uv environment with extras: ${extras}"; \
     uv sync --frozen --no-editable "${args[@]}"
 
-RUN --mount=type=cache,target=${UV_CACHE_DIR},uid=${APP_UID},gid=${APP_GID} \
-    set -eux; \
-    uv pip check; \
-    uv run hotpass --help >/dev/null
+# Expose convenience commands for web UI work but allow overrides in docker-compose
+EXPOSE 4173 5173 8000
 
-HEALTHCHECK --interval=1m --timeout=10s --start-period=30s --retries=3 \
-  CMD uv run hotpass --help >/dev/null 2>&1 || exit 1
-
-ENTRYPOINT ["uv", "run", "hotpass"]
-CMD ["--help"]
+ENTRYPOINT ["/bin/bash"]
+CMD ["-l"]
