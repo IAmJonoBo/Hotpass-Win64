@@ -11,6 +11,7 @@ import Busboy from 'busboy'
 import os from 'os'
 import fs from 'fs'
 import { copyFile, mkdir, mkdtemp, readdir, rm, rename, stat } from 'fs/promises'
+import crypto from 'crypto'
 import {
   createCommandJob,
   createJobId,
@@ -43,6 +44,7 @@ const marquezLimit = Number.parseInt(process.env.MARQUEZ_RATE_LIMIT ?? '60', 10)
 const IMPORT_ROOT = process.env.HOTPASS_IMPORT_ROOT || path.join(process.cwd(), 'dist', 'import')
 const MAX_IMPORT_FILE_SIZE = Number.parseInt(process.env.HOTPASS_IMPORT_MAX_FILE_SIZE ?? `${1024 * 1024 * 1024}`, 10)
 const MAX_IMPORT_FILES = Number.parseInt(process.env.HOTPASS_IMPORT_MAX_FILES ?? '10', 10)
+const PIPELINE_RUN_LIMIT = Number.parseInt(process.env.HOTPASS_PIPELINE_RUN_LIMIT ?? '100', 10)
 
 app.disable('x-powered-by')
 app.use(helmet({ contentSecurityPolicy: false }))
@@ -233,6 +235,178 @@ const parseLimitParam = (value) => {
   }
   const parsed = Number.parseInt(raw, 10)
   return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined
+}
+
+const mapPrefectState = (state) => {
+  const normalised = typeof state === 'string' ? state.toLowerCase() : ''
+  switch (normalised) {
+    case 'completed':
+      return 'completed'
+    case 'running':
+    case 'pending':
+    case 'scheduled':
+      return 'running'
+    case 'failed':
+    case 'crashed':
+    case 'cancelled':
+      return 'failed'
+    default:
+      return 'unknown'
+  }
+}
+
+const derivePipelineAction = ({ name, parameters, tags, metadataType }) => {
+  if (metadataType === 'import') {
+    return 'refine'
+  }
+  const loweredName = typeof name === 'string' ? name.toLowerCase() : ''
+  const loweredTags = Array.isArray(tags) ? tags.map(tag => String(tag).toLowerCase()) : []
+  const parameterAction = typeof parameters?.action === 'string' ? parameters.action.toLowerCase() : null
+
+  const candidates = [
+    parameterAction,
+    loweredName.includes('enrich') ? 'enrich' : null,
+    loweredName.includes('contract') ? 'contracts' : null,
+    loweredName.includes('qa') ? 'qa' : null,
+    loweredName.includes('normalize') || loweredName.includes('normalise') ? 'normalize' : null,
+    loweredName.includes('backfill') ? 'backfill' : null,
+    loweredName.includes('refine') ? 'refine' : null,
+    loweredTags.find(tag => ['refine', 'enrich', 'qa', 'contracts', 'normalize', 'normalise', 'backfill'].includes(tag)),
+  ].filter(Boolean)
+
+  if (candidates.length === 0) {
+    return 'other'
+  }
+
+  const first = candidates[0]
+  if (first === 'normalise') {
+    return 'normalize'
+  }
+  return first
+}
+
+const mapPrefectRunToPipeline = (run) => {
+  const parameters = (run?.parameters && typeof run.parameters === 'object') ? run.parameters : {}
+  const action = derivePipelineAction({
+    name: run?.name,
+    parameters,
+    tags: run?.tags,
+  })
+
+  return {
+    id: run?.id ?? `prefect-${crypto.randomUUID?.() ?? Date.now()}`,
+    source: 'prefect',
+    action,
+    status: mapPrefectState(run?.state_type),
+    startedAt: run?.start_time ?? run?.created ?? null,
+    finishedAt: run?.end_time ?? null,
+    updatedAt: run?.updated ?? run?.end_time ?? run?.start_time ?? null,
+    profile: typeof parameters.profile === 'string' ? parameters.profile : undefined,
+    runName: run?.name ?? run?.id ?? undefined,
+    notes: typeof parameters.notes === 'string' ? parameters.notes : undefined,
+    dataDocsUrl: typeof parameters.data_docs_url === 'string' ? parameters.data_docs_url : undefined,
+    metadata: {
+      flowId: run?.flow_id ?? null,
+      deploymentId: run?.deployment_id ?? null,
+      parameters,
+      tags: run?.tags ?? [],
+      stateName: run?.state_name ?? null,
+      hil: {
+        status: run?.hil_status ?? null,
+        operator: run?.hil_operator ?? null,
+        comment: run?.hil_comment ?? null,
+        timestamp: run?.hil_timestamp ?? null,
+      },
+    },
+  }
+}
+
+const mapJobToPipeline = (job) => {
+  const metadata = job?.metadata && typeof job.metadata === 'object' ? job.metadata : {}
+  const parameters = metadata.parameters && typeof metadata.parameters === 'object' ? metadata.parameters : {}
+  const status = job?.status === 'succeeded'
+    ? 'completed'
+    : job?.status === 'running'
+      ? 'running'
+      : job?.status === 'failed'
+        ? 'failed'
+        : 'unknown'
+
+  const action = derivePipelineAction({
+    name: job?.label ?? job?.command?.[0],
+    parameters,
+    tags: metadata.tags,
+    metadataType: metadata.type,
+  })
+
+  return {
+    id: job?.id ?? `job-${crypto.randomUUID?.() ?? Date.now()}`,
+    source: 'job',
+    action,
+    status,
+    startedAt: job?.startedAt ?? job?.createdAt ?? null,
+    finishedAt: job?.completedAt ?? null,
+    updatedAt: job?.updatedAt ?? job?.completedAt ?? job?.startedAt ?? job?.createdAt ?? null,
+    profile: typeof metadata.profile === 'string' ? metadata.profile : undefined,
+    runName: job?.label ?? job?.command?.join(' ') ?? undefined,
+    notes: typeof metadata.notes === 'string' ? metadata.notes : undefined,
+    dataDocsUrl: typeof metadata.dataDocsUrl === 'string' ? metadata.dataDocsUrl : undefined,
+    metadata: {
+      stage: metadata.stage ?? null,
+      artifacts: metadata.artifacts ?? [],
+      files: metadata.files ?? [],
+      exitCode: job?.exitCode ?? null,
+      pid: job?.pid ?? null,
+      cwd: job?.cwd ?? null,
+    },
+  }
+}
+
+const fetchRecentPrefectRuns = async (limit) => {
+  const resolvedLimit = Number.isFinite(limit) && limit > 0 ? Math.min(limit, PIPELINE_RUN_LIMIT) : 50
+  const base = prefectTarget.endsWith('/') ? prefectTarget.slice(0, -1) : prefectTarget
+  const url = `${base}/flow_runs/filter`
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({
+        limit: resolvedLimit,
+        sort: 'START_TIME_DESC',
+      }),
+    })
+    if (!response.ok) {
+      console.warn('[pipeline-runs] Prefect returned non-200 response', response.status)
+      return []
+    }
+    const payload = await response.json()
+    if (Array.isArray(payload?.result)) {
+      return payload.result
+    }
+    if (Array.isArray(payload?.flow_runs)) {
+      return payload.flow_runs
+    }
+    if (Array.isArray(payload)) {
+      return payload
+    }
+    return []
+  } catch (error) {
+    console.error('[pipeline-runs] Failed to fetch Prefect runs', error)
+    return []
+  }
+}
+
+const normaliseActionFilter = (input) => {
+  if (!input) return null
+  const values = Array.isArray(input) ? input : String(input).split(',')
+  const cleaned = values
+    .map(value => String(value).trim().toLowerCase())
+    .filter(Boolean)
+  return cleaned.length > 0 ? new Set(cleaned) : null
 }
 
 app.post('/api/commands/run', csrfProtection, (req, res) => {
@@ -603,6 +777,65 @@ app.get('/api/jobs/:id/events', (req, res) => {
     clearInterval(keepAlive)
     unsubscribe()
   })
+})
+
+app.get('/api/runs/recent', async (req, res) => {
+  const limit = parseLimitParam(req.query.limit) ?? 50
+  const actionsFilter = normaliseActionFilter(req.query.action)
+  const includeJobs = req.query.includeJobs !== 'false'
+  const includePrefect = req.query.includePrefect !== 'false'
+
+  try {
+    const tasks = []
+    if (includePrefect) {
+      tasks.push(fetchRecentPrefectRuns(limit))
+    } else {
+      tasks.push(Promise.resolve([]))
+    }
+    if (includeJobs) {
+      tasks.push(Promise.resolve(listJobs()))
+    } else {
+      tasks.push(Promise.resolve([]))
+    }
+
+    const [prefectRunsRaw, jobsRaw] = await Promise.all(tasks)
+    const prefectRuns = Array.isArray(prefectRunsRaw) ? prefectRunsRaw.map(mapPrefectRunToPipeline) : []
+    const jobRuns = Array.isArray(jobsRaw) ? jobsRaw.map(mapJobToPipeline) : []
+
+    const combined = [...prefectRuns, ...jobRuns]
+      .filter((run) => {
+        if (!actionsFilter) return true
+        return actionsFilter.has(String(run.action ?? '').toLowerCase())
+      })
+      .map((run) => {
+        const updatedAt = run.updatedAt ? new Date(run.updatedAt).toISOString() : null
+        const updatedMs = updatedAt ? new Date(updatedAt).getTime() : null
+        const isRecent = typeof updatedMs === 'number' && !Number.isNaN(updatedMs) && (Date.now() - updatedMs) <= 2_000
+        return {
+          ...run,
+          updatedAt,
+          isRecent,
+        }
+      })
+      .sort((a, b) => {
+        const timeA = a.updatedAt ? new Date(a.updatedAt).getTime() : 0
+        const timeB = b.updatedAt ? new Date(b.updatedAt).getTime() : 0
+        return timeB - timeA
+      })
+      .slice(0, Math.min(limit, PIPELINE_RUN_LIMIT))
+
+    res.json({
+      runs: combined,
+      lastUpdated: new Date().toISOString(),
+      stats: {
+        totalPrefect: prefectRuns.length,
+        totalJobs: jobRuns.length,
+      },
+    })
+  } catch (error) {
+    console.error('[pipeline-runs] failed to build response', error)
+    sendError(res, 500, 'Failed to load recent runs', { message: error.message })
+  }
 })
 
 app.get('/api/hil/approvals', async (_req, res) => {

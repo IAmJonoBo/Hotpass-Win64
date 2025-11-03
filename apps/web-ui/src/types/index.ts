@@ -182,6 +182,40 @@ export interface PrefectDeployment {
   parameters?: Record<string, unknown>
 }
 
+export type PipelineAction =
+  | 'refine'
+  | 'normalize'
+  | 'backfill'
+  | 'enrich'
+  | 'qa'
+  | 'contracts'
+  | 'other'
+
+export interface PipelineRun {
+  id: string
+  source: 'prefect' | 'job'
+  action: PipelineAction
+  status: 'completed' | 'running' | 'failed' | 'unknown'
+  startedAt: string | null
+  finishedAt: string | null
+  updatedAt: string | null
+  profile?: string
+  runName?: string
+  notes?: string
+  dataDocsUrl?: string
+  metadata?: Record<string, unknown>
+  isRecent?: boolean
+}
+
+export interface PipelineRunResponse {
+  runs: PipelineRun[]
+  lastUpdated?: string
+  stats?: {
+    totalPrefect?: number
+    totalJobs?: number
+  }
+}
+
 // Hotpass-specific types
 
 export interface HotpassRun {

@@ -1,6 +1,6 @@
 # Hotpass Web UI — Functional Implementation Playbook
 
-> Source of truth: README.md, docs/**, DESIGN_REVIEW.md, apps/web-ui/IMPLEMENTATION_SUMMARY.md (no IMPLEMENTATION_COMPLETE_WEB_UI.md in repo)
+> Source of truth: README.md, docs/\*\*, DESIGN_REVIEW.md, apps/web-ui/IMPLEMENTATION_SUMMARY.md (no IMPLEMENTATION_COMPLETE_WEB_UI.md in repo)
 
 ---
 
@@ -33,25 +33,28 @@
 ## Stage 3 – Frontend import integration (operator view)
 
 ### 2.1 Replace mocks
+
 - [x] `DatasetImportPanel` → call `/api/import`, subscribe to events, surface download links once done.
 - [x] DatasetImportPanel → render live processing panel (rolling stage timeline + logs/artifacts) fed by granular SSE events.
 - [x] DatasetImportPanel → show milestone progress states (Upload → Refine → Complete) with real-time badges.
 - [x] DatasetImportPanel → expose detailed job insights (files, notes, artifacts, logs) while keeping simple queue view for operators.
 - [x] `LiveRefinementPanel` → fetch real Prefect runs, highlight new arrivals, surface notes/data docs, retain feedback entry.
 - [x] Activity feed wired to `/api/activity` (role-aware event display).
-- [ ] `TelemetryStrip` → surface backend job/command failures (pending).
-- [ ] `LiveRefinementPanel` → consume `/api/runs/recent` (React Query polling/SSE fallback), show real data-docs link.
-- [ ] LiveRefinementPanel → highlight newly arriving runs/logs for 2 s (background tint + fade) to emphasise real-time work.
+- [x] `TelemetryStrip` → surface backend job/command failures.
+- [x] `PipelineActivityPanel` (replaces LiveRefinementPanel) → consume `/api/runs/recent` (React Query polling/SSE fallback), show real data-docs link.
+- [x] PipelineActivityPanel → highlight newly arriving runs/logs for <=2 s (background tint + fade) to emphasise real-time work.
 - [ ] `AgentActivityPanel` → subscribe to `/api/activity`.
 - [ ] `useHILApprovals` / `ApprovalPanel` → swap to new REST endpoints.
-- [ ] `TelemetryStrip` → include backend job/command failures.
+- [x] `TelemetryStrip` → include backend job/command failures.
 
 ### 2.2 Assistant tool expansion (`src/agent/tools.ts`)
+
 - [ ] Add wrappers: `runRefine`, `runEnrich`, `runQa`, `runPlanResearch`, `runContracts`.
 - [ ] Return `{jobId, statusUrl, logUrl}` for UI to render.
 - [ ] Update chat UI to stream tool responses & link to logs/RunDetails.
 
 ### 2.3 Error handling
+
 - [ ] Create shared toast/banner system (reuse `ApiBanner` variants).
 - [ ] Surface inline errors for uploads, approvals, assistant failures (imports already emit banners; approvals/activity pending).
 
@@ -60,6 +63,7 @@
 ## Stage 4 – Engineer view & log streaming
 
 ### 3.1 Dashboard (operator-first)
+
 - [ ] Guided ingest wizard (dropzone + status timeline).
 - [ ] “Latest refined workbook” card, “Data quality” summary chip.
 - [ ] Live processing widget showing: current workbook name, sheet count, processed rows, auto-fixes, errors needing review, and session duration (updated every 200–500 ms).
@@ -68,6 +72,7 @@
 - [ ] Inline help links (HelpCenter anchors).
 
 ### 3.2 RunDetails (technical depth)
+
 - [ ] Stream live logs (SSE) with tail component.
 - [ ] New events (logs, cell-fixed, validation-failed) should briefly glow (≤200 ms) and then settle to normal state.
 - [ ] Provide link-back to source rule / contract when an auto-fix is displayed, so users can stay in-app (no hard context switch to docs).
@@ -76,11 +81,13 @@
 - [ ] Approval audit timeline (backend data).
 
 ### 3.3 Research & governance
+
 - [ ] Add planner tab (form for `plan research`, results viewer).
 - [ ] Contracts explorer (list YAML from `dist/contracts/` with download).
 - [ ] Data Docs global page or modal (link from sidebar).
 
 ### 3.4 Power tools
+
 - [ ] Replace “copy command” with invocation via `/api/commands/run`.
 - [ ] Provide log modal with tail + download.
 
@@ -97,6 +104,7 @@
 ## Stage 6 – Assistant + power tool upgrades
 
 ### 5.1 Real-time updates
+
 - [ ] Decide SSE vs polling for each panel (DatasetImport, LiveRefinement, Activity).
 - [ ] Prefer SSE for one-way, high-frequency updates from import/validation pipelines (see patterns in Ably, FreeCodeCamp, and recent SSE vs WebSocket guidance).
 - [ ] Fall back to polling (5–10 s) only for Prefect/Marquez endpoints that cannot stream.
@@ -104,14 +112,17 @@
 - [ ] Add skeleton loaders & “last updated” capsules (per DESIGN_REVIEW).
 
 ### 5.2 Error banners & transparency
+
 - [ ] Propagate Prefect/Marquez outage info to Dashboard header.
 - [ ] Warn when Admin endpoints point to private VPC (per Stage 7 requirement).
 
 ### 5.3 Accessibility & responsiveness
+
 - [ ] Validate focus outlines, keyboard flow, screen reader labels.
 - [ ] Ensure tables degrade gracefully <1024px (horizontal scroll hints/cards).
 
 ### 5.4 Engagement & microinteractions
+
 - [ ] Upload dropzone: on drop → scale to 1.02 and swap to parsing state; on success → morph into summary card (sheet count, rows, timestamp).
 - [ ] Buttons that trigger long-running jobs should show in-button progress (spinner + "Working…") for first 1–2 s and then hand over to the live processing panel. Avoid only-global toasts.
 - [ ] Activity feed entries should be timestamped in SAST (UTC+2) and badge for 3 s when new.

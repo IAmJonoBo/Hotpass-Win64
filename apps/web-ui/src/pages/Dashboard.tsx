@@ -17,7 +17,7 @@ import { ApiBanner } from '@/components/feedback/ApiBanner'
 import { cn, formatDuration, getStatusColor } from '@/lib/utils'
 import { prefectApi, mockPrefectData } from '@/api/prefect'
 import { useHILApprovals } from '@/store/hilStore'
-import { LiveRefinementPanel } from '@/components/refinement/LiveRefinementPanel'
+import { PipelineActivityPanel } from '@/components/pipeline/PipelineActivityPanel'
 import { PowerTools } from '@/components/powertools/PowerTools'
 import { DatasetImportPanel } from '@/components/import/DatasetImportPanel'
 import { useLineageTelemetry, jobHasHotpassFacet } from '@/hooks/useLineageTelemetry'
@@ -255,56 +255,57 @@ export function Dashboard() {
         </Card>
       </div>
 
-      {/* Live Refinement Panel */}
-      <Card>
-        <CardHeader className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-          <div>
-            <CardTitle className="text-base flex items-center gap-2">
-              <GitBranch className="h-4 w-4" />
-              Lineage Telemetry
-            </CardTitle>
-            <CardDescription>
-              Snapshot of Marquez activity feeding the telemetry strip. Updates every minute.
-            </CardDescription>
-          </div>
-          {isFetchingTelemetry && <span className="text-xs text-muted-foreground">Refreshing…</span>}
-        </CardHeader>
-        <CardContent>
-          {isFetchingTelemetry && !lineageTelemetry ? (
-            <div className="grid gap-3 md:grid-cols-3">
-              <Skeleton className="h-24" />
-              <Skeleton className="h-24" />
-              <Skeleton className="h-24" />
-            </div>
-          ) : (
-            <div className="grid gap-3 md:grid-cols-3">
-              <div className="rounded-2xl border border-border/60 p-4">
-                <div className="text-xs uppercase tracking-wide text-muted-foreground">Jobs Today</div>
-                <div className="mt-2 text-2xl font-semibold">
-                  {lineageTelemetry?.jobsToday ?? 0}
-                </div>
-              </div>
-              <div className="rounded-2xl border border-border/60 p-4">
-                <div className="text-xs uppercase tracking-wide text-muted-foreground">Failed Today</div>
-                <div className="mt-2 text-2xl font-semibold text-red-600 dark:text-red-400">
-                  {lineageTelemetry?.failedToday ?? 0}
-                </div>
-              </div>
-              <div className="rounded-2xl border border-border/60 p-4">
-                <div className="text-xs uppercase tracking-wide text-muted-foreground">Incomplete Facets</div>
-                <div className="mt-2 text-2xl font-semibold text-yellow-700 dark:text-yellow-400">
-                  {lineageTelemetry?.incompleteFacets ?? 0}
-                </div>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        <PipelineActivityPanel />
 
-      <LiveRefinementPanel />
+        <div className="space-y-6">
+          <Card>
+            <CardHeader className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+              <div>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <GitBranch className="h-4 w-4" />
+                  Lineage Telemetry
+                </CardTitle>
+                <CardDescription>
+                  Snapshot of Marquez activity feeding the telemetry strip. Updates every minute.
+                </CardDescription>
+              </div>
+              {isFetchingTelemetry && <span className="text-xs text-muted-foreground">Refreshing…</span>}
+            </CardHeader>
+            <CardContent>
+              {isFetchingTelemetry && !lineageTelemetry ? (
+                <div className="grid gap-3 md:grid-cols-2">
+                  <Skeleton className="h-24" />
+                  <Skeleton className="h-24" />
+                </div>
+              ) : (
+                <div className="grid gap-3">
+                  <div className="rounded-2xl border border-border/60 p-4">
+                    <div className="text-xs uppercase tracking-wide text-muted-foreground">Jobs Today</div>
+                    <div className="mt-2 text-2xl font-semibold">
+                      {lineageTelemetry?.jobsToday ?? 0}
+                    </div>
+                  </div>
+                  <div className="rounded-2xl border border-border/60 p-4">
+                    <div className="text-xs uppercase tracking-wide text-muted-foreground">Failed Today</div>
+                    <div className="mt-2 text-2xl font-semibold text-red-600 dark:text-red-400">
+                      {lineageTelemetry?.failedToday ?? 0}
+                    </div>
+                  </div>
+                  <div className="rounded-2xl border border-border/60 p-4">
+                    <div className="text-xs uppercase tracking-wide text-muted-foreground">Incomplete Facets</div>
+                    <div className="mt-2 text-2xl font-semibold text-yellow-700 dark:text-yellow-400">
+                      {lineageTelemetry?.incompleteFacets ?? 0}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
-      {/* Power Tools */}
-      <PowerTools onOpenAssistant={() => openAssistant()} />
+          <PowerTools onOpenAssistant={() => openAssistant()} />
+        </div>
+      </div>
 
       {/* Latest Spreadsheets */}
       <Card>

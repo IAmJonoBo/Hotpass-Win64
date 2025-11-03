@@ -17,6 +17,17 @@ interface TelemetryStripProps {
   className?: string
 }
 
+type TelemetryJob = {
+  id?: string
+  status?: string
+  updatedAt?: string
+  completedAt?: string
+  startedAt?: string
+  createdAt?: string
+  label?: string
+  metadata?: Record<string, unknown>
+}
+
 export function TelemetryStrip({ className }: TelemetryStripProps) {
   const environment =
     import.meta.env.HOTPASS_ENVIRONMENT ||
@@ -76,6 +87,28 @@ export function TelemetryStrip({ className }: TelemetryStripProps) {
   })
 
   const { data: lineageTelemetry } = useLineageTelemetry()
+  const { data: jobsPayload = { jobs: [] as TelemetryJob[] } } = useQuery({
+    queryKey: ['telemetry-jobs'],
+    queryFn: async () => {
+      try {
+        const response = await fetch('/api/jobs', {
+          credentials: 'include',
+          headers: { Accept: 'application/json' },
+        })
+        if (!response.ok) {
+          throw new Error(`Failed to fetch jobs (${response.status})`)
+        }
+        const payload = (await response.json()) as { jobs?: TelemetryJob[] }
+        const jobs = Array.isArray(payload?.jobs) ? payload.jobs : []
+        return { jobs }
+      } catch (error) {
+        console.warn('Telemetry: Job fetch failed:', error)
+        return { jobs: [] }
+      }
+    },
+    refetchInterval: 30000,
+    enabled: telemetryEnabled,
+  })
 
   if (!telemetryEnabled) {
     return null
@@ -88,10 +121,44 @@ export function TelemetryStrip({ className }: TelemetryStripProps) {
     return runTime >= thirtyMinutesAgo && run.state_type === 'FAILED'
   }).length
 
+  const jobs = jobsPayload.jobs ?? []
+  const getJobTimestamp = (job: TelemetryJob): number => {
+    const candidates = [
+      job.updatedAt,
+      job.completedAt,
+      job.startedAt,
+      job.createdAt,
+    ]
+    for (const candidate of candidates) {
+      if (typeof candidate === 'string' || candidate instanceof Date) {
+        const value = new Date(candidate).getTime()
+        if (!Number.isNaN(value)) {
+          return value
+        }
+      }
+    }
+    return 0
+  }
+
+  const jobFailures = jobs.filter(job => job?.status === 'failed')
+  const recentJobFailures = jobFailures.filter(job => getJobTimestamp(job) >= thirtyMinutesAgo)
+  const latestJobFailure = jobFailures.reduce<number>((acc, job) => {
+    const ts = getJobTimestamp(job)
+    return ts > acc ? ts : acc
+  }, 0)
+
+  const jobFailureSummary =
+    jobFailures.length === 0
+      ? 'Healthy'
+      : latestJobFailure > 0
+        ? `Last failed ${formatDistanceToNow(new Date(latestJobFailure), { addSuffix: true })}`
+        : `${jobFailures.length} failures recorded`
+
   const hasIssues = recentFailedRuns > 0 ||
     prefectHealth?.status === 'error' ||
     marquezHealth?.status === 'error' ||
-    (lineageTelemetry?.incompleteFacets ?? 0) > 0
+    (lineageTelemetry?.incompleteFacets ?? 0) > 0 ||
+    recentJobFailures.length > 0
 
   return (
     <div
@@ -149,6 +216,30 @@ export function TelemetryStrip({ className }: TelemetryStripProps) {
           </span>
         </div>
 
+        {/* Job Runner */}
+        <div className="flex items-center gap-2">
+          {recentJobFailures.length > 0 ? (
+            <AlertTriangle className="h-3 w-3 text-red-600 dark:text-red-400" />
+          ) : (
+            <CheckCircle className="h-3 w-3 text-green-600 dark:text-green-400" />
+          )}
+          <span className="text-muted-foreground">Job runner:</span>
+          <span
+            className={cn(
+              recentJobFailures.length > 0
+                ? 'text-red-600 dark:text-red-400 font-medium'
+                : 'text-green-600 dark:text-green-400',
+            )}
+          >
+            {recentJobFailures.length > 0
+              ? `${recentJobFailures.length} failure${recentJobFailures.length > 1 ? 's' : ''} (30m)`
+              : 'Healthy'}
+          </span>
+          {jobFailures.length > 0 && (
+            <span className="text-muted-foreground/80">· {jobFailureSummary}</span>
+          )}
+        </div>
+
         {/* Failed Runs */}
         {recentFailedRuns > 0 && (
           <div className="flex items-center gap-2">
@@ -163,7 +254,7 @@ export function TelemetryStrip({ className }: TelemetryStripProps) {
       {/* Right side - Last update */}
       <div className="flex items-center gap-4">
         <span className="text-muted-foreground">
-          Telemetry: {lineageTelemetry?.incompleteFacets ?? 0} pending backfills · {lineageTelemetry?.failedToday ?? 0} failed today · {lineageTelemetry?.jobsToday ?? 0} jobs today
+          Telemetry: {lineageTelemetry?.incompleteFacets ?? 0} pending backfills · {lineageTelemetry?.failedToday ?? 0} failed today · {lineageTelemetry?.jobsToday ?? 0} jobs today · {recentJobFailures.length} job failure{recentJobFailures.length === 1 ? '' : 's'} (30m)
         </span>
         <div className="flex items-center gap-2">
           {hasIssues && (
