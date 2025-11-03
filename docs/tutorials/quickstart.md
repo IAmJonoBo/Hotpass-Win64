@@ -104,7 +104,7 @@ The CLI writes:
 
 ## 6. Review the results
 
-Open the refined workbook to see the normalised columns and conflict resolutions. Notice the recommendation in the pipeline summary: the average data-quality score is below 50%. Investigate the low-scoring rows before sharing the output.
+Open the refined workbook to see the normalised columns and conflict resolutions. Notice the recommendation in the pipeline summary: the average data-quality score is below 50%. Investigate the low-scoring rows before sharing the output. When Hotpass drops duplicate primary keys it also exports them to `dist/contract-notices/<run-id>/` so you can triage the upstream source.
 
 Need Great Expectations Data Docs? Run `uv run hotpass qa all` after the pipeline: the command prints the path to the regenerated docs (for example `dist/quality-gates/qg2-data-quality/<timestamp>/data-docs`).
 

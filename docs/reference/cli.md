@@ -174,8 +174,9 @@ graph TD
    ```
 
    Outputs appear under `dist/` (`refined.xlsx`, `refined.parquet`, and a timestamped archive).
-   If you switch to the aviation profile and point at the SACAA workbook you will see a Frictionless
-   contract failure; resolve duplicates or update the governed schema before re-running.
+   When profiles encounter duplicate primary keys (for example, the SACAA workbook), Hotpass keeps
+   the first occurrence, logs the warning in the quality report, and writes the dropped rows to
+   `dist/contract-notices/<run-id>/` for review.
 
 Shared flags such as `--profile`, `--profile-search-path`, `--config`, and `--log-format`
 can be supplied before the subcommand or repeated. Profiles defined in TOML or YAML load via

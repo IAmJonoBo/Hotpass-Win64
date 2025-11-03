@@ -113,12 +113,10 @@ flowchart LR
 
    Outputs land under `dist/` (`refined.xlsx`, `refined.parquet`, and a timestamped archive). The warning reminds you to triage the low data-quality score before sharing the workbook.
 
-   > **Heads-up:** If you run the aviation profile against the sample SACAA workbook you will hit a Frictionless contract failure (duplicate rows at positions 15, 71, and 43). Inspect the failing sheet or adjust the governed schema before rerunning:
-   >
-   > ```
-   > Error: Data contract validation failed: Frictionless schema validation failed for SACAA Cleaned
-   > Suggested fix: Align the ingest table with the governed schema or update the schema contract
-   > ```
+   > **Heads-up:** The SACAA workbook includes duplicate organisations. Hotpass now keeps the
+   > first occurrence automatically, exports the duplicate rows to
+   > `dist/contract-notices/<run-id>/sacaa-cleaned-duplicates.csv`, and surfaces the warning in the
+   > quality recommendations so you can review them after the run.
 
 6. **Run the platform QA gates**
 

@@ -151,20 +151,26 @@ def ingest_sources(
     if not agent_frame.empty:
         frames.append(agent_frame)
 
+    contract_notices: list[dict[str, Any]] = []
     for label, frame in load_sources(
         config.input_dir, config.country_code, config.excel_options
     ).items():
         frames.append(frame)
         source_timings[label] = frame.attrs.get("load_seconds", 0.0)
+        notices = frame.attrs.get("contract_notices", [])
+        for notice in notices:
+            enriched_notice = dict(notice)
+            enriched_notice.setdefault("source_dataset", label)
+            contract_notices.append(enriched_notice)
 
     if not frames:
-        return _empty_sources_frame(), source_timings, []
+        return _empty_sources_frame(), source_timings, contract_notices
 
     combined = pd.concat(frames, ignore_index=True, sort=False)
     combined = _normalise_source_frame(combined)
     combined["organization_slug"] = combined["organization_name"].apply(slugify)
     combined["province"] = combined["province"].apply(normalize_province)
-    return combined, source_timings, []
+    return combined, source_timings, contract_notices
 
 
 def apply_redaction(

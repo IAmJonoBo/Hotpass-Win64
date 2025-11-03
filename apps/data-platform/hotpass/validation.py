@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from importlib import resources
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
@@ -13,6 +14,8 @@ from .error_handling import DataContractError
 
 if TYPE_CHECKING:  # pragma: no cover - typing only
     from frictionless import Schema
+
+logger = logging.getLogger(__name__)
 
 try:  # pragma: no cover - Great Expectations is an optional dependency
     from great_expectations.core.batch import Batch
@@ -100,6 +103,17 @@ def _load_checkpoint_config(name: str) -> dict[str, object]:
         return cast(dict[str, object], json.load(handle))
 
 
+def _normalise_duplicate_keys(frame: pd.DataFrame, subset: list[str]) -> list[str]:
+    """Return a readable preview of duplicate primary key combinations."""
+
+    if frame.empty:
+        return []
+    preview_frame = frame.loc[:, subset].astype(str)
+    combined = preview_frame.agg(" | ".join, axis=1)
+    unique = list(dict.fromkeys(combined.tolist()))
+    return unique[:5]
+
+
 def validate_with_frictionless(
     df: pd.DataFrame,
     *,
@@ -111,6 +125,45 @@ def validate_with_frictionless(
     from frictionless.resources import TableResource
 
     schema = _load_schema(schema_descriptor)
+    primary_key: list[str] = []
+    if schema.primary_key:
+        if isinstance(schema.primary_key, (list, tuple)):
+            primary_key = [str(value) for value in schema.primary_key]
+        else:
+            primary_key = [str(schema.primary_key)]
+
+    duplicate_rows: pd.DataFrame | None = None
+    if primary_key:
+        duplicate_mask = df.duplicated(subset=primary_key, keep=False)
+        if duplicate_mask.any():
+            duplicate_rows = df.loc[duplicate_mask].copy()
+            duplicate_count = int(duplicate_mask.sum())
+            sample_keys = _normalise_duplicate_keys(duplicate_rows, primary_key)
+            notice = {
+                "table_name": table_name,
+                "source_file": source_file,
+                "primary_key": primary_key,
+                "duplicate_count": duplicate_count,
+                "sample_keys": sample_keys,
+                "duplicate_rows": duplicate_rows.reset_index(drop=True),
+            }
+            notices = df.attrs.setdefault("contract_notices", [])
+            notices.append(notice)
+            logger.warning(
+                "Detected %s duplicate row(s) in %s (primary key: %s). Keeping first occurrence.",
+                duplicate_count,
+                table_name,
+                ", ".join(primary_key),
+            )
+            if sample_keys:
+                logger.warning(
+                    "Sample duplicate keys for %s: %s",
+                    table_name,
+                    "; ".join(sample_keys),
+                )
+            # Ensure downstream consumers observe the deduplicated frame
+            df.drop_duplicates(subset=primary_key, keep="first", inplace=True)
+
     sanitized = df.where(pd.notnull(df), None).copy()
     for field in schema.fields:
         if field.type == "string" and field.name in sanitized.columns:

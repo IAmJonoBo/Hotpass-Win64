@@ -601,6 +601,7 @@ class HotpassConfig(BaseModel):
             incremental=self.pipeline.incremental,
             since=self.pipeline.since,
             run_id=self.pipeline.run_id,
+            dist_dir=self.pipeline.dist_dir,
         )
 
         config.automation_http = self.pipeline.automation_http.to_dataclass()

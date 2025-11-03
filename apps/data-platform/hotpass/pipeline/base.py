@@ -4,7 +4,8 @@ import logging
 import random
 from collections.abc import Mapping
 from dataclasses import asdict
-from typing import TYPE_CHECKING, Any
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Callable
 
 import numpy as np
 import pandas as pd
@@ -14,6 +15,7 @@ if TYPE_CHECKING:
 
 from ..domain.party import PartyStore
 from ..imports.preprocess import apply_import_preprocessing
+from ..normalization import slugify
 from ..pipeline_reporting import generate_recommendations
 from .aggregation import aggregate_records
 from .config import SSOT_COLUMNS, PipelineConfig, PipelineResult, QualityReport, initialise_config
@@ -100,7 +102,7 @@ def execute_pipeline(config: PipelineConfig) -> PipelineResult:
 
     _notify_progress(config, PIPELINE_EVENT_LOAD_STARTED)
     ingest_start = perf_counter()
-    combined, source_timings, _ = ingest_sources(config)
+    combined, source_timings, contract_notices = ingest_sources(config)
     metrics["source_load_seconds"] = dict(source_timings)
     load_seconds = perf_counter() - ingest_start
     metrics["load_seconds"] = load_seconds
@@ -318,6 +320,30 @@ def execute_pipeline(config: PipelineConfig) -> PipelineResult:
     )
     metrics.update(export_metrics)
 
+    sanitized_notices: list[dict[str, Any]] = []
+    if contract_notices:
+        sanitized_notices = _persist_contract_notices(
+            config, contract_notices, hooks.datetime_factory
+        )
+        if sanitized_notices:
+            metrics["contract_notices"] = sanitized_notices
+            if config.enable_audit_trail:
+                audit_trail.append(
+                    {
+                        "timestamp": time_fn(),
+                        "event": "contract_notices",
+                        "details": sanitized_notices,
+                    }
+                )
+            for notice in sanitized_notices:
+                logger.warning(
+                    "Deduplicated %s row(s) from %s (primary key: %s). Artifact: %s",
+                    notice["duplicate_count"],
+                    notice["table_name"],
+                    ", ".join(notice.get("primary_key", [])),
+                    notice["artifact_path"] or "n/a",
+                )
+
     total_records = int(len(aggregation_result.refined_df))
     invalid_records = invalid_record_count
 
@@ -328,6 +354,21 @@ def execute_pipeline(config: PipelineConfig) -> PipelineResult:
             validation_result.expectation_summary,
             validation_result.quality_distribution,
         )
+    if sanitized_notices:
+        for notice in sanitized_notices:
+            sample_keys = notice.get("sample_keys") or []
+            key_preview = ", ".join(sample_keys[:3])
+            message = (
+                f"Deduplicated {notice['duplicate_count']} record(s) in "
+                f"{notice['table_name']} based on primary key "
+                f"{', '.join(notice.get('primary_key', []))}."
+            )
+            if key_preview:
+                message += f" Sample keys: {key_preview}."
+            artifact_path = notice.get("artifact_path")
+            if artifact_path:
+                message += f" Duplicate rows exported to {artifact_path}."
+            recommendations.append(message)
 
     metrics_copy = dict(metrics)
     if config.enable_audit_trail:
@@ -378,6 +419,49 @@ def execute_pipeline(config: PipelineConfig) -> PipelineResult:
         intent_digest=intent_digest,
         daily_list=daily_list_df,
     )
+
+
+def _persist_contract_notices(
+    config: PipelineConfig,
+    notices: list[dict[str, Any]],
+    datetime_factory: Callable[[], Any],
+) -> list[dict[str, Any]]:
+    if not notices:
+        return []
+
+    timestamp = config.run_id or datetime_factory().strftime("%Y%m%dT%H%M%SZ")
+    root: Path = config.dist_dir / "contract-notices" / timestamp
+    root.mkdir(parents=True, exist_ok=True)
+
+    sanitized: list[dict[str, Any]] = []
+    for index, notice in enumerate(notices, start=1):
+        duplicate_rows = notice.get("duplicate_rows")
+        table_name = str(notice.get("table_name", f"table-{index}"))
+        dataset = notice.get("source_dataset")
+        primary_key = list(notice.get("primary_key") or [])
+        sample_keys = list(notice.get("sample_keys") or [])
+        duplicate_count = int(notice.get("duplicate_count", 0))
+
+        artifact_path: Path | None = None
+        if isinstance(duplicate_rows, pd.DataFrame) and not duplicate_rows.empty:
+            slug = slugify(table_name) or f"table-{index}"
+            artifact_path = root / f"{slug}-duplicates.csv"
+            artifact_path.parent.mkdir(parents=True, exist_ok=True)
+            duplicate_rows.to_csv(artifact_path, index=False)
+
+        sanitized.append(
+            {
+                "table_name": table_name,
+                "source_dataset": dataset,
+                "source_file": notice.get("source_file"),
+                "primary_key": primary_key,
+                "duplicate_count": duplicate_count,
+                "sample_keys": sample_keys,
+                "artifact_path": str(artifact_path) if artifact_path else None,
+            }
+        )
+
+    return sanitized
 
 
 def _relay_progress(
