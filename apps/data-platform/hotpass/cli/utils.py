@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import shlex
-import subprocess
+import subprocess  # nosec B404 - subprocess is required for CLI command execution
 from collections.abc import Iterable, Sequence
 
 
@@ -27,7 +27,7 @@ def run_command(
 ) -> subprocess.CompletedProcess[str]:
     """Execute a subprocess command with consistent defaults."""
 
-    proc = subprocess.run(
+    proc = subprocess.run(  # nosec B603 - command arguments are explicit; shell disabled
         list(command),
         check=False,
         capture_output=capture_output,

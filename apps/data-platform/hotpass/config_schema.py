@@ -606,7 +606,21 @@ class HotpassConfig(BaseModel):
         config.automation_http = self.pipeline.automation_http.to_dataclass()
 
         if self.pipeline.research is not None:
-            config.research_settings = self.pipeline.research.model_dump(mode="python")
+            research_settings = self.pipeline.research.model_dump(mode="python")
+            searx_settings = research_settings.get("searx")
+            if searx_settings and "base_url" in searx_settings:
+                base_url = searx_settings["base_url"]
+                from urllib.parse import urlparse
+
+                parsed = urlparse(str(base_url))
+                # `AnyHttpUrl` normalises host-only URLs to include a trailing slash.
+                # Downstream HTTP clients expect the canonical host form, so drop the
+                # suffix only when the path is empty (``""``) or root (``"/"``).
+                if parsed.path in {"", "/"}:
+                    searx_settings["base_url"] = parsed._replace(path="").geturl()
+                else:
+                    searx_settings["base_url"] = parsed.geturl()
+            config.research_settings = research_settings
 
         if self.pipeline.acquisition and self.pipeline.acquisition.enabled:
             from hotpass.data_sources.agents import (

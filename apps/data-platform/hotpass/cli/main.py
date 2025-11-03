@@ -8,49 +8,85 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Protocol, cast
 
-# Ensure repository-local automation packages (ops/*) are importable when the CLI is
-# executed via the installed entry point (uv run hotpass ...).
-PROJECT_ROOT = Path(__file__).resolve().parents[4]
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.append(str(PROJECT_ROOT))
-
-from .builder import CLIBuilder
-from .commands import (
-    arc,
-    aws,
-    backfill,
-    contracts,
-    crawl,
-    ctx,
-    dashboard,
-    deploy,
-    distro,
-    doctor,
-    enrich,
-    env,
-    explain_provenance,
-    imports,
-    init,
-    inventory,
-    net,
-    orchestrate,
-    overview,
-    plan,
-    qa,
-    refine,
-    resolve,
-    run,
-    setup,
-    version,
-)
-from .configuration import (
-    DEFAULT_PROFILE_DIRS,
-    CLIProfile,
-    ProfileIntentError,
-    ProfileNotFoundError,
-    ProfileValidationError,
-    load_profile,
-)
+try:
+    from .builder import CLIBuilder
+    from .commands import (
+        arc,
+        aws,
+        backfill,
+        contracts,
+        crawl,
+        ctx,
+        dashboard,
+        deploy,
+        distro,
+        doctor,
+        enrich,
+        env,
+        explain_provenance,
+        imports,
+        init,
+        inventory,
+        net,
+        orchestrate,
+        overview,
+        plan,
+        qa,
+        refine,
+        resolve,
+        run,
+        setup,
+        version,
+    )
+    from .configuration import (
+        DEFAULT_PROFILE_DIRS,
+        CLIProfile,
+        ProfileIntentError,
+        ProfileNotFoundError,
+        ProfileValidationError,
+        load_profile,
+    )
+except ModuleNotFoundError:  # pragma: no cover - safety net for entry point execution
+    project_root = Path(__file__).resolve().parents[4]
+    if str(project_root) not in sys.path:
+        sys.path.append(str(project_root))
+    from .builder import CLIBuilder
+    from .commands import (
+        arc,
+        aws,
+        backfill,
+        contracts,
+        crawl,
+        ctx,
+        dashboard,
+        deploy,
+        distro,
+        doctor,
+        enrich,
+        env,
+        explain_provenance,
+        imports,
+        init,
+        inventory,
+        net,
+        orchestrate,
+        overview,
+        plan,
+        qa,
+        refine,
+        resolve,
+        run,
+        setup,
+        version,
+    )
+    from .configuration import (
+        DEFAULT_PROFILE_DIRS,
+        CLIProfile,
+        ProfileIntentError,
+        ProfileNotFoundError,
+        ProfileValidationError,
+        load_profile,
+    )
 
 EPILOG = (
     "Profiles may be defined as TOML or YAML files. Use --profile-search-path to locate "

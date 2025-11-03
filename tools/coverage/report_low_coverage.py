@@ -56,7 +56,8 @@ def main() -> int:
             branches = float(clazz.get("branch-rate", 0)) * 100
             if lines < args.min_lines or branches < args.min_branches:
                 offenders.append(
-                    f"{name}: lines={lines:.1f}% (<{args.min_lines}%), branches={branches:.1f}% (<{args.min_branches}%)"
+                    f"{name}: lines={lines:.1f}% (<{args.min_lines}%), "
+                    f"branches={branches:.1f}% (<{args.min_branches}%)"
                 )
 
     if offenders:

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import subprocess
 import sys
 from pathlib import Path
 from typing import Any
@@ -15,6 +14,7 @@ from rich.table import Table
 
 from ..builder import CLICommand, SharedParsers
 from ..configuration import CLIProfile
+from ..utils import run_command
 
 TA_ARTIFACT_PATH = Path("dist/quality-gates/latest-ta.json")
 TA_HISTORY_PATH = Path("dist/quality-gates/history.ndjson")
@@ -154,12 +154,8 @@ def _command_handler(namespace: argparse.Namespace, profile: CLIProfile | None) 
 def run_fitness_functions() -> tuple[bool, str]:
     """Run fitness function checks."""
     try:
-        result = subprocess.run(
-            ["python", "ops/quality/fitness_functions.py"],
-            capture_output=True,
-            text=True,
-            check=False,
-        )
+        command = [sys.executable, "ops/quality/fitness_functions.py"]
+        result = run_command(command, check=False, capture_output=True)
         if result.returncode == 0:
             return True, "All fitness functions satisfied"
         else:
@@ -250,12 +246,7 @@ def _run_gate_script(
     if extra_args:
         cmd.extend(extra_args)
 
-    result = subprocess.run(
-        cmd,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
+    result = run_command(cmd, check=False, capture_output=True)
 
     payload: dict[str, Any] | None = None
     if result.stdout.strip():
@@ -292,16 +283,11 @@ def run_profile_validation(profile_name: str | None = None) -> tuple[bool, str]:
             return True, "Profile linter not yet implemented (coming in Sprint 3)"
 
         # Run profile linter
-        cmd = ["python", str(linter_path)]
+        cmd = [sys.executable, str(linter_path)]
         if profile_name:
             cmd.extend(["--profile", profile_name])
 
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            check=False,
-        )
+        result = run_command(cmd, check=False, capture_output=True)
 
         if result.returncode == 0:
             return True, "All profiles valid"
@@ -319,11 +305,10 @@ def run_contract_checks() -> tuple[bool, str]:
         if not contract_tests.exists():
             return True, "No contract tests found (optional)"
 
-        result = subprocess.run(
-            ["pytest", "tests/contracts", "-v"],
-            capture_output=True,
-            text=True,
+        result = run_command(
+            [sys.executable, "-m", "pytest", "tests/contracts", "-v"],
             check=False,
+            capture_output=True,
         )
 
         if result.returncode == 0:
@@ -350,12 +335,7 @@ def run_ta_checks() -> tuple[bool, str]:
             "ops/quality/run_all_gates.py",
             "--json",
         ]
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            check=False,
-        )
+        result = run_command(cmd, check=False, capture_output=True)
 
         payload: dict[str, Any] | None = None
         if result.stdout.strip():

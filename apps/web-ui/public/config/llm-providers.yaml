@@ -30,7 +30,7 @@ llm:
       model: llama-3-70b
       max_calls_per_hour: 80
       cost_per_call_usd: 0.00
-      api_key_env: GROQ_API_KEY
+      api_key_env: GROQ_API_KEY  # pragma: allowlist secret - env var reference only
 
     - name: openrouter
       label: OpenRouter — Gemma 3 27B (free tier)
@@ -39,7 +39,7 @@ llm:
       model: google/gemma-3-27b-it:free
       max_calls_per_hour: 20
       cost_per_call_usd: 0.00
-      api_key_env: OPENROUTER_API_KEY
+      api_key_env: OPENROUTER_API_KEY  # pragma: allowlist secret - env var reference only
 
     - name: hf
       label: Hugging Face — Mistral-7B Instruct v0.3
@@ -47,7 +47,7 @@ llm:
       url: https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.3
       max_calls_per_hour: 10
       cost_per_call_usd: 0.00
-      api_key_env: HUGGINGFACEHUB_API_TOKEN
+      api_key_env: HUGGINGFACEHUB_API_TOKEN  # pragma: allowlist secret - env var reference only
 
     - name: local
       label: Local Ollama — Mistral

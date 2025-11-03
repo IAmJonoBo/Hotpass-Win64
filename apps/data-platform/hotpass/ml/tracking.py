@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import os
 from collections.abc import Iterable, Mapping, Sequence
 from contextlib import AbstractContextManager
@@ -13,6 +14,8 @@ from types import ModuleType
 from typing import Any, cast
 
 import pandas as pd
+
+LOGGER = logging.getLogger(__name__)
 
 
 class ModelStage(str, Enum):
@@ -167,9 +170,11 @@ def log_training_run(
             try:
                 predictions = model.predict(input_example)
                 signature = infer_signature(input_example, predictions)
-            except Exception:  # pragma: no cover
-                # Signature inference is best-effort
-                pass
+            except Exception as exc:  # pragma: no cover - inference is best-effort
+                LOGGER.debug(
+                    "Signature inference failed; continuing without signature",
+                    exc_info=exc,
+                )
 
         # Log the model
         mlflow.sklearn.log_model(

@@ -24,5 +24,7 @@ uv run mypy \
 	apps/data-platform/hotpass/pipeline/orchestrator.py \
 	ops/quality/fitness_functions.py
 uv run bandit -r apps/data-platform ops --severity-level medium --confidence-level high
-uv run python -m detect_secrets scan apps/data-platform tests ops
+uv run python -m detect_secrets scan \
+  --exclude-files '(pnpm-lock\.yaml$|scancode-sample\.json$)' \
+  apps docs infra ops scripts src tests tools
 uv run pre-commit run --all-files --show-diff-on-failure

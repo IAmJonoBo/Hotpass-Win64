@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import argparse
 import os
-import subprocess
+import subprocess  # nosec B404 - tunnel management requires subprocess control
 from datetime import UTC, datetime
 from typing import cast
 
@@ -214,7 +214,10 @@ def _handle_up(args: argparse.Namespace, profile: CLIProfile | None) -> int:
             "(pass --host or set HOTPASS_BASTION_HOST).[/red]"
         )
         return 1
-    assert host is not None  # narrow for type-checkers
+    if host is None:
+        console.print("[red]Unable to resolve target host for tunnel setup.[/red]")
+        return 1
+    host = cast(str, host)
 
     # Resolve ports
     prefect_port = args.prefect_port
@@ -321,7 +324,7 @@ def _handle_up(args: argparse.Namespace, profile: CLIProfile | None) -> int:
 
     if args.detach:
         try:
-            proc = subprocess.Popen(  # noqa: S603
+            proc = subprocess.Popen(  # nosec B603 - command is explicit and shell disabled
                 command,
                 stdin=subprocess.DEVNULL,
                 stdout=subprocess.DEVNULL,

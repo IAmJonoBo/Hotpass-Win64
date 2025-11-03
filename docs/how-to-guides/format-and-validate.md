@@ -149,6 +149,23 @@ with duckdb.connect() as conn:
 
 Re-running `run_pipeline` will refresh both the parquet snapshot and any CSVW metadata automatically.
 
+## Secrets scanning guardrail
+
+Hotpass ships a curated `detect-secrets` baseline, but full-repository sweeps remain part of the handover checklist. To avoid
+high-entropy fixtures such as `pnpm-lock.yaml` or curated sample archives from dominating the results, target the tracked source
+directories with the shared exclude pattern:
+
+```bash
+uv run python -m detect_secrets scan \
+  --exclude-files '(pnpm-lock\.yaml$|scancode-sample\.json$)' \
+  apps docs infra ops scripts src tests tools
+```
+
+The shortened path list keeps runtime under 20 seconds on ARC runners while still covering the Python, Terraform, and
+documentation surfaces that ship with orchestration changes. The same command is wired into `scripts/testing/full.sh` so CI and
+local quality gates stay in sync. When you deliberately embed placeholder credentials (for example `PLACEHOLDER_REPLACE_WITH_SOPS_REFERENCE`),
+add an inline `# pragma: allowlist secret` comment so the scan remains clean without muting the rule globally.
+
 ## Monitor validation feedback
 
 After each run, inspect the generated quality report:

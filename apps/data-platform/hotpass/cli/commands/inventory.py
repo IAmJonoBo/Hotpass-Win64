@@ -7,9 +7,9 @@ from typing import Any
 from rich.console import Console
 from rich.table import Table
 
+from ...inventory import InventoryService, InventorySummary, load_feature_requirements
 from ..builder import CLICommand, SharedParsers
 from ..configuration import CLIProfile
-from ...inventory import InventoryService, InventorySummary, load_feature_requirements
 
 
 def build(
@@ -123,10 +123,14 @@ def _render_assets(service: InventoryService, *, json_output: bool) -> int:
         f"[bold]Maintainer:[/bold] {manifest.maintainer}  "
         f"[bold]Review cadence:[/bold] {manifest.review_cadence}"
     )
+    type_summary = ", ".join(f"{name} ({count})" for name, count in summary.by_type.items())
+    classification_summary = ", ".join(
+        f"{name} ({count})" for name, count in summary.by_classification.items()
+    )
     console.print(
         f"[bold]Total assets:[/bold] {summary.total_assets}  "
-        f"[bold]Types:[/bold] {', '.join(f'{k} ({v})' for k, v in summary.by_type.items())}  "
-        f"[bold]Classifications:[/bold] {', '.join(f'{k} ({v})' for k, v in summary.by_classification.items())}"
+        f"[bold]Types:[/bold] {type_summary}  "
+        f"[bold]Classifications:[/bold] {classification_summary}"
     )
     console.print(table)
     return 0

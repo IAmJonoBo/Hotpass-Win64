@@ -1854,6 +1854,7 @@ dashboards = [
 dev = [
     { name = "bandit" },
     { name = "black" },
+    { name = "build" },
     { name = "cyclonedx-bom" },
     { name = "detect-secrets" },
     { name = "dolphin-mcp" },
@@ -1920,6 +1921,7 @@ requires-dist = [
     { name = "black", marker = "extra == 'dev'", specifier = ">=25.9.0" },
     { name = "boto3", marker = "extra == 'platform'", specifier = ">=1.35.0" },
     { name = "build", marker = "extra == 'ci'", specifier = ">=1.2.2.post1" },
+    { name = "build", marker = "extra == 'dev'", specifier = ">=1.2.2.post1" },
     { name = "cyclonedx-bom", specifier = ">=7.2.1" },
     { name = "cyclonedx-bom", marker = "extra == 'ci'", specifier = ">=7.2.1" },
     { name = "cyclonedx-bom", marker = "extra == 'dev'", specifier = ">=7.2.1" },

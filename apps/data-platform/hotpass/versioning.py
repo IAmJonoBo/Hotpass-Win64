@@ -4,13 +4,29 @@ from __future__ import annotations
 
 import json
 import logging
-import subprocess
+import subprocess  # nosec B404 - subprocess is required for DVC orchestration
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Literal
 
 logger = logging.getLogger(__name__)
+
+
+def _run_command(
+    command: list[str],
+    *,
+    cwd: Path | None = None,
+) -> subprocess.CompletedProcess[str]:
+    """Run a subprocess command with standard CLI defaults."""
+
+    return subprocess.run(  # nosec - explicit command list, shell disabled
+        command,
+        cwd=str(cwd) if cwd is not None else None,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
 
 VersionType = Literal["major", "minor", "patch"]
 
@@ -96,13 +112,7 @@ class DVCManager:
                 logger.info("DVC already initialized")
                 return True
 
-            result = subprocess.run(
-                ["dvc", "init"],
-                cwd=self.repo_root,
-                capture_output=True,
-                text=True,
-                check=False,
-            )
+            result = _run_command(["dvc", "init"], cwd=self.repo_root)
 
             if result.returncode == 0:
                 logger.info("DVC initialized successfully")
@@ -132,13 +142,7 @@ class DVCManager:
             return False
 
         try:
-            result = subprocess.run(
-                ["dvc", "add", str(path)],
-                cwd=self.repo_root,
-                capture_output=True,
-                text=True,
-                check=False,
-            )
+            result = _run_command(["dvc", "add", str(path)], cwd=self.repo_root)
 
             if result.returncode == 0:
                 logger.info(f"Added {path} to DVC tracking")
@@ -228,7 +232,7 @@ class DVCManager:
         tag_name = f"{dataset_name}-v{version.semver}"
 
         try:
-            result = subprocess.run(
+            result = _run_command(
                 [
                     "git",
                     "tag",
@@ -238,9 +242,6 @@ class DVCManager:
                     f"Dataset {dataset_name} version {version.semver}",
                 ],
                 cwd=self.repo_root,
-                capture_output=True,
-                text=True,
-                check=False,
             )
 
             if result.returncode == 0:
@@ -265,13 +266,7 @@ class DVCManager:
             return False
 
         try:
-            result = subprocess.run(
-                ["dvc", "push"],
-                cwd=self.repo_root,
-                capture_output=True,
-                text=True,
-                check=False,
-            )
+            result = _run_command(["dvc", "push"], cwd=self.repo_root)
 
             if result.returncode == 0:
                 logger.info("DVC push successful")
@@ -294,13 +289,7 @@ class DVCManager:
             return {"initialized": False, "tracked_files": []}
 
         try:
-            result = subprocess.run(
-                ["dvc", "status"],
-                cwd=self.repo_root,
-                capture_output=True,
-                text=True,
-                check=False,
-            )
+            result = _run_command(["dvc", "status"], cwd=self.repo_root)
 
             return {
                 "initialized": True,

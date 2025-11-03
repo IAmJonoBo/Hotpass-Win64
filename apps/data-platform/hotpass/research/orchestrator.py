@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import time
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
@@ -18,7 +19,6 @@ from hotpass.config import IndustryProfile
 from hotpass.enrichment.pipeline import enrich_row
 from hotpass.normalization import slugify
 from hotpass.research.searx import (
-    SearxQuery,
     SearxService,
     SearxServiceError,
     SearxServiceSettings,
@@ -805,57 +805,14 @@ class ResearchOrchestrator:
                 message="No URLs or query provided for crawl step",
             )
 
-        if CrawlerProcess is None:
-            if requests is None or not plan.target_urls:
-                return ResearchStepResult(
-                    name="native_crawl",
-                    status="skipped",
-                    message="Scrapy not installed; emit plan for external crawler",
-                    artifacts={
-                        "urls": list(plan.target_urls),
-                        "query": plan.query,
-                    },
-                )
-            results: list[dict[str, Any]] = []
-            failures: list[str] = []
-            timeout = self._searx_settings.timeout
-            for target_url in plan.target_urls:
-                try:
-                    self._maybe_throttle(plan.rate_limit)
-                    metadata = self._fetch_with_retries(target_url, timeout=timeout)
-                except Exception as exc:  # pragma: no cover - network failure
-                    LOGGER.warning("Requests crawl failed for %s: %s", target_url, exc)
-                    failures.append(str(exc))
-                    continue
-                else:
-                    results.append(metadata)
-
-            if not results:
-                self._last_network_call = time.monotonic()
-                return ResearchStepResult(
-                    name="native_crawl",
-                    status="skipped",
-                    message="Requests crawl failed for all targets",
-                    artifacts={"urls": list(plan.target_urls), "errors": failures},
-                )
-
-            self._last_network_call = time.monotonic()
-            crawl_payload = {"results": results, "query": plan.query}
-            crawl_artifact = self._persist_crawl_results(plan, crawl_payload)
-            artifacts: dict[str, Any] = {"results": results, "query": plan.query}
-            if crawl_artifact:
-                artifacts["results_path"] = crawl_artifact
-            if failures:
-                artifacts["errors"] = failures
-            message = "Fetched metadata via requests fallback"
-            if failures:
-                message += f" ({len(failures)} target(s) failed)"
-            return ResearchStepResult(
-                name="native_crawl",
-                status="success",
-                message=message,
-                artifacts=artifacts,
+        if not self._environment_allows_network():
+            return self._run_requests_crawl(
+                plan,
+                reason="Network disabled by environment gate",
             )
+
+        if CrawlerProcess is None:
+            return self._run_requests_crawl(plan)
 
         # Construct a minimal spider when Scrapy is available. The spider gathers basic metadata
         # (status code, content length) so downstream steps can reason about completeness.
@@ -926,6 +883,82 @@ class ResearchOrchestrator:
             message=message,
             artifacts=artifacts,
         )
+
+    def _run_requests_crawl(
+        self,
+        plan: ResearchPlan,
+        reason: str | None = None,
+    ) -> ResearchStepResult:
+        if requests is None or not plan.target_urls:
+            message = "Scrapy not installed; emit plan for external crawler"
+            if reason:
+                message = f"{reason}; {message}"
+            return ResearchStepResult(
+                name="native_crawl",
+                status="skipped",
+                message=message,
+                artifacts={
+                    "urls": list(plan.target_urls),
+                    "query": plan.query,
+                },
+            )
+
+        results: list[dict[str, Any]] = []
+        failures: list[str] = []
+        timeout = self._searx_settings.timeout
+        for target_url in plan.target_urls:
+            try:
+                self._maybe_throttle(plan.rate_limit)
+                metadata = self._fetch_with_retries(target_url, timeout=timeout)
+            except Exception as exc:  # pragma: no cover - network failure
+                LOGGER.warning("Requests crawl failed for %s: %s", target_url, exc)
+                failures.append(str(exc))
+                continue
+            else:
+                results.append(metadata)
+
+        if not results:
+            self._last_network_call = time.monotonic()
+            message = "Requests crawl failed for all targets"
+            if reason:
+                message = f"{reason}; {message}"
+            return ResearchStepResult(
+                name="native_crawl",
+                status="skipped",
+                message=message,
+                artifacts={"urls": list(plan.target_urls), "errors": failures},
+            )
+
+        self._last_network_call = time.monotonic()
+        crawl_payload = {"results": results, "query": plan.query}
+        crawl_artifact = self._persist_crawl_results(plan, crawl_payload)
+        artifacts: dict[str, Any] = {"results": results, "query": plan.query}
+        if crawl_artifact:
+            artifacts["results_path"] = crawl_artifact
+        if failures:
+            artifacts["errors"] = failures
+
+        message = "Fetched metadata via requests fallback"
+        if reason:
+            message = f"{reason}; {message}"
+        if failures:
+            message += f" ({len(failures)} target(s) failed)"
+        return ResearchStepResult(
+            name="native_crawl",
+            status="success",
+            message=message,
+            artifacts=artifacts,
+        )
+
+    @staticmethod
+    def _environment_allows_network() -> bool:
+        feature_enabled = os.getenv("FEATURE_ENABLE_REMOTE_RESEARCH", "0") == "1"
+        runtime_allowed = os.getenv("ALLOW_NETWORK_RESEARCH", "false").lower() in (
+            "true",
+            "1",
+            "yes",
+        )
+        return feature_enabled and runtime_allowed
 
     def _run_backfill_plan(
         self,

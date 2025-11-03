@@ -7,9 +7,10 @@ import json
 import logging
 import os
 import time
+from collections.abc import Callable, Iterable, Mapping, MutableMapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Iterable, Mapping, MutableMapping, Sequence
+from typing import Any
 
 try:  # pragma: no cover - optional dependency guard
     import requests

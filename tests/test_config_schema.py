@@ -32,7 +32,7 @@ def test_hotpass_config_to_pipeline_and_enhanced_configs(tmp_path: Path) -> None
                 searx=SearxRuntimeSettings(
                     enabled=True,
                     base_url="https://search.example",
-                    api_key="token",
+                    api_key="token",  # pragma: allowlist secret - test fixture value
                     throttle={"min_interval_seconds": 1.0},
                     cache={"ttl_seconds": 60},
                 )

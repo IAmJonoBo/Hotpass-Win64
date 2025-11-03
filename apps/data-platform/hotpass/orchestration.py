@@ -997,8 +997,8 @@ def refinement_pipeline_flow(
             flow_run_name,
             scheduled_start_time,
         )
-    except Exception:  # pragma: no cover - runtime availability only
-        pass
+    except Exception as exc:  # pragma: no cover - runtime availability only
+        _safe_log(logger, logging.DEBUG, "Prefect runtime context unavailable: %s", exc)
 
     config_updates: dict[str, Any] = {
         "pipeline": {

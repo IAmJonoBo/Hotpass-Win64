@@ -13,8 +13,8 @@ if TYPE_CHECKING:
     from ..enrichment.intent.runner import IntentRunResult
 
 from ..domain.party import PartyStore
-from ..pipeline_reporting import generate_recommendations
 from ..imports.preprocess import apply_import_preprocessing
+from ..pipeline_reporting import generate_recommendations
 from .aggregation import aggregate_records
 from .config import SSOT_COLUMNS, PipelineConfig, PipelineResult, QualityReport, initialise_config
 from .enrichment import collect_intent_signals

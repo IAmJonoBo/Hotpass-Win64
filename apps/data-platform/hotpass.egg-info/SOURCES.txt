@@ -64,6 +64,7 @@ apps/data-platform/hotpass/cli/commands/env.py
 apps/data-platform/hotpass/cli/commands/explain_provenance.py
 apps/data-platform/hotpass/cli/commands/imports.py
 apps/data-platform/hotpass/cli/commands/init.py
+apps/data-platform/hotpass/cli/commands/inventory.py
 apps/data-platform/hotpass/cli/commands/net.py
 apps/data-platform/hotpass/cli/commands/orchestrate.py
 apps/data-platform/hotpass/cli/commands/overview.py
@@ -111,6 +112,10 @@ apps/data-platform/hotpass/enrichment/validators/__init__.py
 apps/data-platform/hotpass/imports/__init__.py
 apps/data-platform/hotpass/imports/preprocess.py
 apps/data-platform/hotpass/imports/profiling.py
+apps/data-platform/hotpass/inventory/__init__.py
+apps/data-platform/hotpass/inventory/models.py
+apps/data-platform/hotpass/inventory/service.py
+apps/data-platform/hotpass/inventory/status.py
 apps/data-platform/hotpass/linkage/__init__.py
 apps/data-platform/hotpass/linkage/blocking.py
 apps/data-platform/hotpass/linkage/comparators.py
@@ -145,6 +150,7 @@ apps/data-platform/hotpass/prefect/__init__.py
 apps/data-platform/hotpass/prefect/deployments.py
 apps/data-platform/hotpass/research/__init__.py
 apps/data-platform/hotpass/research/orchestrator.py
+apps/data-platform/hotpass/research/searx.py
 apps/data-platform/hotpass/storage/__init__.py
 apps/data-platform/hotpass/storage/adapters.py
 apps/data-platform/hotpass/storage/dataset.py

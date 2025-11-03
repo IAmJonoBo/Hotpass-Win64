@@ -7,8 +7,8 @@ metadata:
   annotations:
     secret.hotpass.dev/rotation: github-app
 stringData:
-  github_app_private_key: PLACEHOLDER_REPLACE_WITH_SOPS_REFERENCE
-  github_app_webhook_secret: PLACEHOLDER_REPLACE_WITH_SOPS_REFERENCE
+  github_app_private_key: PLACEHOLDER_REPLACE_WITH_SOPS_REFERENCE  # pragma: allowlist secret - managed via SOPS
+  github_app_webhook_secret: PLACEHOLDER_REPLACE_WITH_SOPS_REFERENCE  # pragma: allowlist secret - managed via SOPS
 ---
 apiVersion: actions.github.com/v1alpha1
 kind: GitHubConfig

@@ -319,7 +319,7 @@ uv sync --extra ml_scoring
 SQLite databases can experience locks under concurrent access. For production, use a proper database backend:
 
 ```bash
-export MLFLOW_TRACKING_URI="postgresql://user:pass@host:5432/mlflow"
+export MLFLOW_TRACKING_URI="postgresql://user:<password>@host:5432/mlflow"
 ```
 
 ### Model Not Found

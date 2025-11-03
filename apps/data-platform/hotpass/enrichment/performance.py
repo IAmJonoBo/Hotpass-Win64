@@ -254,6 +254,7 @@ def benchmark_enrichment(
         "rows": len(df),
         "fetchers": len(fetchers),
         "max_workers": max_workers,
+        "errors": [],
     }
 
     # Benchmark sequential execution
@@ -262,8 +263,8 @@ def benchmark_enrichment(
         for fetcher in fetchers:
             try:
                 fetcher.fetch(row, profile=None, allow_network=False)  # type: ignore[arg-type]
-            except Exception:
-                pass
+            except Exception as exc:  # pragma: no cover - defensive capture for benchmarks
+                results["errors"].append(str(exc))
     sequential_time = time.time() - start
     results["sequential_time"] = sequential_time
 

@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, field
-from pathlib import Path
-from typing import Any, Iterable
 import math
 import re
+from collections.abc import Iterable
+from dataclasses import asdict, dataclass, field
+from pathlib import Path
+from typing import Any
 
 import pandas as pd
-
 
 EMAIL_REGEX = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", re.IGNORECASE)
 PHONE_REGEX = re.compile(r"^[\d\-\+\(\)\s]{5,}$")
@@ -283,7 +283,8 @@ def _classify_sheet(columns: Iterable[str]) -> str:
     if not meaningful:
         return "reference"
 
-    contains = lambda keyword: any(keyword in name for name in meaningful)
+    def contains(keyword: str) -> bool:
+        return any(keyword in name for name in meaningful)
 
     if contains("email") and (contains("phone") or contains("cell") or contains("contact")):
         return "contacts"

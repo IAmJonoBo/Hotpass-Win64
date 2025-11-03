@@ -1,9 +1,9 @@
 # Next Steps
 
 ## Tasks
-- [ ] Normalize legacy documentation heading levels and cross-references (owner: docs, due: 2025-03-03)
-- [ ] Harden detect-secrets configuration for full-repo scans (owner: platform, due: 2025-03-03)
-- [ ] Update infrastructure docs to point to current ARC deployment paths (owner: platform, due: 2025-03-03)
+- [x] Normalize legacy documentation heading levels and cross-references (owner: docs, due: 2025-03-03)
+- [x] Harden detect-secrets configuration for full-repo scans (owner: platform, due: 2025-03-03)
+- [x] Update infrastructure docs to point to current ARC deployment paths (owner: platform, due: 2025-03-03)
 - [ ] Resolve local trunk CLI availability or adjust QA workflow guard (owner: platform, due: 2025-03-03)
 - [ ] Address repo-wide pre-commit failures blocking `scripts/testing/full.sh` (owner: platform, due: 2025-11-10)
 - [ ] Fix React compiler lint errors and restore coverage thresholds in `npm run test:unit` (owner: frontend, due: 2025-11-10)
@@ -25,11 +25,11 @@
 - Inventory service code, CLI commands, and frontend surfaces
 - Automated tests and performance benchmarks for inventory flows
 - CHANGELOG entry and version bump proposal
-- [ ] Rerun baseline pytest suite without interruption to confirm green signal (owner: codex, due: 2025-03-03)
-- [ ] Resolve Ruff findings from `uv run ruff check` (exit=1) (owner: platform, due: 2025-03-03)
-- [ ] Provide typing stubs or ignores for `uv run mypy` (`types-PyYAML` missing, exit=1) (owner: platform, due: 2025-03-03)
-- [ ] Triage Bandit warnings from `uv run bandit -r apps/data-platform/hotpass -q` (exit=1) (owner: platform, due: 2025-03-03)
-- [ ] Ensure packaging build succeeds (`uv run python -m build`, exit=1) (owner: platform, due: 2025-03-03)
+- [x] Rerun baseline pytest suite without interruption to confirm green signal (owner: codex, due: 2025-03-03)
+- [x] Resolve Ruff findings from `uv run ruff check` (exit=1) (owner: platform, due: 2025-03-03)
+- [x] Provide typing stubs or ignores for `uv run mypy` (`types-PyYAML` missing, exit=1) (owner: platform, due: 2025-03-03)
+- [x] Triage Bandit warnings from `uv run bandit -r apps/data-platform/hotpass -q` (exit=1) (owner: platform, due: 2025-03-03)
+- [x] Ensure packaging build succeeds (`uv run python -m build`, exit=1) (owner: platform, due: 2025-03-03)
 
 ## Steps
 - Prioritise fixing heading hierarchy warnings raised by Sphinx
@@ -67,9 +67,7 @@
 - Local trunk CLI missing; QA scripts require override or bundled binary.
 - Need to confirm existing CI coverage for docs and inventory flows.
 - Linkcheck disabled by default in make docs (set LINKCHECK=1 to run; currently blocked by external certificate failures).
-- Pending baseline quality checks (pytest interrupted; rerun scheduled)
-- Need to confirm existing CI coverage for docs
-- Full-repo detect-secrets scan aborted due to scope; targeted docs/apps/tests scan succeeded (follow up to scope excludes)
-- Linkcheck disabled by default in make docs (set LINKCHECK=1 to run; currently blocked by external certificate failures)
+- Baseline QA suite now passes (`uv run pytest -q`, `ruff`, `mypy`, `bandit`, `python -m build`); track runtime as suites expand.
+- Detect-secrets scan now runs with targeted directory list to avoid timeout (`apps docs infra ops scripts src tests tools`); monitor for regressions when new repos are added.
 - Verify CODEOWNERS coverage for new research/SearXNG paths once implemented
-- Add SBOM generation task to CI once research changes settle
+- CycloneDX SBOM generation now runs in `.github/workflows/process-data.yml`; confirm the artifact retention policy meets compliance requirements.

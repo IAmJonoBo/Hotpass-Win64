@@ -136,7 +136,8 @@ class InventoryService:
         except ValidationError as exc:  # pragma: no cover - exercised by tests
             raise ValueError(f"Invalid inventory manifest: {exc}") from exc
 
-        # Normalise optional collections (guaranteed by pydantic, but re-iterate to remove duplicates)
+        # Normalise optional collections (guaranteed by pydantic).
+        # Re-iterate here to remove duplicates.
         normalised_assets: list[Asset] = []
         for asset in manifest.assets:
             normalised_assets.append(

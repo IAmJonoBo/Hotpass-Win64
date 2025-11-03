@@ -104,7 +104,7 @@ Sprint 5 docs refresh is published.
 The CLI also includes commands to streamline operator workflows such as tunnel setup,
 AWS/EKS verification, Prefect/kubecontext bootstrap, and environment file generation.
 
-### `setup`
+### hotpass setup
 
 Run a guided wizard that stitches together dependency synchronisation, tunnel creation, AWS
 verification, context bootstrap, and environment file generation. Designed for staging operators
@@ -132,7 +132,7 @@ uv run hotpass setup --preset staging --host bastion.example.com --execute --ski
 
 Successful executions record the plan under `.hotpass/setup.json`.
 
-### `net`
+### hotpass net
 
 Manage SSH or AWS SSM tunnels to staging infrastructure.
 
@@ -154,7 +154,7 @@ uv run hotpass net down --label bastion-session
 State is persisted to `.hotpass/net.json`; `net status` prints active sessions and their
 local ports.
 
-### `aws`
+### hotpass aws
 
 Resolve the active AWS identity and optionally describe/verify EKS access.
 
@@ -174,7 +174,7 @@ uv run hotpass aws --eks-cluster hotpass-staging --verify-kubeconfig
 
 On success, the summary is saved to `.hotpass/aws.json`.
 
-### `ctx`
+### hotpass ctx
 
 Bootstrap Prefect profiles and Kubernetes contexts.
 
@@ -193,7 +193,7 @@ uv run hotpass ctx list
 
 Context history is recorded under `.hotpass/contexts.json`.
 
-### `env`
+### hotpass env
 
 Generate `.env.<environment>` files aligned with the current tunnels and contexts.
 
@@ -212,7 +212,7 @@ uv run hotpass env --target staging --allow-network --force
 
 When tunnels exist, ports recorded in `.hotpass/net.json` are reused automatically.
 
-### `arc`
+### hotpass arc
 
 Wrapper around ARC lifecycle verification with optional artifact storage.
 
@@ -230,7 +230,7 @@ uv run hotpass arc --owner ExampleOrg --repository Hotpass --scale-set hotpass-a
 | `--status-path PATH`                     | Write the JSON result to disk for the web UI health probes.    |
 | `--dry-run`                              | Print the underlying command without executing it.             |
 
-### `distro`
+### hotpass distro
 
 Collect documentation into a single directory for distribution bundles.
 
@@ -318,7 +318,7 @@ The doctor flags missing governance intent or data owners and injects safe defau
 
 ## Subcommands
 
-### `run`
+### hotpass run
 
 Validate, normalise, and publish the refined workbook.
 
@@ -350,7 +350,7 @@ uv run hotpass run [OPTIONS]
 | `--automation-http-dead-letter PATH`                                         | Append failed automation payloads to the given NDJSON file.                           |
 | `--automation-http-dead-letter-enabled` / `--no-automation-http-dead-letter` | Toggle dead-letter persistence for automation failures.                               |
 
-### `orchestrate`
+### hotpass orchestrate
 
 Execute the pipeline under Prefect with optional enhanced features.
 
@@ -378,7 +378,7 @@ uv run hotpass orchestrate [OPTIONS]
 Profiles enabling enrichment or compliance must declare intent statements (`intent = [...]`) to
 enforce guardrails such as consent capture and audit logging.
 
-### `explain-provenance`
+### hotpass explain-provenance
 
 Inspect provenance metadata for a specific row in an enriched workbook.
 
@@ -401,7 +401,7 @@ The command surfaces the standard provenance fields (`provenance_source`, `prove
 associated `organization_name`. When no provenance columns are present the command prints a warning
 and exits with status `2` so pipeline owners can treat it as a soft failure.
 
-### `resolve`
+### hotpass resolve
 
 Deduplicate existing datasets using rule-based or probabilistic linkage.
 
@@ -424,7 +424,7 @@ uv run hotpass resolve --input-file data/raw.xlsx --output-file data/deduplicate
 
 `resolve` inherits the shared `--sensitive-field` flag. Profiles may supply default masks; repeat the flag to extend masks in runtime-only investigations.
 
-### `plan research`
+### hotpass plan research
 
 Generate an adaptive research plan that combines deterministic enrichment, network enrichment (when permitted), and crawl/backfill guidance.
 
@@ -474,7 +474,7 @@ crawler honours `crawl_retry_attempts`/`crawl_retry_backoff_seconds` and emits
 OpenTelemetry metrics under the `hotpass.research.*` namespace for both cache
 hits and retry events.
 
-### `crawl`
+### hotpass crawl
 
 Execute only the crawling component of the research pipeline.
 
@@ -489,7 +489,7 @@ uv run hotpass crawl "https://example.test" --allow-network
 
 Crawler runs write JSON artefacts to `.hotpass/research_runs/<slug>/` and respect profile-defined throttling (`research_rate_limit`).
 
-### `deploy`
+### hotpass deploy
 
 Create or update Prefect deployments defined in the repository manifests.
 
@@ -507,7 +507,7 @@ uv run hotpass deploy --flow refinement
 | `--schedule TEXT`    | Apply a cron schedule in UTC. Use `none`/`off` to disable scheduling.                          |
 | `--work-pool TEXT`   | Target Prefect work pool name when registering deployments.                                    |
 
-### `dashboard`
+### hotpass dashboard
 
 Launch the Streamlit monitoring dashboard. Install the `dashboards` extra before using this
 subcommand.
@@ -521,7 +521,7 @@ uv run hotpass dashboard --host localhost --port 8501
 | `--host HOST`    | Bind address for the dashboard server (default: `localhost`). |
 | `--port INTEGER` | Port for the Streamlit dashboard (default: `8501`).           |
 
-### `doctor`
+### hotpass doctor
 
 Run configuration and environment diagnostics. The command honours shared options such as
 `--config` and `--profile` before running the checks.
@@ -538,7 +538,7 @@ The doctor reports Python version compatibility, input/output directory readines
 results of the underlying `ConfigDoctor` diagnostics. Exit code `1` indicates an error that
 requires remediation, while warnings leave the exit code unchanged.
 
-### `init`
+### hotpass init
 
 Scaffold a workspace with sample configuration, profile, and Prefect deployment files.
 

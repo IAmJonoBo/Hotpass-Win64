@@ -14,7 +14,7 @@ from rich.panel import Panel
 from ..builder import CLICommand, SharedParsers
 from ..configuration import CLIProfile
 from ..state import ensure_state_dir
-from ..utils import format_command
+from ..utils import format_command, run_command
 
 
 def build(
@@ -102,12 +102,7 @@ def _command_handler(namespace: argparse.Namespace, profile: CLIProfile | None) 
         return 0
 
     try:
-        proc = __import__("subprocess").run(  # noqa: S602
-            command,
-            capture_output=True,
-            text=True,
-            check=False,
-        )
+        proc = run_command(command, check=False, capture_output=True)
     except FileNotFoundError as exc:
         console.print(f"[red]Failed to execute verification command: {exc}[/red]")
         return 1

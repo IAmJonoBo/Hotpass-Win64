@@ -89,6 +89,11 @@ jobs:
       - name: Build package
         run: uv run uv build
 
+      - name: Generate CycloneDX SBOM
+        run: |
+          mkdir -p dist/reports
+          uv run cyclonedx-bom --include-dependencies --format json --output dist/reports/sbom.json
+
       - name: Docker build validation
         env:
           DOCKER_BUILDKIT: "1"

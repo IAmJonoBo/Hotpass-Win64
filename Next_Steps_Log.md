@@ -56,3 +56,18 @@
 - [x] Restore IMPLEMENTATION_PLAN.md with sprint and quality gate coverage
   - notes: Added IMPLEMENTATION_PLAN.md sprint breakdown and expanded DummyMetrics research instrumentation in tests/_telemetry_stubs.py to satisfy research orchestrator metrics expectations.
   - checks: tests=pass (`uv run pytest -q`), lint=fail (`uv run ruff check`), type=fail (`uv run mypy`), sec=fail (`uv run bandit -r apps/data-platform/hotpass -q`), build=fail (`uv run python -m build`)
+
+## 2025-11-03 (branch: work, pr: n/a, actor: codex)
+
+- [x] Resolve baseline QA regressions and re-run suite to completion
+  - notes: Fixed research crawler fallback gating, reran `uv run pytest -q`, `uv run ruff check`, `uv run mypy`, `uv run bandit -r apps/data-platform/hotpass -q`, and `uv run python -m build` (all green).
+  - checks: tests=pass, lint=pass, type=pass, sec=pass, build=pass
+- [x] Harden detect-secrets workflow and document scoped command
+  - notes: Added targeted allowlist comments, updated `scripts/testing/full.sh`, documented the curated scan command in `docs/how-to-guides/format-and-validate.md`, and verified the guarded scan (`apps docs infra ops scripts src tests tools`).
+  - checks: tests=not-run, lint=pass, type=not-run, sec=pass, build=not-run
+- [x] Normalise CLI reference headings and refresh ARC guidance
+  - notes: Promoted `docs/reference/cli.md` headings to consistent levels and confirmed ARC deployment instructions point at `infra/arc/` manifests and Terraform module.
+  - checks: tests=not-run, lint=pass, type=not-run, sec=not-run, build=not-run
+- [x] Add CycloneDX SBOM generation to CI baseline
+  - notes: Inserted `uv run cyclonedx-bom` step into `.github/workflows/process-data.yml` to retain JSON SBOM under `dist/reports/`.
+  - checks: tests=not-run, lint=pass, type=not-run, sec=pass, build=not-run
