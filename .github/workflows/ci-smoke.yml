@@ -15,7 +15,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
-      PYTEST_XDIST_AUTO_NUM_WORKERS: 3
       PYTHONUNBUFFERED: "1"
     steps:
       - uses: actions/checkout@v5

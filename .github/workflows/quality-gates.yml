@@ -26,7 +26,6 @@ jobs:
     timeout-minutes: 60
     env:
       UV_EXTRAS: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.uv_extras != '' && github.event.inputs.uv_extras || 'dev' }}
-      PYTEST_XDIST_AUTO_NUM_WORKERS: 4
       TRUNK_ALLOW_MISSING: 1
     steps:
       - uses: actions/checkout@v5
