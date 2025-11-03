@@ -1,6 +1,6 @@
 import { FileText, Download, RefreshCw, HelpCircle, MessageSquare } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useContracts } from '@/api/contracts'
@@ -106,12 +106,10 @@ export function ContractsExplorer({ className, onOpenAssistant, onOpenHelp }: Co
                       <span>{formatBytes(contract.size)}</span>
                     </div>
                   </div>
-                  <Button variant="outline" size="sm" asChild>
-                    <a href={contract.downloadUrl} download>
-                      <Download className="mr-1 h-3 w-3" />
-                      Download
-                    </a>
-                  </Button>
+                  <a href={contract.downloadUrl} download className={buttonVariants({ variant: "outline", size: "sm" })}>
+                    <Download className="mr-1 h-3 w-3" />
+                    Download
+                  </a>
                 </div>
                 <div className="mt-3 flex flex-wrap items-center gap-2">
                   <Button

@@ -1,3 +1,4 @@
+/// <reference types="vitest/globals" />
 import { act, renderHook } from '@testing-library/react'
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest'
 import { fetchLLMConfig, useSelectedLLMProvider } from './useLLMConfig'
@@ -15,14 +16,14 @@ llm:
 `
 
 describe('fetchLLMConfig', () => {
-  const originalFetch = global.fetch
+  const originalFetch = globalThis.fetch
 
   beforeEach(() => {
     vi.resetAllMocks()
   })
 
   afterEach(() => {
-    global.fetch = originalFetch
+    globalThis.fetch = originalFetch
   })
 
   it('parses provider configuration from YAML payload', async () => {
@@ -31,11 +32,11 @@ describe('fetchLLMConfig', () => {
       status: 200,
       text: vi.fn().mockResolvedValue(sampleYaml),
     } as unknown as Response
-    global.fetch = vi.fn().mockResolvedValue(mockResponse)
+    globalThis.fetch = vi.fn().mockResolvedValue(mockResponse)
 
     const config = await fetchLLMConfig()
 
-    expect(global.fetch).toHaveBeenCalledWith('/config/llm-providers.yaml', { cache: 'no-store' })
+    expect(globalThis.fetch).toHaveBeenCalledWith('/config/llm-providers.yaml', { cache: 'no-store' })
     expect(config.strategy).toBe('preferred-first')
     expect(config.default).toBe('copilot')
     expect(config.providers).toHaveLength(1)
@@ -43,7 +44,7 @@ describe('fetchLLMConfig', () => {
 
   it('throws when the configuration request fails', async () => {
     const mockResponse = { ok: false, status: 503 } as unknown as Response
-    global.fetch = vi.fn().mockResolvedValue(mockResponse)
+    globalThis.fetch = vi.fn().mockResolvedValue(mockResponse)
 
     await expect(fetchLLMConfig()).rejects.toThrow(
       'Failed to load LLM provider configuration (503)',

@@ -27,6 +27,18 @@ import { ContractsExplorer } from '@/components/governance/ContractsExplorer'
 import { useLineageTelemetry, jobHasHotpassFacet } from '@/hooks/useLineageTelemetry'
 import { useConsolidationTelemetry } from '@/api/imports'
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null
+
+const toStringOrUndefined = (value: unknown): string | undefined =>
+  typeof value === 'string' ? value : undefined
+
+const toNumberOrUndefined = (value: unknown): number | undefined =>
+  typeof value === 'number' ? value : undefined
+
+const toStringArray = (value: unknown): string[] =>
+  Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === 'string') : []
+
 interface OutletContext {
   openAssistant: (message?: string) => void
   openHelp: (options?: { topicId?: string; query?: string }) => void
@@ -118,19 +130,73 @@ export function Dashboard() {
   const failedRuns = recentRuns.filter(r => r.state_type === 'FAILED').length
   const runningRuns = recentRuns.filter(r => r.state_type === 'RUNNING').length
 
-  const consolidationAggregate = consolidationTelemetry?.aggregate
-  const topProfile = consolidationAggregate?.profileBreakdown?.[0]?.profile ?? 'generic'
-  const topRuleType = consolidationAggregate?.popularRuleTypes?.[0]?.type ?? 'normalize_date'
-  const totalTemplates = consolidationAggregate?.totalTemplates ?? 0
+  const aggregateRecord = isRecord(consolidationTelemetry?.aggregate)
+    ? (consolidationTelemetry?.aggregate as Record<string, unknown>)
+    : undefined
+  const profileBreakdown = Array.isArray(aggregateRecord?.['profileBreakdown'])
+    ? (aggregateRecord?.['profileBreakdown'] as unknown[])
+    : []
+  const topProfile =
+    profileBreakdown
+      .map(entry => (isRecord(entry) ? toStringOrUndefined(entry['profile']) : undefined))
+      .find(Boolean) ?? 'generic'
+  const popularRuleTypes = Array.isArray(aggregateRecord?.['popularRuleTypes'])
+    ? (aggregateRecord?.['popularRuleTypes'] as unknown[])
+    : []
+  const topRuleType =
+    popularRuleTypes
+      .map(entry => (isRecord(entry) ? toStringOrUndefined(entry['type']) : undefined))
+      .find(Boolean) ?? 'normalize_date'
+
+  const rawTemplates = Array.isArray(consolidationTelemetry?.templates)
+    ? (consolidationTelemetry?.templates as unknown[])
+    : []
+
+  type NormalizedTemplateTelemetry = {
+    id: string
+    name: string
+    summary: {
+      profile?: string
+      mappingCount: number
+      ruleCount: number
+      ruleTypes: string[]
+    }
+  }
+
+  const consolidationTemplates = rawTemplates.reduce<NormalizedTemplateTelemetry[]>((acc, entry, index) => {
+    if (!isRecord(entry)) {
+      return acc
+    }
+    const summaryRaw = isRecord(entry['summary'])
+      ? (entry['summary'] as Record<string, unknown>)
+      : {}
+    acc.push({
+      id: toStringOrUndefined(entry['id']) ?? `template-${index}`,
+      name: toStringOrUndefined(entry['name']) ?? `Template ${index + 1}`,
+      summary: {
+        profile: toStringOrUndefined(summaryRaw['profile']),
+        mappingCount: toNumberOrUndefined(summaryRaw['mappingCount']) ?? 0,
+        ruleCount: toNumberOrUndefined(summaryRaw['ruleCount']) ?? 0,
+        ruleTypes: toStringArray(summaryRaw['ruleTypes']),
+      },
+    })
+    return acc
+  }, [])
+
+  const totalTemplates = toNumberOrUndefined(aggregateRecord?.['totalTemplates']) ?? consolidationTemplates.length
 
   const latestSpreadsheets = recentRuns.slice(0, 50).map((run) => {
-    const params = run.parameters ?? {}
+    const params = isRecord(run.parameters) ? (run.parameters as Record<string, unknown>) : {}
     const hil = hilApprovals[run.id]
     return {
       id: run.id,
-      name: String(params.input_dir || params.source || run.name || 'Unknown input'),
+      name:
+        toStringOrUndefined(params['input_dir']) ??
+        toStringOrUndefined(params['source']) ??
+        run.name ??
+        'Unknown input',
       status: run.state_name,
-      geDocs: String(params.data_docs_url || '/dist/data-docs/index.html'),
+      geDocs: toStringOrUndefined(params['data_docs_url']) ?? '/dist/data-docs/index.html',
       notes: hil?.comment || '-',
       run,
     }
@@ -380,7 +446,7 @@ export function Dashboard() {
         </Card>
       </div>
 
-      {consolidationTelemetry && consolidationTelemetry.templates?.length > 0 && (
+      {consolidationTemplates.length > 0 && (
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0">
             <div>
@@ -402,18 +468,18 @@ export function Dashboard() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {consolidationTelemetry.templates.slice(0, 5).map(item => (
+                {consolidationTemplates.slice(0, 5).map(item => (
                   <TableRow key={item.id}>
                     <TableCell className="font-medium">
                       {item.name}
-                      {item.summary?.profile && (
+                      {item.summary.profile && (
                         <span className="ml-2 text-xs text-muted-foreground">{item.summary.profile}</span>
                       )}
                     </TableCell>
-                    <TableCell className="text-right text-sm text-muted-foreground">{item.summary?.mappingCount ?? 0}</TableCell>
-                    <TableCell className="text-right text-sm text-muted-foreground">{item.summary?.ruleCount ?? 0}</TableCell>
+                    <TableCell className="text-right text-sm text-muted-foreground">{item.summary.mappingCount}</TableCell>
+                    <TableCell className="text-right text-sm text-muted-foreground">{item.summary.ruleCount}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {(item.summary?.ruleTypes ?? []).slice(0, 3).join(', ') || '—'}
+                      {item.summary.ruleTypes.slice(0, 3).join(', ') || '—'}
                     </TableCell>
                   </TableRow>
                 ))}

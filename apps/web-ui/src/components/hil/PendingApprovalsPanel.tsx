@@ -30,6 +30,12 @@ type PendingApprovalEntry = {
 
 const MAX_DISPLAY = 6;
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const getString = (value: unknown): string | undefined =>
+  typeof value === "string" && value.length > 0 ? value : undefined;
+
 export function PendingApprovalsPanel({
   approvals,
   runs,
@@ -115,14 +121,15 @@ export function PendingApprovalsPanel({
           <ul className="space-y-3">
             {waitingEntries.map(({ approval, run }) => {
               const runName = run?.name ?? approval.runId;
-              const profile =
-                typeof run?.parameters?.profile === "string"
-                  ? run.parameters.profile
-                  : null;
+              const parameterMap = isRecord(run?.parameters)
+                ? (run.parameters as Record<string, unknown>)
+                : {};
+              const profile = getString(parameterMap["profile"]);
               const comment =
-                approval.comment ||
-                run?.parameters?.notes ||
-                run?.parameters?.comment;
+                approval.comment ??
+                getString(parameterMap["notes"]) ??
+                getString(parameterMap["comment"]);
+              const assistantComment = comment ?? "None provided";
               const timestamp = Date.parse(approval.timestamp);
               return (
                 <li
@@ -170,14 +177,9 @@ export function PendingApprovalsPanel({
                       Waiting
                     </Badge>
                   </div>
-                  {typeof comment === "string" && comment && (
+                  {comment && (
                     <p className="mt-2 line-clamp-3 text-xs text-muted-foreground">
                       “{comment}”
-                    </p>
-                  )}
-                  {comment && typeof comment !== "string" && (
-                    <p className="mt-2 line-clamp-3 text-xs text-muted-foreground">
-                      “{JSON.stringify(comment)}”
                     </p>
                   )}
                   <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -192,7 +194,7 @@ export function PendingApprovalsPanel({
                         size="sm"
                         onClick={() =>
                           onOpenAssistant(
-                            `Help me prepare approval notes for run ${approval.runId}. Current comment: ${comment ?? "None provided"}.`,
+                            `Help me prepare approval notes for run ${approval.runId}. Current comment: ${assistantComment}.`,
                           )
                         }
                       >
