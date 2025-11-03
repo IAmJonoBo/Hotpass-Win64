@@ -621,7 +621,7 @@ class ResearchOrchestrator:
                 )
             results: list[dict[str, Any]] = []
             failures: list[str] = []
-            timeout = self._searx_settings.timeout if self._searx_settings.timeout else 10.0
+            timeout = self._searx_settings.timeout
             for target_url in plan.target_urls:
                 try:
                     self._maybe_throttle(plan.rate_limit)
