@@ -8,8 +8,8 @@
  * - Run parameters and metadata
  */
 
-import { useParams, Link, useOutletContext } from 'react-router-dom'
-import { useState } from 'react'
+import { useParams, Link, useOutletContext, useSearchParams } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ArrowLeft, CheckCircle2, XCircle, AlertTriangle, Clock, Tag, UserCheck, GitBranch } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -33,6 +33,7 @@ export function RunDetails() {
   const { runId } = useParams<{ runId: string }>()
   const { openAssistant } = useOutletContext<OutletContext>()
   const [approvalPanelOpen, setApprovalPanelOpen] = useState(false)
+  const [searchParams] = useSearchParams()
   const { hasRole } = useAuth()
 
   const mockRun = mockPrefectData.flowRuns.find(r => r.id === runId)
@@ -50,6 +51,17 @@ export function RunDetails() {
   const showSkeleton = isLoading && !run
   const isFallback = Boolean(runError && mockRun)
   const canApprove = hasRole(['approver', 'admin'])
+  const shouldAutoOpenApproval = useMemo(() => {
+    const value = searchParams.get('hil') ?? searchParams.get('openApproval')
+    if (!value) return false
+    return value === '1' || value === 'true' || value === 'open'
+  }, [searchParams])
+
+  useEffect(() => {
+    if (shouldAutoOpenApproval) {
+      setApprovalPanelOpen(true)
+    }
+  }, [shouldAutoOpenApproval])
 
   const {
     data: lineageTelemetry,

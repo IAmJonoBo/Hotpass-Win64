@@ -76,7 +76,7 @@
 - [x] Add `LatestRefinedWorkbookCard` + `DataQualityChip` components sourced from recent run summaries.
 - [x] Implement `LiveProcessingWidget` (current workbook, sheet count, rows processed, autofixes, errors, session timer; 200–500 ms refresh).
 - [ ] Build optional `CellSpotlight` panel highlighting most recent fix (e.g. Sheet2!D14 + rule).
-- [ ] Surface `PendingApprovalsPanel` (links to `RunDetails` with HIL context).
+- [x] Surface `PendingApprovalsPanel` (links to `RunDetails` with HIL context).
 - [ ] Wire inline help anchors into HelpCenter (`helpContent.ts`).
 
 > Dependencies: profiling API/hooks from Stage 3.4, template CRUD (Stage 3.5), persisted profile payloads (Stage 3.4).

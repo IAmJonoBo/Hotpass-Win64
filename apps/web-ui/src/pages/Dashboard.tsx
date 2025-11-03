@@ -21,6 +21,7 @@ import { PipelineActivityPanel } from '@/components/pipeline/PipelineActivityPan
 import { PowerTools } from '@/components/powertools/PowerTools'
 import { DatasetImportPanel } from '@/components/import/DatasetImportPanel'
 import { LatestRefinedWorkbookCard } from '@/components/import/LatestRefinedWorkbookCard'
+import { PendingApprovalsPanel } from '@/components/hil/PendingApprovalsPanel'
 import { useLineageTelemetry, jobHasHotpassFacet } from '@/hooks/useLineageTelemetry'
 import { useConsolidationTelemetry } from '@/api/imports'
 
@@ -42,7 +43,10 @@ export function Dashboard() {
   const prefectError = flowRunsQuery.error instanceof Error ? flowRunsQuery.error : null
 
   // Fetch HIL approvals
-  const { data: hilApprovals = {} } = useHILApprovals()
+  const {
+    data: hilApprovals = {},
+    isLoading: hilApprovalsLoading,
+  } = useHILApprovals()
 
   const {
     data: lineageTelemetry,
@@ -215,12 +219,20 @@ export function Dashboard() {
         trend={trend}
       />
 
-      <DatasetImportPanel
-        flowRuns={flowRuns}
-        hilApprovals={hilApprovals}
-        isLoadingRuns={isLoadingPrefect}
-        onOpenAssistant={openAssistant}
-      />
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        <DatasetImportPanel
+          flowRuns={flowRuns}
+          hilApprovals={hilApprovals}
+          isLoadingRuns={isLoadingPrefect}
+          onOpenAssistant={openAssistant}
+        />
+        <PendingApprovalsPanel
+          approvals={hilApprovals}
+          runs={flowRuns}
+          isLoading={hilApprovalsLoading || isLoadingPrefect}
+          onOpenAssistant={openAssistant}
+        />
+      </div>
 
       {prefectError && (
         <ApiBanner
