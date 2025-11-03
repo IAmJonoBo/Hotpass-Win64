@@ -267,7 +267,7 @@ def test_requests_crawl_retries_on_failure(tmp_path, monkeypatch):
         def __init__(self) -> None:
             self.calls = 0
 
-        def get(self, url: str, timeout: float):  # noqa: ANN201 - stub protocol
+        def get(self, url: str, timeout: float) -> _StubResponse:
             self.calls += 1
             if self.calls == 1:
                 raise RuntimeError("temporary failure")
