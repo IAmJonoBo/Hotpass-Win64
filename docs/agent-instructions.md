@@ -80,7 +80,7 @@ Follow these steps to refine, enrich, and validate a workbook end-to-end.
      --format yaml
    ```
 
-> **MCP equivalent:** start the server with `uv run python -m hotpass.mcp.server` and call tools such as `hotpass.refine`, `hotpass.enrich`, or `hotpass.qa` with matching parameters.
+> **MCP equivalent:** start the server with `uv run python -m hotpass.mcp.server` and call tools such as `hotpass.refine`, `hotpass.enrich`, or `hotpass.qa` with matching parameters. Contract publishing and consolidation insights are also available via `hotpass.publish_contract`, `hotpass.template_summary`, and `hotpass.consolidation_telemetry`.
 
 ---
 

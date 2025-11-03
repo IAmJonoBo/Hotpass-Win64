@@ -6,8 +6,6 @@ import {
   CheckCircle2,
   BookOpen,
   CloudUpload,
-  PencilRuler,
-  ListChecks,
   Plus,
   Trash2,
   Copy,

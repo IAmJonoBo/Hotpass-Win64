@@ -21,7 +21,7 @@ const normaliseRule = (rule = {}) => {
     : typeof rule.columns === 'string'
       ? rule.columns.split(',').map(column => column.trim()).filter(Boolean)
       : []
-  const { type, columns, ...rest } = rule
+  const { type, ...rest } = rule
   const config = { ...rest }
   return {
     type: typeof type === 'string' ? type : '',

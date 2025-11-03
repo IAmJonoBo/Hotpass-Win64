@@ -9,8 +9,8 @@
 | Advanced rule library (rename, normalize_date, drop_layout rows, etc.) | ✅ (initial set) | Additional rules ready for per-profile layering               |
 | Consolidation / relational export                                      | ⏳               | TODO: entity/contact/address joins + multi-tab/Parquet export |
 | Wizard UI (mapping editor, rule toggles, preview)                      | ⏳               | Backend-ready; FE implementation pending                      |
-| Template service (list/save/delete)                                    | ⏳               | Need REST endpoints + storage for named templates             |
-| Assistant integration (reuse templates, surface issues)                | ⏳               | Queue after wizard foundation                                 |
+| Template service (list/save/delete)                                    | ✅               | REST endpoints + storage for named templates (`/api/imports/templates`) |
+| Assistant integration (reuse templates, surface issues)                | ✅ (phase 1)     | Assistant tools cover template summary/contract/telemetry     |
 | QA/HIL alignment                                                       | ⏳               | Surface auto-fixes & unresolved issues in HIL panel           |
 
 ### Next Actions
@@ -18,19 +18,26 @@
 **Backend**
 
 1. Implement relational consolidation helpers so entity + contact + address sheets can emit tidy linked tables (preserving multi-location/contact data) and export complementary Parquet/JSON bundles.
-2. Add API + persistence for named templates (list/create/update/delete) so wizard/assistant/CLI can reuse shared configs.
-3. Extend rule library with fuzzy matching, geocoding backfill, duplicate resolution, and provenance tagging; keep rules white-label by default.
-4. Emit structured import issue logs via SSE/telemetry for dashboards & HIL.
+2. Extend the rule library with fuzzy matching, geocoding backfill, duplicate resolution, and provenance tagging; keep rules white-label by default.
+3. Emit structured import issue logs via SSE/telemetry for dashboards & HIL.
+4. Add batch contract generation support (per-profile suites) and persist manifest metadata alongside `dist/contracts`.
 
-**Wizard / UI** 5. Expose profiler sheet roles + join hints in the wizard to drive default selections.  
-6. Build wizard steps: sheet selection → mapping editor (rename/type adjustments) → rule toggle preview (diff view) → run submission.  
-7. Provide result summary (autofixes, blockers, recommendations) and allow template save directly from the wizard.
+**Wizard / UI**
 
-**Assistant / CLI** 8. Allow assistants/CLI to reference named templates (`--import-template foo`) and surface import issue summaries in chat/CLI output.  
+5. Surface profiler sheet roles + join hints in the wizard to drive default mapping selections.
+6. Implement run submission + queue trigger from the wizard, including job status hand-off and notifications.
+7. Provide result summaries (autofixes, blockers, recommendations) and allow template diff export directly from the wizard UI.
+
+**Assistant / CLI**
+
+8. Enable assistants/CLI to trigger refinement with `--import-template` arguments and expose contract artifacts in chat responses.
 9. Add assistant actions that preview suggested fixes before applying them, keeping a human-in-the-loop confirmation.
 
-**Quality & Governance** 10. Surface import issues in pipeline telemetry/HIL workflows so operators can approve/reject critical fixes with context.  
+**Quality & Governance**
+
+10. Surface import issues in pipeline telemetry/HIL workflows so operators can approve/reject critical fixes with context.
 11. Keep all defaults industry-agnostic; profile-specific templates remain optional overlays.
+12. Wire consolidation telemetry into governance dashboards (QA/HIL review tooling).
 
 _Updated: 2025-11-03_
 
@@ -54,11 +61,11 @@ _Updated: 2025-11-03_
   - When an import job kicks off, copy the selected payload into `dist/import/<job-id>/profile.json` and include a download link in job metadata.
   - Optional future enhancement: add `GET /api/imports/profile/:id` to retrieve archived payloads without hitting disk directly.
 
-- **Template/API gaps**
+- **Template/API status**
 
-  - Server needs `/api/imports/templates` CRUD endpoints (list, create/update, delete) plus storage helpers (likely `.hotpass/ui/templates/`).
-  - Assistant + CLI tooling should consume the same endpoints to keep template discovery consistent.
-  - Remaining UI work: automate contract publishing via CLI, add assistant-powered run orchestration, and expose consolidation telemetry in dashboards.
+  - `/api/imports/templates` CRUD endpoints (list/create/update/delete) with storage helpers live under `.hotpass/ui/imports/templates/*.json`.
+  - Assistant + CLI tooling consumes the same endpoints for summary, contract publishing, and telemetry.
+  - Remaining work: batch contract automation, diff manifest export, and governance dashboards that consume consolidation telemetry.
 
 - **Current scaffolding (2025-11-03)**
 
@@ -73,4 +80,4 @@ _Updated: 2025-11-03_
   2. ✅ When an import run starts, persist the chosen profile metadata alongside the job (`dist/import/<job-id>/profile.json`) and surface the artifact link in job events (2025-11-03).
   3. ✅ Stand up the `/imports/wizard` route with step components (Upload → Profile → Mapping → Rules → Summary) reusing stored profiles/templates (editable mapping/rule forms + consolidation preview live 2025-11-03).
   4. ✅ Layer on template management UI (`TemplatePicker`, `TemplateManagerDrawer`) plus CLI/assistant template tools (2025-11-03).
-  5. 🔭 Next: automate contract publishing via CLI, deepen assistant orchestration, and pipe consolidation telemetry into dashboards.
+  5. 🔭 Next: batch contract automation + diff manifests, assistant-driven run orchestration, and governance dashboards with consolidation telemetry.

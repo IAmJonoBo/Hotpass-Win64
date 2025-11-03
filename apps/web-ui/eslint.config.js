@@ -15,7 +15,7 @@ const compat = new FlatCompat({
 
 export default [
   {
-    ignores: ['dist', 'storybook-static'],
+    ignores: ['dist', 'storybook-static', 'coverage'],
   },
   ...compat.config({
     root: true,

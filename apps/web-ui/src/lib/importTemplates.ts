@@ -48,7 +48,7 @@ const normaliseRule = (rule: Record<string, unknown>): NormalisedRule => {
     : typeof rule.columns === 'string'
       ? rule.columns.split(',').map(column => column.trim()).filter(Boolean)
       : []
-  const { type, columns, ...rest } = rule
+  const { type, ...rest } = rule
   return {
     type: typeof type === 'string' ? type : '',
     columns: [...columnsRaw].sort((a, b) => a.localeCompare(b)),
