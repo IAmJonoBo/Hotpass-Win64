@@ -7,6 +7,8 @@ Hotpass ingests messy spreadsheet collections (primarily XLSX) alongside orchest
 - **Industry-ready**: Configurable profiles tailor validation rules, mappings, and terminology to your sector.
 - **Quality first**: Great Expectations, POPIA compliance checks, and actionable quality reports keep stakeholders informed.
 - **Operational**: Prefect orchestration, OpenTelemetry metrics, and a Streamlit dashboard make the pipeline production-friendly.
+- **Research ready**: Integrated SearXNG meta-search with caching, throttling, and crawler retries keeps network enrichment fast
+  and observable.
 
 ## Product vision
 

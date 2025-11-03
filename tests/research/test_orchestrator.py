@@ -6,6 +6,7 @@ from pathlib import Path
 import pandas as pd
 from hotpass.config import IndustryProfile
 from hotpass.research import ResearchContext, ResearchOrchestrator
+from hotpass.research.searx import SearxQuery, SearxResponse, SearxResult, SearxServiceSettings
 
 
 def expect(condition: bool, message: str) -> None:
@@ -68,6 +69,7 @@ def test_plan_offline_path(tmp_path):
     statuses = {step.name: step.status for step in outcome.steps}
     expect(statuses.get("local_snapshot") == "success", "Local snapshot should load")
     expect(statuses.get("authority_sources") == "success", "Authority snapshot should load")
+    expect(statuses.get("searx_search") == "skipped", "SearX step skipped without network")
     expect(statuses.get("network_enrichment") == "skipped", "Network step disabled offline")
     expect(statuses.get("native_crawl") == "skipped", "Crawl skipped without network")
     expect(
@@ -105,6 +107,10 @@ def test_crawl_summary_without_network(tmp_path):
     )
 
     statuses = {step.name: step.status for step in outcome.steps}
+    expect(
+        statuses.get("searx_search") == "skipped",
+        "SearX search should skip when network disabled",
+    )
     expect(
         statuses.get("network_enrichment") == "skipped",
         "Network enrichment should skip when disabled",
@@ -155,6 +161,10 @@ def test_crawl_persists_artifact_and_rate_limit(tmp_path, monkeypatch):
 
     statuses = {step.name: step.status for step in outcome.steps}
     expect(
+        statuses.get("searx_search") == "skipped",
+        "SearX step should skip when service disabled",
+    )
+    expect(
         statuses.get("native_crawl") == "success",
         "Native crawl should succeed under stubbed requests",
     )
@@ -182,3 +192,119 @@ def test_crawl_persists_artifact_and_rate_limit(tmp_path, monkeypatch):
         rate_limit.burst == 2,
         "Burst value from profile should be preserved in the plan",
     )
+
+
+def test_searx_search_enriches_plan(tmp_path, monkeypatch):
+    cache_root = tmp_path / ".hotpass"
+    cache_root.mkdir()
+
+    profile = IndustryProfile.from_dict({"name": "generic", "display_name": "Generic"})
+
+    class _StubSearxService:
+        def __init__(self) -> None:
+            self.received_terms: list[str] = []
+
+        def build_queries(self, terms: list[str]) -> list[SearxQuery]:
+            self.received_terms.extend(terms)
+            return [SearxQuery(term=term) for term in terms]
+
+        def search(self, queries: list[SearxQuery]) -> SearxResponse:
+            results = (
+                SearxResult(title="Example", url="https://example.test"),
+                SearxResult(title="Alt", url="https://example.test/about"),
+            )
+            return SearxResponse(tuple(queries), results, from_cache=False)
+
+    class _StubResponse:
+        def __init__(self, url: str) -> None:
+            self.url = url
+            self.status_code = 200
+            self.content = b"ok"
+
+    class _StubRequests:
+        def __init__(self) -> None:
+            self.invocations: list[str] = []
+
+        def get(self, url: str, timeout: float) -> _StubResponse:
+            self.invocations.append(url)
+            return _StubResponse(url)
+
+    stub_requests = _StubRequests()
+    monkeypatch.setattr(
+        "hotpass.research.orchestrator.requests", stub_requests, raising=False
+    )
+
+    stub_service = _StubSearxService()
+    orchestrator = ResearchOrchestrator(
+        cache_root=cache_root,
+        audit_log=cache_root / "audit.log",
+        searx_settings=SearxServiceSettings(enabled=True),
+        searx_service=stub_service,
+    )
+
+    row = pd.Series({"organization_name": "Example Org"})
+    context = ResearchContext(profile=profile, row=row, allow_network=True)
+    outcome = orchestrator.plan(context)
+
+    statuses = {step.name: step.status for step in outcome.steps}
+    expect(statuses.get("searx_search") == "success", "SearX step should succeed")
+    native_step = next(step for step in outcome.steps if step.name == "native_crawl")
+    expect(native_step.status == "success", "Native crawl should succeed with SearX URLs")
+    expect(
+        "https://example.test" in outcome.plan.target_urls,
+        "SearX results should populate plan target URLs",
+    )
+    expect(stub_requests.invocations, "Requests fallback should be invoked")
+
+
+def test_requests_crawl_retries_on_failure(tmp_path, monkeypatch):
+    cache_root = tmp_path / ".hotpass"
+    cache_root.mkdir()
+
+    profile = IndustryProfile.from_dict({"name": "generic", "display_name": "Generic"})
+
+    class _FlakyRequests:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def get(self, url: str, timeout: float):  # noqa: ANN201 - stub protocol
+            self.calls += 1
+            if self.calls == 1:
+                raise RuntimeError("temporary failure")
+            return _StubResponse(url)
+
+    class _StubResponse:
+        def __init__(self, url: str) -> None:
+            self.url = url
+            self.status_code = 200
+            self.content = b"ok"
+
+    flaky = _FlakyRequests()
+    monkeypatch.setattr(
+        "hotpass.research.orchestrator.requests", flaky, raising=False
+    )
+
+    settings = SearxServiceSettings(
+        enabled=False,
+        crawl_retry_attempts=2,
+        crawl_retry_backoff_seconds=0.0,
+        timeout=0.1,
+    )
+    orchestrator = ResearchOrchestrator(
+        cache_root=cache_root,
+        audit_log=cache_root / "audit.log",
+        searx_settings=settings,
+    )
+
+    outcome = orchestrator.crawl(
+        profile=profile,
+        query_or_url="https://example.test/retry",
+        allow_network=True,
+    )
+
+    native_step = next(step for step in outcome.steps if step.name == "native_crawl")
+    expect(native_step.status == "success", "Native crawl should recover after retry")
+    artifacts = native_step.artifacts or {}
+    results = artifacts.get("results", [])
+    expect(results, "Crawl results should be captured")
+    expect(flaky.calls == 2, "Crawler should retry once before succeeding")

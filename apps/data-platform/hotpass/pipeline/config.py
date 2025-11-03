@@ -6,7 +6,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Mapping
 
 import pandas as pd
 
@@ -116,6 +116,7 @@ class PipelineConfig:
     crm_endpoint: str | None = None
     crm_token: str | None = None
     automation_http: AutomationHTTPConfig = field(default_factory=AutomationHTTPConfig)
+    research_settings: Mapping[str, Any] | None = None
     preloaded_agent_frame: pd.DataFrame | None = None
     preloaded_agent_timings: list[AgentTiming] = field(default_factory=list)
     preloaded_agent_warnings: list[str] = field(default_factory=list)

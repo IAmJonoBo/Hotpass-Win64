@@ -7,7 +7,14 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import (
+    AnyHttpUrl,
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_validator,
+    model_validator,
+)
 
 from hotpass.automation.http import (
     AutomationCircuitBreakerPolicy,
@@ -214,6 +221,62 @@ class IntentSettings(BaseModel):
     credentials: Mapping[str, str] = Field(default_factory=dict)
 
 
+class SearxCacheSettings(BaseModel):
+    directory: Path | None = None
+    ttl_seconds: float = Field(default=3600.0, ge=0.0)
+
+
+class SearxThrottleSettings(BaseModel):
+    min_interval_seconds: float = Field(default=1.0, ge=0.0)
+    burst: int | None = Field(default=None, ge=1)
+
+
+class SearxRuntimeSettings(BaseModel):
+    enabled: bool = False
+    base_url: str | AnyHttpUrl = "http://localhost:8080"
+    api_key: str | None = None
+    api_key_header: str = "Authorization"
+    api_key_prefix: str | None = "Bearer"
+    timeout: float = Field(default=10.0, gt=0.0)
+    max_results: int = Field(default=25, ge=1)
+    categories: tuple[str, ...] = Field(default_factory=tuple)
+    engines: tuple[str, ...] = Field(default_factory=tuple)
+    language: str | None = None
+    deduplicate: bool = True
+    stop_on_first: bool = True
+    cache: SearxCacheSettings = Field(default_factory=SearxCacheSettings)
+    throttle: SearxThrottleSettings = Field(default_factory=SearxThrottleSettings)
+    default_params: Mapping[str, Any] = Field(default_factory=dict)
+    user_agent: str | None = None
+    trace_queries: bool = True
+    metrics_enabled: bool = True
+    crawl_retry_attempts: int = Field(default=3, ge=1)
+    crawl_retry_backoff_seconds: float = Field(default=1.0, ge=0.0)
+    auto_crawl: bool = True
+
+    @field_validator("categories", "engines", mode="before")
+    @classmethod
+    def _normalise_tokens(
+        cls, value: Iterable[str] | str | None
+    ) -> tuple[str, ...]:  # pragma: no cover - simple sanitiser
+        if value is None:
+            return ()
+        if isinstance(value, str):
+            candidates = value.split(",")
+        else:
+            candidates = value
+        cleaned: list[str] = []
+        for candidate in candidates:
+            token = str(candidate).strip()
+            if token and token not in cleaned:
+                cleaned.append(token)
+        return tuple(cleaned)
+
+
+class ResearchRuntimeSettings(BaseModel):
+    searx: SearxRuntimeSettings = Field(default_factory=SearxRuntimeSettings)
+
+
 DEFAULT_AUTOMATION_STATUS_CODES: tuple[int, ...] = (408, 425, 429, 500, 502, 503, 504)
 
 
@@ -310,6 +373,7 @@ class PipelineRuntimeConfig(BaseModel):
     automation_http: AutomationHTTPSettings = Field(default_factory=AutomationHTTPSettings)
     import_mappings: tuple[Mapping[str, Any], ...] = Field(default_factory=tuple)
     import_rules: tuple[Mapping[str, Any], ...] = Field(default_factory=tuple)
+    research: ResearchRuntimeSettings | None = None
 
     @field_validator("sensitive_fields", mode="before")
     @classmethod
@@ -541,6 +605,9 @@ class HotpassConfig(BaseModel):
 
         config.automation_http = self.pipeline.automation_http.to_dataclass()
 
+        if self.pipeline.research is not None:
+            config.research_settings = self.pipeline.research.model_dump(mode="python")
+
         if self.pipeline.acquisition and self.pipeline.acquisition.enabled:
             from hotpass.data_sources.agents import (
                 AcquisitionPlan,
@@ -732,5 +799,9 @@ __all__ = [
     "PIIRedactionSettings",
     "PipelineRuntimeConfig",
     "ProfileConfig",
+    "ResearchRuntimeSettings",
+    "SearxCacheSettings",
+    "SearxRuntimeSettings",
+    "SearxThrottleSettings",
     "TelemetrySettings",
 ]
