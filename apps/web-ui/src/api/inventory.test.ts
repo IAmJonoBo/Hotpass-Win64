@@ -77,4 +77,29 @@ describe('inventory api', () => {
     expect(result.assets).toHaveLength(1)
     expect(result.manifest.version).toBe('1')
   })
+
+  it('throws descriptive error when server responds with JSON error payload', async () => {
+    const errorResponse = {
+      error: 'Inventory manifest not found',
+      details: { message: 'Inventory manifest not found at /data/inventory/asset-register.yaml' },
+    }
+
+    const fetchMock = vi.fn(() =>
+      Promise.resolve({
+        ok: false,
+        statusText: 'Internal Server Error',
+        json: () => Promise.resolve(errorResponse),
+        text: () => Promise.resolve(''),
+        clone: () => ({
+          json: () => Promise.resolve(errorResponse),
+          text: () => Promise.resolve(''),
+        }),
+      }),
+    ) as unknown as typeof fetch
+
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(fetchInventory()).rejects.toThrow('Inventory manifest not found')
+    expect(fetchMock).toHaveBeenCalled()
+  })
 })

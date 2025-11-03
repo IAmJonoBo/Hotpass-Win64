@@ -9,6 +9,36 @@ import type {
 
 const limiter = createRateLimiter(6, 30_000)
 
+const parseInventoryError = async (response: Response) => {
+  try {
+    const payload = await response.clone().json()
+    if (payload && typeof payload === 'object') {
+      const message =
+        (payload as { error?: unknown }).error ?? (payload as { message?: unknown }).message
+      if (typeof message === 'string' && message.trim()) {
+        return message
+      }
+      const details = (payload as { details?: { message?: unknown } }).details
+      if (details && typeof details === 'object' && typeof details.message === 'string') {
+        return details.message
+      }
+    }
+  } catch {
+    // fall through to status text/text body parsing
+  }
+
+  try {
+    const text = await response.clone().text()
+    if (text.trim()) {
+      return text.trim()
+    }
+  } catch {
+    // ignore text parsing errors
+  }
+
+  return response.statusText || 'Failed to fetch inventory'
+}
+
 const fetchWithLimiter = <T>(input: RequestInfo | URL, init?: RequestInit) =>
   limiter(async () => {
     const response = await fetch(input, {
@@ -20,7 +50,8 @@ const fetchWithLimiter = <T>(input: RequestInfo | URL, init?: RequestInit) =>
       },
     })
     if (!response.ok) {
-      throw new Error(response.statusText || 'Failed to fetch inventory')
+      const message = await parseInventoryError(response)
+      throw new Error(message)
     }
     return response.json() as Promise<T>
   })

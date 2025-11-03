@@ -8,6 +8,7 @@ Modern React-based web interface for Hotpass data pipeline monitoring and manage
 - **Lineage View**: Interactive data lineage visualization from OpenLineage/Marquez
 - **Run Details**: Detailed view of individual runs with QA results
 - **Admin Panel**: Configure API endpoints and environment settings
+- **Governance Inventory**: Asset manifest explorer linked to the backend inventory service
 - **Assistant**: AI-powered chat interface for exploring flows and lineage
 - **Human-in-the-Loop**: Approval workflows for quality gates
 - **Dark Mode**: System-aware dark/light theme with manual toggle

@@ -56,6 +56,7 @@ describe('InventoryOverview', () => {
     expect(screen.getByText('Secret store')).toBeInTheDocument()
     expect(screen.getByText('Telemetry database')).toBeInTheDocument()
     expect(screen.getByText('Backend, CLI, and UI readiness for the inventory feature')).toBeInTheDocument()
+    expect(screen.getByText(/Snapshot generated/)).toBeInTheDocument()
   })
 
   it('filters assets by search query', () => {

@@ -30,6 +30,10 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/prefect/, '/api'),
       },
+      '/api/inventory': {
+        target: process.env.HOTPASS_WEB_API_URL || 'http://localhost:3000',
+        changeOrigin: true,
+      },
     },
   },
   build: {

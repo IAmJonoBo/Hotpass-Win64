@@ -51,7 +51,11 @@ export function InventoryOverview({ snapshot, isLoading = false, error, onRetry 
   }
   const summary = snapshot?.summary ?? { total: 0, byType: {}, byClassification: {} }
   const requirements: InventoryRequirement[] = snapshot?.requirements ?? []
-  const assets: InventoryAsset[] = snapshot?.assets ?? []
+  const assets: InventoryAsset[] = useMemo(
+    () => (snapshot?.assets ? [...snapshot.assets] : []),
+    [snapshot],
+  )
+  const generatedAt = snapshot?.generatedAt ?? null
 
   const classifications = useMemo(() => {
     const unique = new Map<string, string>()
@@ -68,6 +72,21 @@ export function InventoryOverview({ snapshot, isLoading = false, error, onRetry 
     () => filterAssets(assets, query, classificationFilter),
     [assets, query, classificationFilter],
   )
+
+  const generatedAtLabel = useMemo(() => {
+    if (!generatedAt) {
+      return 'Snapshot timestamp unavailable.'
+    }
+    const parsed = new Date(generatedAt)
+    if (Number.isNaN(parsed.getTime())) {
+      return 'Snapshot timestamp unavailable.'
+    }
+    const formatter = new Intl.DateTimeFormat(undefined, {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    })
+    return `Snapshot generated ${formatter.format(parsed)}`
+  }, [generatedAt])
 
   if (isLoading) {
     return (
@@ -107,6 +126,9 @@ export function InventoryOverview({ snapshot, isLoading = false, error, onRetry 
             <p className="text-4xl font-bold">{summary.total}</p>
             <p className="mt-2 text-sm text-muted-foreground">
               Maintainer: {manifest.maintainer} · Version: {manifest.version}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground" aria-live="polite">
+              {generatedAtLabel}
             </p>
           </CardContent>
         </Card>
@@ -209,32 +231,34 @@ export function InventoryOverview({ snapshot, isLoading = false, error, onRetry 
               No assets match the selected filters. Try adjusting your search or classification.
             </p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>ID</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Classification</TableHead>
-                  <TableHead>Owner</TableHead>
-                  <TableHead>Custodian</TableHead>
-                  <TableHead>Location</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredAssets.map(asset => (
-                  <TableRow key={asset.id}>
-                    <TableCell className="font-mono text-xs">{asset.id}</TableCell>
-                    <TableCell className="font-medium">{asset.name}</TableCell>
-                    <TableCell>{asset.type}</TableCell>
-                    <TableCell className="capitalize">{asset.classification}</TableCell>
-                    <TableCell>{asset.owner}</TableCell>
-                    <TableCell>{asset.custodian || '—'}</TableCell>
-                    <TableCell>{asset.location || '—'}</TableCell>
+            <div className="overflow-x-auto">
+              <Table className="min-w-[720px]">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>ID</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Classification</TableHead>
+                    <TableHead>Owner</TableHead>
+                    <TableHead>Custodian</TableHead>
+                    <TableHead>Location</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {filteredAssets.map(asset => (
+                    <TableRow key={asset.id}>
+                      <TableCell className="font-mono text-xs">{asset.id}</TableCell>
+                      <TableCell className="font-medium">{asset.name}</TableCell>
+                      <TableCell>{asset.type}</TableCell>
+                      <TableCell className="capitalize">{asset.classification}</TableCell>
+                      <TableCell>{asset.owner}</TableCell>
+                      <TableCell>{asset.custodian || '—'}</TableCell>
+                      <TableCell>{asset.location || '—'}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>
