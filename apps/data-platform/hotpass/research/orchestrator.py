@@ -9,7 +9,7 @@ from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal, cast
+from typing import TYPE_CHECKING, Any, Literal, Mapping, cast
 
 import pandas as pd
 
@@ -112,6 +112,80 @@ class ResearchPlan:
 
 
 @dataclass(slots=True)
+class SearchQuery:
+    """Describe an individual search query the agent should execute."""
+
+    query: str
+    rationale: str
+    weight: float = 1.0
+    filters: dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "query": self.query,
+            "rationale": self.rationale,
+            "weight": self.weight,
+            "filters": self.filters,
+        }
+
+
+@dataclass(slots=True)
+class SearchStrategy:
+    """Aggregate strategy returned for intelligent search orchestration."""
+
+    primary_query: SearchQuery
+    expanded_queries: tuple[SearchQuery, ...]
+    site_hints: tuple[str, ...]
+    metadata: dict[str, Any]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "primary_query": self.primary_query.to_dict(),
+            "expanded_queries": [query.to_dict() for query in self.expanded_queries],
+            "site_hints": list(self.site_hints),
+            "metadata": self.metadata,
+        }
+
+
+@dataclass(slots=True)
+class CrawlDirective:
+    """Instruction defining how a crawl should proceed for a given URL."""
+
+    url: str
+    priority: int = 1
+    depth: int = 1
+    respect_robots: bool = True
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "url": self.url,
+            "priority": self.priority,
+            "depth": self.depth,
+            "respect_robots": self.respect_robots,
+            "metadata": self.metadata,
+        }
+
+
+@dataclass(slots=True)
+class CrawlSchedule:
+    """Schedule describing crawl directives and downstream expectations."""
+
+    backend: str
+    directives: tuple[CrawlDirective, ...]
+    follow_up: tuple[str, ...]
+    rate_limit: RateLimitPolicy | None
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "backend": self.backend,
+            "directives": [directive.to_dict() for directive in self.directives],
+            "follow_up": list(self.follow_up),
+            "rate_limit": self.rate_limit.to_dict() if self.rate_limit else None,
+        }
+
+
+@dataclass(slots=True)
 class ResearchContext:
     """Inputs supplied by the CLI or MCP caller."""
 
@@ -203,6 +277,27 @@ class ResearchOrchestrator:
         outcome = self._execute(plan)
         self._write_audit_entry("plan", outcome)
         return outcome
+
+    def intelligent_search(self, context: ResearchContext) -> SearchStrategy:
+        """Derive an intelligent search strategy without executing the pipeline."""
+
+        plan = self._build_plan(context)
+        strategy = self._build_search_strategy(plan)
+        self._write_structured_audit("search.strategy", strategy.to_dict())
+        return strategy
+
+    def coordinate_crawl(
+        self,
+        context: ResearchContext,
+        *,
+        backend: str = "deterministic",
+    ) -> CrawlSchedule:
+        """Build a crawl schedule that agents can execute incrementally."""
+
+        plan = self._build_plan(context)
+        schedule = self._build_crawl_schedule(plan, backend=backend)
+        self._write_structured_audit("crawl.schedule", schedule.to_dict())
+        return schedule
 
     def crawl(
         self,
@@ -297,6 +392,108 @@ class ResearchOrchestrator:
             authority_sources=authority_sources,
             backfill_fields=backfill_fields,
             rate_limit=rate_limit_policy,
+        )
+
+    def _build_search_strategy(self, plan: ResearchPlan) -> SearchStrategy:
+        base_query = plan.query or plan.entity_name
+        primary = SearchQuery(
+            query=base_query,
+            rationale="Entity context provided by pipeline inputs",
+            weight=1.0,
+        )
+
+        expanded: list[SearchQuery] = []
+        seen = {primary.query.casefold()}
+
+        for field_name, values in self._derive_row_tokens(plan.row).items():
+            for value in values:
+                query = f"{base_query} {value}".strip()
+                key = query.casefold()
+                if key in seen:
+                    continue
+                seen.add(key)
+                expanded.append(
+                    SearchQuery(
+                        query=query,
+                        rationale=f"Add {field_name} context from source row",
+                        weight=0.85,
+                        filters={"field": field_name},
+                    )
+                )
+
+        for source in plan.authority_sources:
+            if not source.name:
+                continue
+            query = f"{base_query} {source.name}".strip()
+            key = query.casefold()
+            if key in seen:
+                continue
+            seen.add(key)
+            expanded.append(
+                SearchQuery(
+                    query=query,
+                    rationale="Cross-reference authority source",
+                    weight=0.7,
+                    filters={"authority": source.name},
+                )
+            )
+
+        site_hints = self._normalise_site_hints(plan)
+        metadata = {
+            "entity": plan.entity_slug,
+            "profile": getattr(plan.profile, "name", "unknown"),
+            "allow_network": plan.allow_network,
+            "rate_limit": plan.rate_limit.to_dict() if plan.rate_limit else None,
+            "authority_sources": [snapshot.name for snapshot in plan.authority_sources],
+            "backfill_fields": list(plan.backfill_fields),
+        }
+
+        return SearchStrategy(
+            primary_query=primary,
+            expanded_queries=tuple(expanded),
+            site_hints=site_hints,
+            metadata=metadata,
+        )
+
+    def _build_crawl_schedule(self, plan: ResearchPlan, *, backend: str) -> CrawlSchedule:
+        base_hints = list(self._normalise_site_hints(plan))
+        authority_urls = [
+            self._ensure_protocol(source.url)
+            for source in plan.authority_sources
+            if source.url
+        ]
+        seeds = list(dict.fromkeys(base_hints + authority_urls))
+
+        directives: list[CrawlDirective] = []
+        target_index = {
+            self._ensure_protocol(url): index for index, url in enumerate(plan.target_urls)
+        }
+        for index, url in enumerate(seeds):
+            directives.append(
+                CrawlDirective(
+                    url=url,
+                    priority=1 if index == 0 else 2,
+                    depth=3 if backend == "research" else 1,
+                    respect_robots=backend != "research",
+                    metadata={
+                        "source": self._classify_seed(url, target_index, authority_urls),
+                        "entity": plan.entity_slug,
+                        "backend": backend,
+                    },
+                )
+            )
+
+        follow_up: list[str] = ["qa:linkcheck"]
+        if plan.allow_network:
+            follow_up.append("enrichment:network")
+        if plan.backfill_fields:
+            follow_up.append("backfill:fields")
+
+        return CrawlSchedule(
+            backend=backend,
+            directives=tuple(directives),
+            follow_up=tuple(dict.fromkeys(follow_up)),
+            rate_limit=plan.rate_limit,
         )
 
     # --------------------------------------------------------------------- #
@@ -878,6 +1075,64 @@ class ResearchOrchestrator:
         metrics = self._get_metrics()
         metrics.record_research_crawl_failure(url=url, reason=str(exc))
 
+    def _derive_row_tokens(self, row: pd.Series | None) -> dict[str, list[str]]:
+        tokens: dict[str, list[str]] = {}
+        if row is None:
+            return tokens
+        candidate_fields = {
+            "province": "province",
+            "state": "state",
+            "region": "region",
+            "country": "country",
+            "city": "city",
+            "industry": "industry",
+            "segment": "segment",
+        }
+        for column, label in candidate_fields.items():
+            value = row.get(column)
+            values: list[Any] = []
+            if isinstance(value, str):
+                values = [value]
+            elif isinstance(value, Mapping):
+                values = [str(item) for item in value.values()]
+            elif isinstance(value, Sequence) and not isinstance(value, (str, bytes, bytearray)):
+                values = list(value)
+            elif value not in (None, ""):
+                values = [value]
+
+            for candidate in values:
+                candidate_str = str(candidate).strip()
+                if not candidate_str:
+                    continue
+                bucket = tokens.setdefault(label, [])
+                if candidate_str not in bucket:
+                    bucket.append(candidate_str)
+        return tokens
+
+    def _normalise_site_hints(self, plan: ResearchPlan) -> tuple[str, ...]:
+        hints: list[str] = []
+        for url in plan.target_urls:
+            hints.append(self._ensure_protocol(url))
+        row = plan.row
+        if row is not None:
+            website = row.get("website")
+            if isinstance(website, str) and website.strip():
+                hints.append(self._ensure_protocol(website.strip()))
+        return tuple(dict.fromkeys(hints))
+
+    def _classify_seed(
+        self,
+        url: str,
+        target_index: Mapping[str, int],
+        authority_urls: Sequence[str],
+    ) -> str:
+        normalised = self._ensure_protocol(url)
+        if normalised in target_index:
+            return "target"
+        if normalised in authority_urls:
+            return "authority"
+        return "derived"
+
     def _write_audit_entry(self, action: str, outcome: ResearchOutcome) -> None:
         try:
             entry = {
@@ -889,6 +1144,19 @@ class ResearchOrchestrator:
                     {"name": step.name, "status": step.status, "message": step.message}
                     for step in outcome.steps
                 ],
+            }
+            with self.audit_log.open("a", encoding="utf-8") as handle:
+                handle.write(json.dumps(entry))
+                handle.write("\n")
+        except Exception:  # pragma: no cover - audit logging is best effort
+            LOGGER.debug("Failed to persist research audit entry", exc_info=True)
+
+    def _write_structured_audit(self, action: str, payload: Mapping[str, Any]) -> None:
+        try:
+            entry = {
+                "action": action,
+                "timestamp": time.time(),
+                "payload": payload,
             }
             with self.audit_log.open("a", encoding="utf-8") as handle:
                 handle.write(json.dumps(entry))

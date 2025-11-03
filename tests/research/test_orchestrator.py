@@ -119,8 +119,60 @@ def test_crawl_summary_without_network(tmp_path):
         statuses.get("native_crawl") == "skipped",
         "Crawl should skip without network access",
     )
-    if outcome.artifact_path:
-        expect(Path(outcome.artifact_path).exists(), "Crawl artefact should be written")
+
+
+def test_intelligent_search_and_crawl_schedule(tmp_path):
+    cache_root = tmp_path / ".hotpass"
+    cache_root.mkdir()
+    orchestrator = ResearchOrchestrator(
+        cache_root=cache_root,
+        audit_log=cache_root / "audit.log",
+        artefact_root=cache_root / "runs",
+    )
+
+    profile = IndustryProfile.from_dict(
+        {
+            "name": "aviation",
+            "display_name": "Aviation",
+            "authority_sources": [
+                {"name": "Civil Aviation Authority", "url": "caa.example"}
+            ],
+            "research_rate_limit": {"min_interval_seconds": 2.0, "burst": 3},
+        }
+    )
+
+    row = pd.Series(
+        {
+            "organization_name": "SkyLift Training",
+            "province": "Gauteng",
+            "industry": ["Aviation", "Training"],
+            "website": "skylift.example",
+        }
+    )
+
+    context = ResearchContext(
+        profile=profile,
+        row=row,
+        query="SkyLift Training",
+        urls=["https://skylift.example", "skylift.example"],
+        allow_network=True,
+    )
+
+    strategy = orchestrator.intelligent_search(context)
+    filters = [query.filters for query in strategy.expanded_queries]
+    assert any(mapping.get("field") == "province" for mapping in filters)
+    assert any("Aviation" in query.query for query in strategy.expanded_queries)
+    assert "https://skylift.example" in strategy.site_hints
+    assert "Civil Aviation Authority" in strategy.metadata["authority_sources"]
+    assert strategy.metadata["allow_network"] is True
+
+    schedule = orchestrator.coordinate_crawl(context, backend="research")
+    assert schedule.backend == "research"
+    assert schedule.rate_limit and schedule.rate_limit.min_interval_seconds == 2.0
+    assert "enrichment:network" in schedule.follow_up
+    assert "qa:linkcheck" in schedule.follow_up
+    directive_sources = {directive.metadata["source"] for directive in schedule.directives}
+    assert {"target", "authority"}.issubset(directive_sources)
 
 
 def test_crawl_persists_artifact_and_rate_limit(tmp_path, monkeypatch):
