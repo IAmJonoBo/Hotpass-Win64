@@ -1,8 +1,10 @@
 ---
 title: Reference — MCP tools
 summary: Model Context Protocol tools exposed by Hotpass and their CLI equivalents.
-last_updated: 2025-11-02
+last_updated: 2025-11-03
 ---
+
+# MCP tools
 
 Hotpass ships a stdio MCP server (`python -m hotpass.mcp.server`) that mirrors the CLI surface so agents can orchestrate the platform without bespoke adapters. The table below documents each tool, the underlying CLI command, and common arguments.
 
@@ -21,8 +23,12 @@ Hotpass ships a stdio MCP server (`python -m hotpass.mcp.server`) that mirrors t
 | `hotpass.plan.research` | Build deterministic/network research plans. | Uses `ResearchOrchestrator`. | `profile`, `dataset_path`, `row_id`, `entity`, `allow_network` |
 | `hotpass.crawl` | Execute crawl-only orchestration flow. | Uses `ResearchOrchestrator`. | `query_or_url`, `profile`, `allow_network`, `backend` |
 | `hotpass.ta.check` | Run the technical acceptance script (`ops/quality/run_all_gates.py`). | `python ops/quality/run_all_gates.py --json` | `gate` (1‑5) |
+| `hotpass.search.intelligent` | Generate search strategies without executing a crawl. | Uses `ResearchOrchestrator`. | `profile`, `dataset_path`, `row_id`, `entity`, `query`, `urls`, `allow_network` |
+| `hotpass.crawl.coordinate` | Produce a crawl coordination schedule for agents. | Uses `ResearchOrchestrator`. | `profile`, `dataset_path`, `row_id`, `entity`, `query`, `urls`, `allow_network`, `backend` |
+| `hotpass.pipeline.supervise` | Analyse pipeline snapshots and recommendations. | `PipelineSupervisor` harness | `pipeline` (snapshot payload) |
+| `hotpass.agent.workflow` | Simulate an end-to-end agent workflow (plan → crawl → provenance). | `AgentWorkflowHarness` | `profile`, `dataset_path`, `row_id`, `entity`, `query`, `urls`, `allow_network`, `pipeline_snapshot`, `crawl_backend` |
 
-### Example dolphin-mcp session
+## Example dolphin-mcp session
 
 ```bash
 uv run python -m hotpass.mcp.server &
@@ -36,9 +42,9 @@ dolphin-mcp chat --server hotpass --model ollama/llama3.1
 /call hotpass.aws profile=staging region=eu-west-1 dry_run=true output=json
 ```
 
-### Tool availability
+## Tool availability
 
 - `hotpass.setup`, `hotpass.net`, `hotpass.ctx`, `hotpass.env`, `hotpass.aws`, and `hotpass.arc` were introduced in October 2025 to streamline staging bootstrap for agents.
 - Tools inherit the same safeguards as the CLI: network enrichment still requires `FEATURE_ENABLE_REMOTE_RESEARCH=1` and `ALLOW_NETWORK_RESEARCH=1`, while ARC verification honours the `.hotpass/` evidence directory.
-- When invoking from IDEs (VS Code, Cursor, Zed, etc.), ensure `chat.mcp.access` is set to `"all"` so the editor can reach the local server. For quick experiments, use `dolphin-mcp` as described in [AGENTS.md](../AGENTS.md).
+- When invoking from IDEs (VS Code, Cursor, Zed, etc.), ensure `chat.mcp.access` is set to `"all"` so the editor can reach the local server. For quick experiments, use `dolphin-mcp` as described in [agent-instructions](../agent-instructions.md).
 - Model routing and provider metadata live in `apps/web-ui/public/config/llm-providers.yaml`. Update the YAML to surface additional providers in both the Admin UI and MCP clients.

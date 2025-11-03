@@ -43,7 +43,7 @@ Confirm in GitHub branch protection rules that:
 
 1. Create a release branch `release/0.2.x`.
 2. Run the baseline tooling matrix above (or trigger the composite GitHub workflow). Archive the `htmlcov/`, `coverage.xml`, `dist/`, and SBOM artifacts.
-3. Update `docs/CHANGELOG.md` (done in this pass) and prepare user-facing notes using `docs/docs/templates/ReleaseNotes.md`.
+3. Update `docs/CHANGELOG.md` (done in this pass) and prepare user-facing notes using `docs/reference/templates.md`.
 4. Draft the Git tag (`git tag v0.2.x && git push origin v0.2.x`) once QA sign-off is complete.
 5. Publish the GitHub Release using Release Drafter output; attach SBOM and provenance artifacts.
 6. Notify support and platform channels with deployment window and rollback hooks.
@@ -60,8 +60,8 @@ Confirm in GitHub branch protection rules that:
 
 ## Onboarding & support verification
 
-- Developer onboarding: `docs/docs/development/TOOLCHAIN_SETUP.md` and `docs/docs/delivery/RELEASE_PROCESS.md` already reference `uv`, Playwright, and the refreshed pre-commit hooks—no updates required. Surface the new requirement to install Playwright browsers (`npx playwright install`) for local runs in the next revision.
-- Support escalation: `docs/docs/community/GOVERNANCE.md` lists release managers and security contacts; confirm the on-call rotation matches PagerDuty schedule before tagging 0.2.x.
+- Developer onboarding: `docs/how-to-guides/toolchain-setup.md` and `docs/how-to-guides/qa-checklist.md` already reference `uv`, Playwright, and the refreshed pre-commit hooks—no updates required. Surface the new requirement to install Playwright browsers (`npx playwright install`) for local runs in the next revision.
+- Support escalation: `docs/governance/data-governance-navigation.md` lists release managers and security contacts; confirm the on-call rotation matches PagerDuty schedule before tagging 0.2.x.
 - Help Center integration: context-sensitive buttons added in this cycle point to `docs/how-to-guides/**` topics (`openHelp` handlers). Verify those docs stay published in the operator portal prior to release.
 
 Store this checklist alongside artifacts and link it in the release issue for traceability.

@@ -1,15 +1,100 @@
 ---
 title: Reference — command-line interface
 summary: Detailed options for the unified `hotpass` CLI entry point and its subcommands.
-last_updated: 2025-11-02
+last_updated: 2025-11-03
 ---
 
 # Command-line interface reference
 
-Hotpass now ships a single console script: `hotpass`. Subcommands map to the core
-pipeline as well as orchestrator, entity resolution, dashboard, and deployment workflows.
-Legacy `hotpass-enhanced` invocations continue to work but simply delegate to the unified
-CLI after printing a deprecation warning.
+You run every Hotpass workflow through the unified `hotpass` console script. The command
+ships with the Python project and mirrors the verbs exposed through the MCP server. Legacy
+`hotpass-enhanced` calls still work, but they delegate to the unified entry point after
+printing a deprecation warning.
+
+```text
+$ uv run hotpass --help
+usage: hotpass [-h]
+               {overview,refine,enrich,explain-provenance,qa,contracts,imports,inventory,plan,crawl,setup,net,aws,ctx,env,arc,distro,run,backfill,doctor,orchestrate,resolve,dashboard,deploy,init,version}
+               ...
+
+Hotpass CLI
+
+positional arguments:
+  {overview,refine,enrich,explain-provenance,qa,contracts,imports,inventory,plan,crawl,setup,net,aws,ctx,env,arc,distro,run,backfill,doctor,orchestrate,resolve,dashboard,deploy,init,version}
+    overview            Display available Hotpass commands and system status
+    refine              Run the Hotpass refinement pipeline
+    enrich              Enrich refined data with additional information
+    explain-provenance  Inspect provenance metadata for a specific row
+    qa                  Run quality assurance checks and validation
+    contracts           Emit data contracts and schemas for a profile
+    imports             Smart import utilities
+    inventory           Inspect the asset inventory and implementation status
+    plan                Plan adaptive research tasks and supporting workflows
+    crawl               Execute a targeted crawl via the research orchestrator
+    setup               Run guided wizards for dependency sync and staging bootstrap
+    net                 Manage SSH/SSM tunnels to Hotpass environments
+    aws                 Check AWS identity and EKS connectivity
+    ctx                 Manage Prefect and Kubernetes contexts
+    env                 Write Hotpass .env files
+    arc                 Verify GitHub ARC runner scale sets
+    distro              Create distribution-ready artefacts
+    run                 Run the Hotpass refinement pipeline
+    backfill            Replay archived inputs through the refinement pipeline
+    doctor              Run configuration and environment diagnostics
+    orchestrate         Run the pipeline with Prefect orchestration and optional enhanced features
+    resolve             Run entity resolution on existing datasets
+    dashboard           Launch the Hotpass Streamlit monitoring dashboard
+    deploy              Deploy the Hotpass pipeline to Prefect
+    init                Bootstrap a project workspace with sample configuration
+    version             Manage dataset versions with DVC
+
+options:
+  -h, --help            show this help message and exit
+
+Profiles may be defined as TOML or YAML files. Use --profile-search-path to locate custom profiles.
+```
+
+Example `overview` output (captured 2025-11-03):
+
+```text
+$ uv run hotpass overview
+
+╭─────────────────────────────── About Hotpass ────────────────────────────────╮
+│ Hotpass Data Refinement Platform                                             │
+│ Version: 0.2.0                                                               │
+│                                                                              │
+│ Hotpass transforms messy spreadsheets into a governed single source of       │
+│ truth.                                                                       │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+                           Available Hotpass Commands                           
+┏━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Command         ┃ Description                                                ┃
+┡━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ overview        │ Display this overview of Hotpass commands and status       │
+│ refine          │ Run the Hotpass refinement pipeline on input data          │
+│ enrich          │ Enrich refined data with additional information            │
+│ qa              │ Run quality assurance checks and validation                │
+│ contracts       │ Emit data contracts and schemas for a profile              │
+│ setup           │ Run the guided staging wizard (deps, tunnels, contexts,    │
+│                 │ env)                                                       │
+│ net             │ Manage SSH/SSM tunnels to staging services                 │
+│ aws             │ Verify AWS credentials and optional EKS access             │
+│ ctx             │ Bootstrap Prefect profiles and kube contexts               │
+│ env             │ Generate .env files aligned with active tunnels            │
+│ arc             │ Verify GitHub ARC runner scale sets                        │
+│ distro          │ Bundle documentation assets under dist/docs                │
+│ run             │ Run the Hotpass refinement pipeline (alias for refine)     │
+│ backfill        │ Replay archived inputs through the pipeline                │
+│ doctor          │ Run configuration and environment diagnostics              │
+│ orchestrate     │ Run pipeline with Prefect orchestration                    │
+│ resolve         │ Run entity resolution on existing datasets                 │
+│ dashboard       │ Launch the Hotpass monitoring dashboard                    │
+│ deploy          │ Deploy the Hotpass pipeline to Prefect                     │
+│ init            │ Bootstrap a project workspace                              │
+│ version         │ Manage dataset versions with DVC                           │
+└─────────────────┴────────────────────────────────────────────────────────────┘
+```
 
 > ℹ️ Need the MCP equivalents? See [Reference — MCP tools](mcp-tools.md) for the tool names that mirror each CLI verb.
 
@@ -74,30 +159,23 @@ additional configuration files and feature toggles.
 
 ## Core commands
 
-The unified CLI exposes five primary verbs that map to the workflows described in
-`UPGRADE.md`:
+Use these verbs for day-to-day work:
 
-- `uv run hotpass overview` — list available commands, profiles, and shortcuts for agents.
+- `uv run hotpass overview` — list the active command set, installed extras, and profile search paths.
 - `uv run hotpass refine` — execute the deterministic data refinement pipeline.
-- `uv run hotpass enrich` — enrich refined data with deterministic and optional research sources.
+- `uv run hotpass enrich` — enrich refined data with deterministic sources by default (pass `--allow-network=true` after approvals).
 - `uv run hotpass qa` — run quality gates (`fitness`, `data-quality`, `docs`, `contracts`, `cli`, `ta`).
 - `uv run hotpass contracts` — emit contract bundles (YAML/JSON) for downstream systems.
 - `uv run hotpass setup` — run the guided staging wizard (dependencies, tunnels, contexts, env files).
 - `uv run hotpass net` — manage SSH/SSM tunnels to Prefect and Marquez.
 - `uv run hotpass aws` — resolve the current AWS identity and verify EKS connectivity.
 - `uv run hotpass ctx` — bootstrap Prefect profiles and Kubernetes contexts.
-- `uv run hotpass env` — generate `.env.<target>` files using recorded tunnel/context metadata.
-- `uv run hotpass explain-provenance --dataset ./dist/enriched.xlsx --row-id 0 --json` — surface provenance metadata for a specific row (prints a table by default or JSON with `--json`).
-- `uv run hotpass plan research --dataset ./dist/refined.xlsx --row-id 0 --allow-network` — generate an adaptive research plan that combines local snapshots, deterministic enrichment, optional network fetchers, and crawl/backfill recommendations.
-- `uv run hotpass crawl "https://example.test" --allow-network` — trigger the crawler-only pathway (uses the same orchestrator engine but skips deterministic enrichment).
+- `uv run hotpass env` — generate `.env` files aligned with active tunnels and contexts.
+- `uv run hotpass explain-provenance --dataset ./dist/enriched.xlsx --row-id 0 --json` — surface provenance metadata for a specific row.
+- `uv run hotpass plan research --dataset ./dist/refined.xlsx --row-id 0 --allow-network=false` — generate an adaptive research plan that combines local snapshots, deterministic enrichment, optional network fetchers, and crawl/backfill recommendations.
+- `uv run hotpass crawl "https://example.test" --allow-network=true` — trigger the crawler-only pathway with rate-limit enforcement.
 
-> 🔐 **QG-1 — CLI Integrity:** Automated checks expect `hotpass overview` and
-> `hotpass --help` to advertise the automation verbs (`setup`, `net`, `aws`,
-> `ctx`, `env`) alongside the core pipeline commands above. If a new verb is
-> added, update the quality gate lists and this reference page together.
-
-The sections below retain backward-compatible documentation for legacy verbs until the
-Sprint 5 docs refresh is published.
+> 🔐 **QG-1 — CLI integrity:** `tests/cli/test_quality_gates.py` expects `hotpass overview` and `hotpass --help` to advertise the automation verbs (`setup`, `net`, `aws`, `ctx`, `env`) alongside the core pipeline commands. Update the test list and this reference together when you add or rename verbs.
 
 ## Infrastructure automation
 

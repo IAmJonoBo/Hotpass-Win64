@@ -46,3 +46,16 @@ navigation) keeps the guidance actionable.
   page or governance artefacts shift so consumers know where to look first.
 - Reference relevant ADRs from pull requests to maintain traceability between
   code, docs, and decisions.
+
+```{toctree}
+:maxdepth: 1
+
+0001-qa-tooling
+0002-governance-automation
+0003-data-contracts
+0004-checkpoint-validation-strategy
+0005-prefect-deployment-manifests
+0006-telemetry-bootstrap
+0006-mlflow-lifecycle-strategy
+0007-cli-onboarding
+```

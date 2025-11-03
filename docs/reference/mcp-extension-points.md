@@ -1,4 +1,10 @@
-# MCP Extension Points and Operational Notes
+---
+title: Reference — MCP extension points
+summary: Extend the MCP server safely by registering new tools, policies, or orchestration helpers.
+last_updated: 2025-11-03
+---
+
+# MCP extension points and operational notes
 
 Hotpass exposes its MCP surface as an extensible platform. This reference documents the
 supported hooks, guardrails, and quality expectations for additional agent integrations.

@@ -2,104 +2,55 @@
 title: Hotpass documentation
 summary: Learn how to install, operate, and extend the Hotpass data refinement platform.
 owner: n00tropic
-last_updated: 2025-11-18
+last_updated: 2025-11-03
 ---
 
-Welcome to the Hotpass knowledge base. Choose the entry point that matches your role, then dive into the supporting references.
+# Hotpass documentation
+
+Welcome to the Hotpass knowledge base. Start with the section that matches your goal, then explore the deeper references.
+
+```{toctree}
+:maxdepth: 1
+:caption: Start here
+
+/explanations/developer-hub
+/how-to-guides/operator-runbook
+```
+
+## Diátaxis navigation
 
 ```{toctree}
 :maxdepth: 2
-:caption: Choose your guide
+:caption: Tutorials
 
-/docs/developer/index
-/docs/operator/index
-```
-
-## Reference catalogues
-
-Once you’re comfortable with the persona-specific guides, keep these catalogues handy:
-
-```{toctree}
-:maxdepth: 1
-:caption: Tutorials & quickstarts
-
-/tutorials/quickstart
-/tutorials/enhanced-pipeline
+/tutorials/index
 ```
 
 ```{toctree}
-:maxdepth: 1
-:caption: API & automation reference
+:maxdepth: 2
+:caption: How-to guides
 
-/reference/cli
-/reference/mcp-tools
-/reference/data-model
-/reference/profiles
-/reference/expectations
-/reference/smart-import-plan
-/reference/repo-inventory
-/reference/source-mapping
-/reference/research-log
-/reference/data-docs
-/reference/schema-exports
-/reference/schemas
+/how-to-guides/index
 ```
 
 ```{toctree}
-:maxdepth: 1
-:caption: Governance, metrics, and audits
+:maxdepth: 2
+:caption: Reference
 
-/governance/gap-analysis
-/governance/project-charter
-/governance/pr-playbook
-/governance/upgrade-final-report
-/governance/supplier-risk-register
-/governance/secrets-management
-/governance/data-governance-navigation
-/metrics/metrics-plan
-/metrics/devex-audit
-/metrics/forecast
-/roadmap
-/roadmap/30-60-90
-/roadmap/dependency-matrix
-/roadmap/deployment-notes
-/platform/tech-radar
+/reference/index
 ```
 
 ```{toctree}
-:maxdepth: 1
-:caption: Compliance & security
+:maxdepth: 2
+:caption: Explanations
 
-/compliance/index
-/compliance/popia/maturity-matrix
-/compliance/iso-27001/maturity-matrix
-/compliance/soc2/maturity-matrix
-/compliance/verification-plan
-/compliance/remediation-backlog
-/compliance/evidence-catalog
-/compliance/presidio-redaction
-/security/quality-gates
-/security/risk-register
-/security/supply-chain-plan
-/security/threat-model
-/security/tooling
+/explanations/index
 ```
 
-```{toctree}
-:maxdepth: 1
-:caption: Developer experience & UX
+## Need a quick refresher?
 
-/CONTRIBUTING
-/README
-/style
-/devex/baseline
-/devex/experiments
-/devex/review-loop
-/devex/backstage-mvp
-/ux/heuristic-review
-/ux/accessibility-checklist
-/ux/accessibility-testing
-```
+- Check `docs/how-to-guides/qa-checklist.md` before you merge or cut a release.
+- Use `docs/reference/cli.md` when you need canonical CLI syntax and examples.
+- Explore `docs/explanations/ai/guardrails.md` if you run Hotpass through Codex or Copilot.
 
-For lineage and provenance insight, launch the [Marquez lineage UI](observability/marquez.md) and pair the output with
-[Data Docs](reference/data-docs.md) while triaging validation issues.
+For lineage and provenance insight, launch the [Marquez lineage UI](observability/marquez.md) through `uv run hotpass net up` and pair the output with [Data Docs](reference/data-docs.md) while triaging validation issues.
