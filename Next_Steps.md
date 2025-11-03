@@ -217,15 +217,22 @@ jobs:
           pip install great_expectations phonenumbers requests graphviz
       - name: Run docs refresh script
         env:
-          MARQUEZ_URL: ${{ secrets.MARQUEZ_URL }}
-          MARQUEZ_API_KEY: ${{ secrets.MARQUEZ_API_KEY }}
-        run: |
-          python scripts/docs_refresh.py
-      - name: Commit artefacts
-        run: |
-          git config user.name "hotpass-bot"
-          git config user.email "bot@users.noreply.github.com"
-          git add docs/ README.md Next_Steps.md AGENTS.md || true
+      MARQUEZ_URL: ${{ secrets.MARQUEZ_URL }}
+      MARQUEZ_API_KEY: ${{ secrets.MARQUEZ_API_KEY }}
+    run: |
+      python scripts/docs_refresh.py
+  - name: Upload Data Docs artifact
+    uses: actions/upload-artifact@v4
+    with:
+      name: data-docs-${{ github.run_id }}
+      path: dist/data-docs
+      if-no-files-found: warn
+      retention-days: 7
+  - name: Commit artefacts
+    run: |
+      git config user.name "hotpass-bot"
+      git config user.email "bot@users.noreply.github.com"
+      git add docs/ README.md Next_Steps.md AGENTS.md || true
           git commit -m "chore(docs): refresh Data Docs & lineage snapshots [skip ci]" || echo "No changes to commit"
           git push || true
 ```
@@ -233,22 +240,51 @@ jobs:
 2. scripts/docs_refresh.py
 
 ```python
-"""
-Refresh Great Expectations Data Docs, export Marquez lineage subgraphs, and persist research manifests.
-Idempotent & safe to re-run.
-Required env: MARQUEZ_URL, optional MARQUEZ_API_KEY.
-"""
-from pathlib import Path
-import os, json, subprocess, time
-import requests
+"""Refresh Data Docs, lineage snapshots, and research manifests."""
 
-# --- GE Data Docs ---
-# Prefer CLI to avoid importing project context; fallback to Python if needed.
-try:
-    # Expect a checkpoint named `contacts_checkpoint` (adjust if different)
-    subprocess.run(["great_expectations", "checkpoint", "run", "contacts_checkpoint"], check=False)
-except Exception:
-    pass
+from __future__ import annotations
+
+import json
+import os
+import time
+from pathlib import Path
+from typing import Any
+
+import requests  # type: ignore[import-untyped]
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+import sys
+
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+
+# --- Great Expectations Data Docs ---
+def run_data_contract_checks() -> None:
+    """
+    Generate Data Docs by reusing the ops/validation/refresh_data_docs helper.
+
+    The helper loads sample workbooks from data/ and writes HTML outputs to
+    dist/data-docs/. We treat failures as non-fatal so docs refresh remains
+    best-effort on environments without optional dependencies.
+    """
+
+    try:
+        from ops.validation.refresh_data_docs import main as refresh_data_docs_main
+    except Exception as exc:  # noqa: BLE001 - optional dependency
+        print(f"Great Expectations refresh skipped: unable to import helper ({exc}).")
+        return
+
+    try:
+        exit_code = refresh_data_docs_main()
+    except Exception as exc:  # noqa: BLE001 - keep doc refresh best-effort
+        print(f"Great Expectations refresh skipped: {exc}")
+        return
+
+    if exit_code != 0:
+        print(f"Great Expectations refresh completed with exit code {exit_code}.")
+    else:
+        print("Great Expectations refresh completed successfully.")
 
 # --- Marquez lineage export (PNG + JSON) ---
 MARQUEZ_URL = os.environ.get("MARQUEZ_URL", "")
