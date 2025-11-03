@@ -12,7 +12,7 @@ sys.path.insert(0, str(SRC_PATH))
 
 project = "Hotpass"
 author = "Hotpass Team"
-release = "0.1.0"
+release = "0.2.0"
 copyright = f"{datetime.now():%Y}, {author}"
 
 extensions = [

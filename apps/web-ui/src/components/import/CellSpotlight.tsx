@@ -144,4 +144,3 @@ export function CellSpotlight({ logs, profile, onOpenAssistant, className }: Cel
     </Card>
   )
 }
-

@@ -10,10 +10,11 @@ import { createProxyMiddleware } from 'http-proxy-middleware'
 import Busboy from 'busboy'
 import os from 'os'
 import fs from 'fs'
-import { copyFile, mkdir, mkdtemp, readdir, rm, rename, stat, writeFile } from 'fs/promises'
+import { copyFile, mkdir, mkdtemp, readdir, rm, rename, stat, readFile, writeFile } from 'fs/promises'
 import crypto from 'crypto'
 import { EventEmitter } from 'events'
 import { spawn } from 'child_process'
+import YAML from 'yaml'
 import {
   createCommandJob,
   createJobId,
@@ -49,7 +50,7 @@ import {
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-const app = express()
+export const app = express()
 
 const port = process.env.PORT || 3000
 const prefectTarget = process.env.PREFECT_API_URL || process.env.VITE_PREFECT_API_URL || 'http://localhost:4200/api'
@@ -62,6 +63,47 @@ const CONTRACTS_ROOT = process.env.HOTPASS_CONTRACT_ROOT || path.join(process.cw
 const MAX_IMPORT_FILE_SIZE = Number.parseInt(process.env.HOTPASS_IMPORT_MAX_FILE_SIZE ?? `${1024 * 1024 * 1024}`, 10)
 const MAX_IMPORT_FILES = Number.parseInt(process.env.HOTPASS_IMPORT_MAX_FILES ?? '10', 10)
 const PIPELINE_RUN_LIMIT = Number.parseInt(process.env.HOTPASS_PIPELINE_RUN_LIMIT ?? '100', 10)
+const INVENTORY_PATH =
+  process.env.HOTPASS_INVENTORY_PATH ||
+  path.join(process.cwd(), 'data', 'inventory', 'asset-register.yaml')
+const INVENTORY_STATUS_PATH =
+  process.env.HOTPASS_INVENTORY_FEATURE_STATUS_PATH ||
+  path.join(process.cwd(), 'data', 'inventory', 'feature-status.yaml')
+const resolveNonNegativeInt = (rawValue, envName, defaultValue) => {
+  if (rawValue === undefined || rawValue === null || `${rawValue}`.trim() === '') {
+    return defaultValue
+  }
+  const parsed = Number.parseInt(String(rawValue), 10)
+  if (Number.isNaN(parsed) || parsed < 0) {
+    throw new Error(`${envName} must be a non-negative integer`)
+  }
+  return parsed
+}
+
+const INVENTORY_CACHE_TTL_SECONDS = resolveNonNegativeInt(
+  process.env.HOTPASS_INVENTORY_CACHE_TTL,
+  'HOTPASS_INVENTORY_CACHE_TTL',
+  300,
+)
+const INVENTORY_CACHE_TTL_MS = resolveNonNegativeInt(
+  process.env.HOTPASS_INVENTORY_CACHE_TTL_MS,
+  'HOTPASS_INVENTORY_CACHE_TTL_MS',
+  INVENTORY_CACHE_TTL_SECONDS * 1000,
+)
+
+const inventoryCache = {
+  snapshot: null,
+  manifestMtimeMs: 0,
+  statusMtimeMs: 0,
+  expiresAt: 0,
+}
+
+export const resetInventoryCache = () => {
+  inventoryCache.snapshot = null
+  inventoryCache.manifestMtimeMs = 0
+  inventoryCache.statusMtimeMs = 0
+  inventoryCache.expiresAt = 0
+}
 
 const activityEmitter = new EventEmitter()
 activityEmitter.setMaxListeners(0)
@@ -189,6 +231,170 @@ const safeStatFile = async (filePath) => {
     }
     throw error
   }
+}
+
+const parseInventoryArray = value => {
+  if (!value) return []
+  if (Array.isArray(value)) {
+    return [...new Set(value.map(item => String(item)))]
+  }
+  return [String(value)]
+}
+
+const normaliseAssetRecord = raw => {
+  if (!isRecord(raw)) return null
+  return {
+    id: raw.id ? String(raw.id) : raw.name ? String(raw.name) : 'unknown',
+    name: raw.name ? String(raw.name) : raw.id ? String(raw.id) : 'unknown',
+    type: raw.type ? String(raw.type) : 'unknown',
+    location: raw.location ? String(raw.location) : '',
+    classification: raw.classification ? String(raw.classification) : 'unknown',
+    owner: raw.owner ? String(raw.owner) : 'unknown',
+    custodian: raw.custodian ? String(raw.custodian) : '',
+    description: raw.description ? String(raw.description) : '',
+    dependencies: parseInventoryArray(raw.dependencies),
+    controls: parseInventoryArray(raw.controls),
+  }
+}
+
+const summariseAssets = assets => {
+  const byType = new Map()
+  const byClassification = new Map()
+
+  for (const asset of assets) {
+    byType.set(asset.type, (byType.get(asset.type) ?? 0) + 1)
+    byClassification.set(
+      asset.classification,
+      (byClassification.get(asset.classification) ?? 0) + 1,
+    )
+  }
+
+  const sortEntries = map => Object.fromEntries([...map.entries()].sort())
+
+  return {
+    total: assets.length,
+    byType: sortEntries(byType),
+    byClassification: sortEntries(byClassification),
+  }
+}
+
+const parseRequirementPayload = payload => {
+  if (!isRecord(payload)) return []
+  const rawRequirements = Array.isArray(payload.requirements) ? payload.requirements : []
+
+  const requirements = []
+  for (const item of rawRequirements) {
+    if (!isRecord(item)) continue
+    const status = typeof item.status === 'string' ? item.status : 'planned'
+    requirements.push({
+      id: item.id ? String(item.id) : 'unknown',
+      surface: item.surface ? String(item.surface) : 'unknown',
+      description: item.description ? String(item.description) : '',
+      status,
+      detail: item.detail == null ? null : String(item.detail),
+    })
+  }
+  return requirements
+}
+
+const ensureBackendRequirement = (requirements, detail) => {
+  let matched = false
+  for (const requirement of requirements) {
+    const surface = requirement.surface.toLowerCase()
+    if (surface === 'backend' || ['backend', 'backend-service'].includes(requirement.id)) {
+      requirement.status = 'degraded'
+      requirement.detail = detail
+      matched = true
+      break
+    }
+  }
+
+  if (!matched) {
+    requirements.push({
+      id: 'backend',
+      surface: 'backend',
+      description: 'Inventory manifest is available',
+      status: 'degraded',
+      detail,
+    })
+  }
+}
+
+const loadInventorySnapshot = async () => {
+  const now = Date.now()
+  const manifestStats = await safeStatFile(INVENTORY_PATH)
+  if (!manifestStats) {
+    const error = new Error(`Inventory manifest not found at ${INVENTORY_PATH}`)
+    error.code = 'ENOENT'
+    throw error
+  }
+
+  const statusStats = await safeStatFile(INVENTORY_STATUS_PATH)
+
+  if (
+    inventoryCache.snapshot &&
+    inventoryCache.manifestMtimeMs === manifestStats.mtimeMs &&
+    inventoryCache.statusMtimeMs === (statusStats?.mtimeMs ?? 0) &&
+    inventoryCache.expiresAt > now
+  ) {
+    return inventoryCache.snapshot
+  }
+
+  const manifestRaw = await readFile(INVENTORY_PATH, 'utf8')
+  const manifestPayload = YAML.parse(manifestRaw) ?? {}
+  const rawAssets = Array.isArray(manifestPayload.assets) ? manifestPayload.assets : []
+  const assets = rawAssets
+    .map(normaliseAssetRecord)
+    .filter(Boolean)
+
+  let requirements = []
+  if (statusStats) {
+    try {
+      const statusRaw = await readFile(INVENTORY_STATUS_PATH, 'utf8')
+      const statusPayload = YAML.parse(statusRaw) ?? {}
+      requirements = parseRequirementPayload(statusPayload)
+    } catch (error) {
+      console.warn('[inventory] failed to parse feature status file', error)
+      requirements = []
+    }
+  }
+
+  if (!assets.length) {
+    ensureBackendRequirement(requirements, 'Inventory manifest contains no assets')
+  }
+
+  const manifestVersion = manifestPayload?.version
+  const manifestMaintainer = manifestPayload?.maintainer
+  const manifestReviewCadence =
+    manifestPayload?.review_cadence ?? manifestPayload?.reviewCadence
+
+  const snapshot = {
+    manifest: {
+      version:
+        manifestVersion === undefined || manifestVersion === null
+          ? 'unknown'
+          : String(manifestVersion),
+      maintainer:
+        manifestMaintainer === undefined || manifestMaintainer === null
+          ? 'unknown'
+          : String(manifestMaintainer),
+      reviewCadence:
+        manifestReviewCadence === undefined || manifestReviewCadence === null
+          ? 'unknown'
+          : String(manifestReviewCadence),
+    },
+    summary: summariseAssets(assets),
+    requirements,
+    assets,
+    generatedAt: new Date().toISOString(),
+  }
+
+  inventoryCache.snapshot = snapshot
+  inventoryCache.manifestMtimeMs = manifestStats.mtimeMs
+  inventoryCache.statusMtimeMs = statusStats?.mtimeMs ?? 0
+  inventoryCache.expiresAt = now + INVENTORY_CACHE_TTL_MS
+
+  return snapshot
 }
 
 const enumerateImportArtifacts = async (job) => {
@@ -760,6 +966,21 @@ app.get('/api/imports/templates/:id/summary', async (req, res) => {
   } catch (error) {
     console.error('[imports] failed to summarise template', error)
     sendError(res, 500, 'Unable to summarise template', { message: error.message })
+  }
+})
+
+app.get('/api/inventory', async (_req, res) => {
+  try {
+    const snapshot = await loadInventorySnapshot()
+    res.json(snapshot)
+  } catch (error) {
+    console.error('[inventory] failed to load inventory', error)
+    const message = error instanceof Error ? error.message : 'Unknown inventory error'
+    if (error?.code === 'ENOENT') {
+      sendError(res, 503, 'Inventory manifest not found', { message })
+    } else {
+      sendError(res, 500, 'Unable to load inventory', { message })
+    }
   }
 })
 
@@ -1910,6 +2131,8 @@ app.use((req, res, next) => {
   res.sendFile(path.join(__dirname, '..', 'dist', 'index.html'))
 })
 
-app.listen(port, () => {
-  console.log(`Hotpass UI server listening on port ${port}`)
-})
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(port, () => {
+    console.log(`Hotpass UI server listening on port ${port}`)
+  })
+}

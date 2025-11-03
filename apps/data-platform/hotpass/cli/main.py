@@ -31,6 +31,7 @@ from .commands import (
     explain_provenance,
     imports,
     init,
+    inventory,
     net,
     orchestrate,
     overview,
@@ -76,6 +77,7 @@ def build_parser() -> argparse.ArgumentParser:
     builder.register(qa.register())
     builder.register(contracts.register())
     builder.register(imports.register())
+    builder.register(inventory.register())
     builder.register(plan.register())
     builder.register(crawl.register())
     builder.register(setup.register())

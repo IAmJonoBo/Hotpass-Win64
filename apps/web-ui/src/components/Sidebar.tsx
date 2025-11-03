@@ -10,6 +10,7 @@ import {
   History,
   Stethoscope,
   Files,
+  Boxes,
 } from 'lucide-react'
 import { cn, getEnvironmentColor } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -55,6 +56,7 @@ export function Sidebar({ environment = 'local', onOpenAssistant, onOpenActivity
     { name: 'Lineage', href: '/lineage', icon: GitBranch },
     { name: 'Health', href: '/health', icon: Stethoscope },
     { name: 'Smart Import', href: '/imports/wizard', icon: Files, roles: ['operator', 'approver', 'admin'] as const },
+    { name: 'Inventory', href: '/governance/inventory', icon: Boxes, roles: ['operator', 'approver', 'admin'] as const },
     { name: 'Assistant', href: '/assistant', icon: MessageSquare },
     { name: 'Admin', href: '/admin', icon: Settings, roles: ['admin'] as const },
   ]
@@ -171,7 +173,7 @@ export function Sidebar({ environment = 'local', onOpenAssistant, onOpenActivity
 
       {/* Footer */}
       <div className="border-t p-4 text-xs text-muted-foreground">
-        <p>Hotpass v0.1.0</p>
+        <p>Hotpass v0.2.0</p>
         <p className="mt-1">Data Pipeline Dashboard</p>
       </div>
     </div>

@@ -45,7 +45,9 @@ def summarise_npm_audit(payload: Any) -> dict[str, Any]:
     metadata = payload.get("metadata") or {}
     vulnerabilities = metadata.get("vulnerabilities") or {}
     total = metadata.get("total", 0)
-    summary["total"] = int(total) if isinstance(total, int) else int(vulnerabilities.get("total", 0) or 0)
+    summary["total"] = (
+        int(total) if isinstance(total, int) else int(vulnerabilities.get("total", 0) or 0)
+    )
     for severity in SEVERITY_ORDER:
         count = vulnerabilities.get(severity, 0)
         if isinstance(count, int):
@@ -62,7 +64,7 @@ def render_summary(pip_summary: dict[str, Any], npm_summary: dict[str, Any]) -> 
         lines.extend(
             f"  - {severity.title()}: {pip_summary['by_severity'][severity]}"
             for severity in SEVERITY_ORDER
-            if pip_summary['by_severity'][severity] > 0
+            if pip_summary["by_severity"][severity] > 0
         )
     lines.append("")
     lines.append("### Web UI (npm audit)")
@@ -73,7 +75,7 @@ def render_summary(pip_summary: dict[str, Any], npm_summary: dict[str, Any]) -> 
         lines.extend(
             f"  - {severity.title()}: {npm_summary['by_severity'][severity]}"
             for severity in SEVERITY_ORDER
-            if npm_summary['by_severity'][severity] > 0
+            if npm_summary["by_severity"][severity] > 0
         )
     lines.append("")
     lines.append("Raw reports are published alongside this release for downstream triage.")
@@ -82,9 +84,15 @@ def render_summary(pip_summary: dict[str, Any], npm_summary: dict[str, Any]) -> 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Render release security summary text.")
-    parser.add_argument("--pip-audit", type=Path, required=True, help="Path to pip-audit JSON output")
-    parser.add_argument("--npm-audit", type=Path, required=True, help="Path to npm audit JSON output")
-    parser.add_argument("--output", type=Path, required=True, help="Path to write the Markdown summary")
+    parser.add_argument(
+        "--pip-audit", type=Path, required=True, help="Path to pip-audit JSON output"
+    )
+    parser.add_argument(
+        "--npm-audit", type=Path, required=True, help="Path to npm audit JSON output"
+    )
+    parser.add_argument(
+        "--output", type=Path, required=True, help="Path to write the Markdown summary"
+    )
     return parser.parse_args(argv)
 
 

@@ -84,7 +84,7 @@ def test_registry_initializes_console_exporters() -> None:
     assert isinstance(context.metrics, DummyMetrics)
     assert DummyResource.last_attributes == {
         "service.name": "svc",
-        "service.version": "0.1.0",
+        "service.version": "0.2.0",
         "deployment.environment": "prod",
         "custom": "value",
     }
