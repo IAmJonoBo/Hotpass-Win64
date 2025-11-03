@@ -450,6 +450,30 @@ uv run hotpass plan research \
 
 Plans honour environment toggles and profile settings. When network access is disabled the orchestrator records skipped steps so reviewers can track pending research work.
 
+#### SearXNG integration
+
+The planner integrates with [SearXNG](https://docs.searxng.org/) to coordinate
+meta-search queries, deduplicate results, and seed the crawler. Enable the
+service in the canonical configuration:
+
+```toml
+[pipeline.research.searx]
+enabled = true
+base_url = "https://search.internal.example"
+api_key = "${SEARX_API_KEY}"        # optional; also accepts HOTPASS_SEARX_API_KEY
+cache.ttl_seconds = 3600             # reuse results for an hour
+throttle.min_interval_seconds = 2.0  # space out upstream requests
+crawl_retry_attempts = 3             # retry flaky metadata fetches
+```
+
+Alternatively set `HOTPASS_SEARX_ENABLED=1` with overrides such as
+`HOTPASS_SEARX_URL`, `HOTPASS_SEARX_MIN_INTERVAL`, or
+`HOTPASS_SEARX_CACHE_DIR`. Search artefacts are written to
+`.hotpass/searx/` and surface as a `searx_search` step in CLI output. The
+crawler honours `crawl_retry_attempts`/`crawl_retry_backoff_seconds` and emits
+OpenTelemetry metrics under the `hotpass.research.*` namespace for both cache
+hits and retry events.
+
 ### `crawl`
 
 Execute only the crawling component of the research pipeline.

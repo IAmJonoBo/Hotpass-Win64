@@ -185,6 +185,7 @@ class DummyMetrics:
         )
 
         self._latest_quality_score = 0.0
+        self._research_instruments_ready = False
 
     def _counter(self, name: str) -> SimpleNamespace:
         counter = self.meter.create_counter(name)
@@ -288,6 +289,63 @@ class DummyMetrics:
     ) -> None:
         attributes = self._acquisition_attributes(scope, agent, provider, extra_attributes)
         self.acquisition_warnings.add(count, attributes)
+
+    def _ensure_research_instruments(self) -> None:
+        if self._research_instruments_ready:
+            return
+
+        self.research_queries = self._counter("hotpass.research.queries")
+        self.research_query_duration = self._histogram("hotpass.research.query.duration")
+        self.research_query_results = self._counter("hotpass.research.query.results")
+        self.research_cache_hits = self._counter("hotpass.research.cache.hits")
+        self.research_cache_misses = self._counter("hotpass.research.cache.misses")
+        self.research_crawl_duration = self._histogram("hotpass.research.crawl.duration")
+        self.research_crawl_retries = self._counter("hotpass.research.crawl.retries")
+        self.research_crawl_failures = self._counter("hotpass.research.crawl.failures")
+        self._research_instruments_ready = True
+
+    def record_research_query(
+        self,
+        seconds: float,
+        *,
+        query: str,
+        result_count: int,
+        cached: bool,
+        status: str,
+    ) -> None:
+        self._ensure_research_instruments()
+        attributes = {"query": query, "cached": str(cached), "status": status}
+        self.research_queries.add(1, attributes)
+        self.research_query_duration.record(seconds, attributes)
+        self.research_query_results.add(result_count, attributes)
+
+    def record_research_cache_hit(self, query: str) -> None:
+        self._ensure_research_instruments()
+        self.research_cache_hits.add(1, {"query": query})
+
+    def record_research_cache_miss(self, query: str) -> None:
+        self._ensure_research_instruments()
+        self.research_cache_misses.add(1, {"query": query})
+
+    def record_research_crawl(
+        self,
+        seconds: float,
+        *,
+        url: str,
+        status: str,
+        attempts: int,
+    ) -> None:
+        self._ensure_research_instruments()
+        attributes = {"url": url, "status": status, "attempts": attempts}
+        self.research_crawl_duration.record(seconds, attributes)
+
+    def record_research_crawl_retry(self, *, url: str, attempt: int) -> None:
+        self._ensure_research_instruments()
+        self.research_crawl_retries.add(1, {"url": url, "attempt": attempt})
+
+    def record_research_crawl_failure(self, *, url: str, reason: str) -> None:
+        self._ensure_research_instruments()
+        self.research_crawl_failures.add(1, {"url": url, "reason": reason})
 
     @staticmethod
     def _acquisition_attributes(

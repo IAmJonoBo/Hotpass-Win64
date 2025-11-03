@@ -286,3 +286,94 @@ class PipelineMetrics:
             attributes["confidence_bucket"] = f"{int(confidence * 10) * 10}%"
 
         self.enrichment_records.add(count, attributes)
+
+    def _ensure_research_instruments(self) -> None:
+        if hasattr(self, "research_queries"):
+            return
+        self.research_queries = self._meter.create_counter(
+            name="hotpass.research.queries",
+            description="Number of SearXNG queries executed",
+            unit="queries",
+        )
+        self.research_query_duration = self._meter.create_histogram(
+            name="hotpass.research.query.duration",
+            description="Duration of SearXNG queries",
+            unit="seconds",
+        )
+        self.research_query_results = self._meter.create_counter(
+            name="hotpass.research.query.results",
+            description="Result count returned by SearXNG queries",
+            unit="results",
+        )
+        self.research_cache_hits = self._meter.create_counter(
+            name="hotpass.research.cache.hits",
+            description="Number of cached SearXNG responses reused",
+            unit="hits",
+        )
+        self.research_cache_misses = self._meter.create_counter(
+            name="hotpass.research.cache.misses",
+            description="Number of SearXNG cache misses",
+            unit="misses",
+        )
+        self.research_crawl_duration = self._meter.create_histogram(
+            name="hotpass.research.crawl.duration",
+            description="Duration of research crawl attempts",
+            unit="seconds",
+        )
+        self.research_crawl_retries = self._meter.create_counter(
+            name="hotpass.research.crawl.retries",
+            description="Retry attempts during research crawls",
+            unit="retries",
+        )
+        self.research_crawl_failures = self._meter.create_counter(
+            name="hotpass.research.crawl.failures",
+            description="Failed research crawl attempts",
+            unit="failures",
+        )
+
+    def record_research_query(
+        self,
+        seconds: float,
+        *,
+        query: str,
+        result_count: int,
+        cached: bool,
+        status: str,
+    ) -> None:
+        self._ensure_research_instruments()
+        attributes = {
+            "query": query,
+            "cached": str(cached),
+            "status": status,
+        }
+        self.research_queries.add(1, attributes)
+        self.research_query_duration.record(seconds, attributes)
+        self.research_query_results.add(result_count, attributes)
+
+    def record_research_cache_hit(self, query: str) -> None:
+        self._ensure_research_instruments()
+        self.research_cache_hits.add(1, {"query": query})
+
+    def record_research_cache_miss(self, query: str) -> None:
+        self._ensure_research_instruments()
+        self.research_cache_misses.add(1, {"query": query})
+
+    def record_research_crawl(
+        self,
+        seconds: float,
+        *,
+        url: str,
+        status: str,
+        attempts: int,
+    ) -> None:
+        self._ensure_research_instruments()
+        attributes = {"url": url, "status": status, "attempts": attempts}
+        self.research_crawl_duration.record(seconds, attributes)
+
+    def record_research_crawl_retry(self, *, url: str, attempt: int) -> None:
+        self._ensure_research_instruments()
+        self.research_crawl_retries.add(1, {"url": url, "attempt": attempt})
+
+    def record_research_crawl_failure(self, *, url: str, reason: str) -> None:
+        self._ensure_research_instruments()
+        self.research_crawl_failures.add(1, {"url": url, "reason": reason})
