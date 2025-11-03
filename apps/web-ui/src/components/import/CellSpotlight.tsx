@@ -10,6 +10,7 @@ export interface CellSpotlightProps {
   logs: string[]
   profile?: ImportProfile | null
   onOpenAssistant?: (message?: string) => void
+  onOpenHelp?: (topicId?: string) => void
   className?: string
 }
 
@@ -31,7 +32,7 @@ const RULE_PATTERN = /(rule|validator|check)[:\s]+(?<rule>[A-Za-z0-9_.-]+)/i
 const normaliseSheetName = (value?: string | null) =>
   value ? value.trim().replace(/\s+/g, ' ') : undefined
 
-export function CellSpotlight({ logs, profile, onOpenAssistant, className }: CellSpotlightProps) {
+export function CellSpotlight({ logs, profile, onOpenAssistant, onOpenHelp, className }: CellSpotlightProps) {
   const spotlight = useMemo<SpotlightInfo | null>(() => {
     if (!Array.isArray(logs) || logs.length === 0) return null
     for (let index = logs.length - 1; index >= 0; index -= 1) {
@@ -101,10 +102,14 @@ export function CellSpotlight({ logs, profile, onOpenAssistant, className }: Cel
               )}
               <span>Cell {spotlight.cell ?? '—'}</span>
               {spotlight.rule && (
-                <span className="inline-flex items-center gap-1 text-primary">
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1 text-primary underline-offset-2 hover:underline"
+                  onClick={() => onOpenHelp?.('format-and-validate')}
+                >
                   <ArrowUpRight className="h-3 w-3" aria-hidden="true" />
                   Rule {spotlight.rule}
-                </span>
+                </button>
               )}
             </div>
 

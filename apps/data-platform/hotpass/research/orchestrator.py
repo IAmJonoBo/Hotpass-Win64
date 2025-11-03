@@ -13,9 +13,16 @@ from typing import TYPE_CHECKING, Any, Literal, cast
 
 import pandas as pd
 
+from hotpass import observability
 from hotpass.config import IndustryProfile
 from hotpass.enrichment.pipeline import enrich_row
 from hotpass.normalization import slugify
+from hotpass.research.searx import (
+    SearxQuery,
+    SearxService,
+    SearxServiceError,
+    SearxServiceSettings,
+)
 
 try:  # pragma: no cover - optional dependency
     from scrapy.crawler import CrawlerProcess as _CrawlerProcess
@@ -171,6 +178,8 @@ class ResearchOrchestrator:
         cache_root: Path | None = None,
         audit_log: Path | None = None,
         artefact_root: Path | None = None,
+        searx_settings: Any | None = None,
+        searx_service: SearxService | None = None,
     ) -> None:
         self.cache_root = cache_root or Path(".hotpass")
         self.cache_root.mkdir(parents=True, exist_ok=True)
@@ -180,6 +189,12 @@ class ResearchOrchestrator:
         self._last_network_call: float | None = None
         self._rate_limit_policy: RateLimitPolicy | None = None
         self._burst_tokens: int | None = None
+        self._metrics: Any | None = None
+        self._searx_settings = SearxServiceSettings.from_payload(searx_settings)
+        env_settings = SearxServiceSettings.from_environment()
+        if env_settings.enabled:
+            self._searx_settings = env_settings
+        self._searx_service = searx_service
 
     def plan(self, context: ResearchContext) -> ResearchOutcome:
         """Build and execute a research plan."""
@@ -309,6 +324,9 @@ class ResearchOrchestrator:
             if deterministic_step.artifacts.get("enriched_row"):
                 enriched_row = deterministic_step.artifacts["enriched_row"]
                 provenance = deterministic_step.artifacts.get("provenance")
+
+        searx_step = self._run_searx_search(plan)
+        steps.append(searx_step)
 
         network_step = self._run_network_enrichment(plan, enriched_row=enriched_row)
         steps.append(network_step)
@@ -444,6 +462,80 @@ class ResearchOrchestrator:
             },
         )
 
+    def _run_searx_search(self, plan: ResearchPlan) -> ResearchStepResult:
+        service = self._resolve_searx_service()
+        if service is None:
+            return ResearchStepResult(
+                name="searx_search",
+                status="skipped",
+                message="SearXNG integration disabled",
+            )
+
+        if not plan.allow_network:
+            return ResearchStepResult(
+                name="searx_search",
+                status="skipped",
+                message="Network access disabled; skipping SearXNG search",
+            )
+
+        terms = self._build_search_terms(plan)
+        if not terms:
+            return ResearchStepResult(
+                name="searx_search",
+                status="skipped",
+                message="No search terms available for SearXNG",
+            )
+
+        queries = service.build_queries(terms)
+        if not queries:
+            return ResearchStepResult(
+                name="searx_search",
+                status="skipped",
+                message="Unable to build SearXNG queries from supplied terms",
+            )
+
+        try:
+            response = service.search(queries)
+        except SearxServiceError as exc:  # pragma: no cover - defensive guard
+            LOGGER.warning("SearXNG query failed: %s", exc)
+            return ResearchStepResult(
+                name="searx_search",
+                status="error",
+                message=f"SearXNG query failed: {exc}",
+            )
+
+        artifacts = {
+            "queries": [query.term for query in response.queries],
+            "from_cache": response.from_cache,
+            "results": [result.to_dict() for result in response.results],
+        }
+
+        if not response.results:
+            return ResearchStepResult(
+                name="searx_search",
+                status="skipped",
+                message="SearXNG returned no candidate results",
+                artifacts=artifacts,
+            )
+
+        merged_urls = list(plan.target_urls)
+        for result in response.results:
+            candidate = self._ensure_protocol(result.url)
+            if candidate not in merged_urls:
+                merged_urls.append(candidate)
+        plan.target_urls = tuple(dict.fromkeys(merged_urls))
+
+        message = f"SearXNG returned {len(response.results)} candidate result(s)"
+        if response.from_cache:
+            message += " (cache hit)"
+
+        return ResearchStepResult(
+            name="searx_search",
+            status="success",
+            message=message,
+            artifacts=artifacts,
+        )
+
     def _run_network_enrichment(
         self,
         plan: ResearchPlan,
@@ -527,50 +619,46 @@ class ResearchOrchestrator:
                         "query": plan.query,
                     },
                 )
-            try:
-                self._maybe_throttle(plan.rate_limit)
-                response = requests.get(plan.target_urls[0], timeout=10)
-                self._last_network_call = time.monotonic()
-                crawl_artifact = self._persist_crawl_results(
-                    plan,
-                    {
-                        "results": [
-                            {
-                                "url": response.url,
-                                "status": response.status_code,
-                                "content_length": len(response.content),
-                            }
-                        ],
-                        "query": plan.query,
-                    },
-                )
-                artifacts = {
-                    "results": [
-                        {
-                            "url": response.url,
-                            "status": response.status_code,
-                            "content_length": len(response.content),
-                        }
-                    ],
-                    "query": plan.query,
-                }
-                if crawl_artifact:
-                    artifacts["results_path"] = crawl_artifact
-                return ResearchStepResult(
-                    name="native_crawl",
-                    status="success",
-                    message="Fetched metadata via requests fallback",
-                    artifacts=artifacts,
-                )
-            except Exception as exc:  # pragma: no cover - network failure
-                LOGGER.warning("Requests crawl failed: %s", exc)
+            results: list[dict[str, Any]] = []
+            failures: list[str] = []
+            timeout = self._searx_settings.timeout
+            for target_url in plan.target_urls:
+                try:
+                    self._maybe_throttle(plan.rate_limit)
+                    metadata = self._fetch_with_retries(target_url, timeout=timeout)
+                except Exception as exc:  # pragma: no cover - network failure
+                    LOGGER.warning("Requests crawl failed for %s: %s", target_url, exc)
+                    failures.append(str(exc))
+                    continue
+                else:
+                    results.append(metadata)
+
+            if not results:
                 self._last_network_call = time.monotonic()
                 return ResearchStepResult(
                     name="native_crawl",
                     status="skipped",
-                    message=f"Requests crawl failed (non-fatal): {exc}",
-                    artifacts={"urls": list(plan.target_urls)},
+                    message="Requests crawl failed for all targets",
+                    artifacts={"urls": list(plan.target_urls), "errors": failures},
                 )
+
+            self._last_network_call = time.monotonic()
+            crawl_payload = {"results": results, "query": plan.query}
+            crawl_artifact = self._persist_crawl_results(plan, crawl_payload)
+            artifacts: dict[str, Any] = {"results": results, "query": plan.query}
+            if crawl_artifact:
+                artifacts["results_path"] = crawl_artifact
+            if failures:
+                artifacts["errors"] = failures
+            message = "Fetched metadata via requests fallback"
+            if failures:
+                message += f" ({len(failures)} target(s) failed)"
+            return ResearchStepResult(
+                name="native_crawl",
+                status="success",
+                message=message,
+                artifacts=artifacts,
+            )
 
         # Construct a minimal spider when Scrapy is available. The spider gathers basic metadata
         # (status code, content length) so downstream steps can reason about completeness.
@@ -684,6 +772,111 @@ class ResearchOrchestrator:
     # ------------------------------------------------------------------ #
     # Helpers
     # ------------------------------------------------------------------ #
+
+    def _resolve_searx_service(self) -> SearxService | None:
+        if not self._searx_settings.enabled:
+            return None
+        if self._searx_service is None:
+            metrics = None
+            try:
+                metrics = self._get_metrics()
+            except Exception:  # pragma: no cover - defensive guard
+                metrics = None
+            self._searx_service = SearxService(
+                self._searx_settings,
+                cache_root=self.cache_root,
+                metrics=metrics,
+            )
+        return self._searx_service
+
+    def _build_search_terms(self, plan: ResearchPlan) -> list[str]:
+        terms: list[str] = []
+
+        def _append(candidate: Any) -> None:
+            if candidate is None:
+                return
+            value = str(candidate).strip()
+            if value and value not in terms:
+                terms.append(value)
+
+        _append(plan.query)
+        _append(plan.entity_name)
+        if plan.entity_slug is not None:
+            _append(plan.entity_slug.replace("-", " "))
+        if plan.row is not None:
+            _append(plan.row.get("organization_name"))
+            website_value = plan.row.get("website")
+            if isinstance(website_value, str) and website_value.strip():
+                _append(website_value.strip())
+        return terms
+
+    def _get_metrics(self) -> Any:
+        if self._metrics is None:
+            self._metrics = observability.get_pipeline_metrics()
+        return self._metrics
+
+    def _fetch_with_retries(self, url: str, *, timeout: float) -> dict[str, Any]:
+        if requests is None:  # pragma: no cover - defensive guard
+            raise RuntimeError("requests is required for crawl retries")
+
+        attempts = max(1, int(self._searx_settings.crawl_retry_attempts))
+        backoff = max(0.0, float(self._searx_settings.crawl_retry_backoff_seconds))
+        last_exc: Exception | None = None
+        for attempt in range(1, attempts + 1):
+            start = time.perf_counter()
+            try:
+                response = requests.get(url, timeout=timeout)
+            except Exception as exc:  # pragma: no cover - network failure
+                duration = time.perf_counter() - start
+                self._record_crawl_retry(url, attempt, exc, duration)
+                last_exc = exc
+                if attempt < attempts and backoff > 0:
+                    time.sleep(backoff * attempt)
+                continue
+            duration = time.perf_counter() - start
+            metadata = {
+                "url": getattr(response, "url", url),
+                "status": getattr(response, "status_code", None),
+                "content_length": len(getattr(response, "content", b"")),
+            }
+            self._record_crawl_success(metadata["url"], duration, attempt)
+            return metadata
+
+        if last_exc is None:
+            last_exc = RuntimeError(f"Failed to crawl {url}")
+        self._record_crawl_failure(url, last_exc)
+        raise last_exc
+
+    def _record_crawl_success(self, url: str, duration: float, attempts: int) -> None:
+        if not self._searx_settings.metrics_enabled:
+            return
+        metrics = self._get_metrics()
+        metrics.record_research_crawl(
+            duration,
+            url=url,
+            status="success",
+            attempts=attempts,
+        )
+
+    def _record_crawl_retry(
+        self, url: str, attempt: int, exc: Exception, duration: float
+    ) -> None:
+        if not self._searx_settings.metrics_enabled:
+            return
+        metrics = self._get_metrics()
+        metrics.record_research_crawl_retry(url=url, attempt=attempt)
+        metrics.record_research_crawl(
+            duration,
+            url=url,
+            status="retry",
+            attempts=attempt,
+        )
+
+    def _record_crawl_failure(self, url: str, exc: Exception) -> None:
+        if not self._searx_settings.metrics_enabled:
+            return
+        metrics = self._get_metrics()
+        metrics.record_research_crawl_failure(url=url, reason=str(exc))
 
     def _write_audit_entry(self, action: str, outcome: ResearchOutcome) -> None:
         try:

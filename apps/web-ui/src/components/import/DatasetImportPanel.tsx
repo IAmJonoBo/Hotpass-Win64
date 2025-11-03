@@ -1336,6 +1336,7 @@ export function DatasetImportPanel({ flowRuns, hilApprovals, isLoadingRuns, onOp
                   logs={importJob.logs}
                   profile={profilePreview}
                   onOpenAssistant={onOpenAssistant}
+                  onOpenHelp={onOpenHelp}
                 />
 
                 <div className="rounded-2xl border border-border/70 bg-card/90 p-4">

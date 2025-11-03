@@ -101,6 +101,9 @@ Create a `.env.local` file:
 VITE_PREFECT_API_URL=http://localhost:4200
 VITE_MARQUEZ_API_URL=http://localhost:5000
 VITE_ENVIRONMENT=local  # or 'docker', 'staging', 'prod'
+# Optional: override default artifact directories
+HOTPASS_IMPORT_ROOT=./dist/import
+HOTPASS_CONTRACT_ROOT=./dist/contracts
 ```
 
 **Environment Options:**

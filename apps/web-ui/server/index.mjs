@@ -51,6 +51,15 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 export const app = express()
+await ensureDirectory(IMPORT_ROOT).catch((error) => {
+  console.warn('[bootstrap] unable to prepare import root', { IMPORT_ROOT, error })
+})
+
+await ensureDirectory(CONTRACTS_ROOT).catch((error) => {
+  console.warn('[bootstrap] unable to prepare contracts root', { CONTRACTS_ROOT, error })
+})
+
+const app = express()
 
 const port = process.env.PORT || 3000
 const prefectTarget = process.env.PREFECT_API_URL || process.env.VITE_PREFECT_API_URL || 'http://localhost:4200/api'

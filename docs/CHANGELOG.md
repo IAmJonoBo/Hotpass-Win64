@@ -15,6 +15,25 @@
 
 ### Release management
 - Bumped project, documentation, telemetry, and UI package versions to `0.2.0` and recorded the rollout details here.
+## 2025-11-03 — Import assist enhancements and run telemetry
+
+### Dashboard & operator workflows
+- Added inline Help Center anchors so import, contracts, and lineage widgets open topic-specific guidance without leaving the dashboard.
+- Introduced a contracts explorer card backed by the new `/api/contracts` endpoint, enabling operators to download the latest YAML/JSON contracts directly from `dist/contracts`.
+- Surfaced the most recent cell-level auto-fix via the Cell Spotlight panel, complete with assistant hand-off and sheet metadata.
+
+### Run diagnostics
+- Exposed `/api/runs/:id/logs` SSE stream and reworked Run Details to show live log tails with <200 ms highlight effects for fresh events.
+- Wired contextual action buttons (rerun pipeline, enrich, plan research, explain provenance) to prefilled assistant prompts for faster remediation.
+
+### Platform & documentation
+- Documented `HOTPASS_IMPORT_ROOT` and `HOTPASS_CONTRACT_ROOT` environment variables for deployments that relocate artifact directories.
+- Added unit coverage for CellSpotlight parsing heuristics, keeping the import UI under test.
+- Refreshed the implementation summary and feature inventory to highlight remaining governance and planner tasks.
+
+### Known gaps
+- LiveProcessingWidget metrics still require dedicated tests.
+- Planner tab (`plan research`) and approvals audit timeline remain open items for Stage 3.3/3.2 respectively.
 
 ## 2025-11-02 — UI hardening, pipeline guardrails, and security telemetry
 

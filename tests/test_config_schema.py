@@ -12,6 +12,8 @@ from hotpass.config_schema import (
     GovernanceMetadata,
     HotpassConfig,
     PipelineRuntimeConfig,
+    ResearchRuntimeSettings,
+    SearxRuntimeSettings,
 )
 from pydantic import ValidationError
 
@@ -26,6 +28,15 @@ def test_hotpass_config_to_pipeline_and_enhanced_configs(tmp_path: Path) -> None
             archive=True,
             expectation_suite="aviation",
             log_format="json",
+            research=ResearchRuntimeSettings(
+                searx=SearxRuntimeSettings(
+                    enabled=True,
+                    base_url="https://search.example",
+                    api_key="token",
+                    throttle={"min_interval_seconds": 1.0},
+                    cache={"ttl_seconds": 60},
+                )
+            ),
         ),
         features=FeatureSwitches(
             compliance=True,
@@ -56,6 +67,10 @@ def test_hotpass_config_to_pipeline_and_enhanced_configs(tmp_path: Path) -> None
     assert enhanced_config.detect_pii is True
     assert "Refine POPIA regulated dataset" in enhanced_config.governance_intent
     assert enhanced_config.consent_overrides == {"acme-flight": "granted"}
+    assert base_config.research_settings is not None
+    searx_config = base_config.research_settings.get("searx")
+    assert searx_config["enabled"] is True
+    assert searx_config["base_url"] == "https://search.example"
 
 
 def test_hotpass_config_requires_governance_intent_when_compliance_enabled() -> None:

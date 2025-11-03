@@ -8,8 +8,9 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link, useOutletContext } from 'react-router-dom'
 import { formatDistanceToNow } from 'date-fns'
-import { Activity, Clock, GitBranch, CheckCircle, XCircle, AlertCircle } from 'lucide-react'
+import { Activity, Clock, GitBranch, CheckCircle, XCircle, AlertCircle, HelpCircle } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -437,7 +438,18 @@ export function Dashboard() {
                   Snapshot of Marquez activity feeding the telemetry strip. Updates every minute.
                 </CardDescription>
               </div>
-              {isFetchingTelemetry && <span className="text-xs text-muted-foreground">Refreshing…</span>}
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  title="Learn about lineage telemetry"
+                  onClick={() => openHelp({ topicId: 'live-process-tracking' })}
+                >
+                  <HelpCircle className="h-4 w-4" />
+                </Button>
+                {isFetchingTelemetry && <span className="text-xs text-muted-foreground">Refreshing…</span>}
+              </div>
             </CardHeader>
             <CardContent>
               {isFetchingTelemetry && !lineageTelemetry ? (

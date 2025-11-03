@@ -36,3 +36,23 @@
 - [x] Bump version and changelog once inventory feature ships
   - notes: Incremented version across pyproject, docs, telemetry registry, and CHANGELOG v0.2.0 entry.
   - checks: tests=not-run, lint=not-run, type=not-run, sec=not-run, build=not-run
+## 2025-11-03 (branch: work, pr: n/a, actor: codex)
+- [x] Map research/backfill integration points for SearXNG adoption
+  - notes: Reviewed `apps/data-platform/hotpass/research/orchestrator.py` flow and introduced SearXNG planning step feeding crawler targets.
+  - checks: tests=pass, lint=not-run, type=not-run, sec=not-run, build=not-run
+- [x] Implement SearXNG service layer with scheduling, deduplication, and caching
+  - notes: Added `apps/data-platform/hotpass/research/searx.py` service with query scheduling, caching, and metrics hooks.
+  - checks: tests=pass, lint=not-run, type=not-run, sec=not-run, build=not-run
+- [x] Coordinate crawler execution via SearXNG with retries and failure handling
+  - notes: Extended `ResearchOrchestrator` native crawl to leverage SearX results and retry requests with telemetry.
+  - checks: tests=pass, lint=not-run, type=not-run, sec=not-run, build=not-run
+- [x] Expose configurable research settings for API keys, throttling, and metrics
+  - notes: Expanded `config_schema.PipelineRuntimeConfig` with `research.searx` block and propagated settings to pipeline config/docs.
+  - checks: tests=pass, lint=not-run, type=not-run, sec=not-run, build=not-run
+- [x] Backfill integration tests, tracing, and docs for the research/SearXNG workflow
+  - notes: Added targeted pytest coverage in `tests/research`, updated CLI documentation and README for SearXNG usage.
+  - checks: tests=pass, lint=not-run, type=not-run, sec=not-run, build=not-run
+## 2025-11-03 (branch: work, pr: n/a, actor: codex)
+- [x] Restore IMPLEMENTATION_PLAN.md with sprint and quality gate coverage
+  - notes: Added IMPLEMENTATION_PLAN.md sprint breakdown and expanded DummyMetrics research instrumentation in tests/_telemetry_stubs.py to satisfy research orchestrator metrics expectations.
+  - checks: tests=pass (`uv run pytest -q`), lint=fail (`uv run ruff check`), type=fail (`uv run mypy`), sec=fail (`uv run bandit -r apps/data-platform/hotpass -q`), build=fail (`uv run python -m build`)
