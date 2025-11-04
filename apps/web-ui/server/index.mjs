@@ -39,6 +39,8 @@ import {
   readImportTemplate,
   writeImportTemplate,
   deleteImportTemplate,
+  listResearchMetadata,
+  readResearchRecord,
 } from './storage.js'
 import {
   summariseTemplate as summariseTemplateSnapshot,
@@ -1228,6 +1230,33 @@ app.post('/api/imports/templates/:id/contracts', csrfProtection, async (req, res
   } catch (error) {
     console.error('[contracts] failed to publish contract', error)
     sendError(res, 500, 'Unable to publish contract', { message: error.message })
+  }
+})
+
+app.get('/api/research/metadata', async (_req, res) => {
+  try {
+    const items = await listResearchMetadata()
+    res.json({ items })
+  } catch (error) {
+    console.error('[research] metadata listing failed', error)
+    sendError(res, 500, 'Unable to load research metadata')
+  }
+})
+
+app.get('/api/research/metadata/:slug', async (req, res) => {
+  const { slug } = req.params
+  if (!slug) {
+    return sendError(res, 400, 'Research slug is required')
+  }
+  try {
+    const record = await readResearchRecord(slug)
+    if (!record) {
+      return sendError(res, 404, 'Research record not found')
+    }
+    res.json(record)
+  } catch (error) {
+    console.error('[research] failed to load record', slug, error)
+    sendError(res, 500, 'Unable to load research record')
   }
 })
 

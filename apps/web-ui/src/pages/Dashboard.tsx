@@ -24,6 +24,8 @@ import { DatasetImportPanel } from '@/components/import/DatasetImportPanel'
 import { LatestRefinedWorkbookCard } from '@/components/import/LatestRefinedWorkbookCard'
 import { PendingApprovalsPanel } from '@/components/hil/PendingApprovalsPanel'
 import { ContractsExplorer } from '@/components/governance/ContractsExplorer'
+import { ResearchPlannerCard } from '@/components/research/ResearchPlannerCard'
+import { DataDocsViewerCard } from '@/components/governance/DataDocsViewerCard'
 import { useLineageTelemetry, jobHasHotpassFacet } from '@/hooks/useLineageTelemetry'
 import { useConsolidationTelemetry } from '@/api/imports'
 
@@ -555,6 +557,11 @@ export function Dashboard() {
             onOpenHelp={(topicId) => openHelp({ topicId })}
           />
         </div>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <ResearchPlannerCard onOpenAssistant={openAssistant} />
+        <DataDocsViewerCard />
       </div>
 
       {/* Latest Spreadsheets */}

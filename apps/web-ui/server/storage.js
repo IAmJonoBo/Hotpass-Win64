@@ -5,6 +5,7 @@ import { mkdir, readFile, writeFile, readdir, rm, stat } from 'fs/promises'
 const DATA_ROOT = process.env.HOTPASS_STATE_ROOT || path.join(process.cwd(), '.hotpass', 'ui')
 const IMPORT_PROFILES_DIR = path.join(DATA_ROOT, 'imports', 'profiles')
 const IMPORT_TEMPLATES_DIR = path.join(DATA_ROOT, 'imports', 'templates')
+const RESEARCH_ROOT = process.env.HOTPASS_RESEARCH_ROOT || path.join(process.cwd(), 'docs', 'research')
 
 async function ensureParentDir(filePath) {
   const dir = path.dirname(filePath)
@@ -277,4 +278,99 @@ export async function touchImportTemplate(templateId) {
     throw error
   }
   return false
+}
+
+async function readResearchJson(filePath) {
+  try {
+    const payload = await readJson(filePath, null)
+    return payload && typeof payload === 'object' ? payload : null
+  } catch (error) {
+    console.warn('[storage] failed to read research JSON', filePath, error)
+    return null
+  }
+}
+
+export async function listResearchMetadata() {
+  let dirEntries = []
+  try {
+    dirEntries = await readdir(RESEARCH_ROOT, { withFileTypes: true })
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      return []
+    }
+    throw error
+  }
+
+  const records = []
+  for (const entry of dirEntries) {
+    if (!entry.isDirectory()) continue
+    const slug = entry.name
+    const planPath = path.join(RESEARCH_ROOT, slug, 'plan.json')
+    const manifestPath = path.join(RESEARCH_ROOT, slug, 'site_manifest.json')
+    const plan = await readResearchJson(planPath)
+    const manifest = await readResearchJson(manifestPath)
+    if (!plan && !manifest) continue
+
+    const entityName =
+      plan?.plan?.entity_name ??
+      manifest?.entity_name ??
+      slug
+    const generatedAt =
+      manifest?.generated_at ??
+      plan?.plan?.generated_at ??
+      plan?.generated_at ??
+      null
+    const priority =
+      manifest?.priority ??
+      plan?.plan?.priority ??
+      null
+
+    records.push({
+      slug,
+      entityName,
+      generatedAt,
+      priority,
+      plan: plan ?? null,
+      manifest: manifest ?? null,
+    })
+  }
+
+  return records.sort((a, b) => {
+    const left = a.generatedAt ? new Date(a.generatedAt).getTime() : 0
+    const right = b.generatedAt ? new Date(b.generatedAt).getTime() : 0
+    if (right !== left) {
+      return right - left
+    }
+    return a.slug.localeCompare(b.slug)
+  })
+}
+
+export async function readResearchRecord(slug) {
+  if (!slug) return null
+  const planPath = path.join(RESEARCH_ROOT, slug, 'plan.json')
+  const manifestPath = path.join(RESEARCH_ROOT, slug, 'site_manifest.json')
+  const plan = await readResearchJson(planPath)
+  const manifest = await readResearchJson(manifestPath)
+  if (!plan && !manifest) {
+    return null
+  }
+
+  return {
+    slug,
+    entityName:
+      plan?.plan?.entity_name ??
+      manifest?.entity_name ??
+      slug,
+    generatedAt:
+      manifest?.generated_at ??
+      plan?.plan?.generated_at ??
+      plan?.generated_at ??
+      null,
+    priority:
+      manifest?.priority ??
+      plan?.plan?.priority ??
+      null,
+    plan: plan ?? null,
+    manifest: manifest ?? null,
+  }
 }

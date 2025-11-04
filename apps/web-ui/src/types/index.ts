@@ -318,6 +318,65 @@ export interface QAResult {
   details?: Record<string, unknown>
 }
 
+export interface ResearchPlanStep {
+  name: string
+  status: string
+  message?: string
+  artifacts?: Record<string, unknown>
+}
+
+export interface ResearchPlanPayload {
+  plan?: {
+    entity_name?: string
+    entity_slug?: string
+    query?: string | null
+    target_urls?: string[]
+    allow_network?: boolean
+    authority_sources?: unknown[]
+    backfill_fields?: string[]
+    rate_limit?: unknown
+  }
+  steps?: ResearchPlanStep[]
+  enriched_row?: Record<string, unknown> | null
+  provenance?: Record<string, unknown> | null
+  elapsed_seconds?: number
+  success?: boolean
+  artifact_path?: string | null
+  [key: string]: unknown
+}
+
+export interface ResearchSiteManifestCandidate {
+  url: string
+  category?: string
+  method?: string
+  notes?: string
+}
+
+export interface ResearchSiteManifest {
+  entity_name?: string
+  entity_slug?: string
+  generated_at?: string
+  priority?: string | null
+  base_url?: string | null
+  discovery_status?: string | null
+  country?: string | null
+  indicative_industry?: string | null
+  robots_txt?: Record<string, unknown> | null
+  sitemaps?: Array<Record<string, unknown>>
+  candidate_pages?: ResearchSiteManifestCandidate[]
+  notes?: string[]
+  [key: string]: unknown
+}
+
+export interface ResearchRecord {
+  slug: string
+  entityName: string
+  generatedAt: string | null
+  priority: string | null
+  plan: ResearchPlanPayload | null
+  manifest: ResearchSiteManifest | null
+}
+
 // Configuration types
 
 export interface AppConfig {

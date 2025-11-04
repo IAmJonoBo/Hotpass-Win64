@@ -92,9 +92,9 @@
 
 ### 3.3 Research & governance
 
-- [ ] Add planner tab (form for `plan research`, results viewer).
+- [x] Add planner tab (form for `plan research`, results viewer).
 - [x] Contracts explorer (list YAML from `dist/contracts/` with download).
-- [ ] Data Docs global page or modal (link from sidebar).
+- [x] Data Docs global page or modal (link from sidebar).
 
 ### 3.4 Power tools
 
