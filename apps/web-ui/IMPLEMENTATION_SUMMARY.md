@@ -95,6 +95,8 @@ This document summarizes the implementation of all 8 stages from DESIGN_REVIEW.m
 - Run Details query parameter `?hil=1` auto-opens the approval panel
 - Cell spotlight panel surfaces the latest auto-fix context during imports
 - Run Details streams live logs via SSE with real-time highlighting
+- Auto-fix events link directly to the originating contract/rule snippet for quick provenance checks
+- Run Details includes structured QA summaries from the latest quality gate artifacts and keeps the Data Docs iframe in sync
 - Inline help anchors wire cards to topic-specific guidance
 - Contracts explorer lists `dist/contracts` artifacts with quick download and assistant prompts
 
@@ -114,6 +116,8 @@ This document summarizes the implementation of all 8 stages from DESIGN_REVIEW.m
 - Last poll timestamp
 - Admin toggle for enable/disable
 - Auto-refresh every 30-60 seconds
+- Dashboard view preference (simple vs. advanced) persists per user and adjusts visible panels accordingly
+- Assistant tool contract honours role gating; operators and approvers only see commands they are permitted to execute
 
 ### Stage 6 - Power Tools Launcher ✅
 **New Files:**
@@ -124,10 +128,12 @@ This document summarizes the implementation of all 8 stages from DESIGN_REVIEW.m
 
 **Features:**
 - Grid layout with common operations
-- CLI commands with copy functionality
+- CLI commands invoke `/api/commands/run` directly with live SSE log streaming and completion status badges
 - Docker-aware (greys out unavailable tools)
 - Actions: Start Marquez, Run Pipeline, Open Lineage, Open Assistant
 - Visual feedback for copied commands
+- Dataset import, pipeline telemetry, and agent activity panels now surface explicit SSE vs. polling transport badges along with fresh "last updated" capsules
+- Vitest smoke test exercises the job runner event stream (queued → log → finished)
 
 ### Stage 7 - UX Transparency Red-team ✅
 **New Files:**
@@ -145,6 +151,7 @@ This document summarizes the implementation of all 8 stages from DESIGN_REVIEW.m
 - "Last updated" timestamps on tables
 - Agent activity side panel showing last 10 actions
 - Activity types: tool calls, approvals, chat, navigation
+- Activity entries display SAST (UTC+2) timestamps, with new events highlighted for three seconds
 
 ### Stage 8 - Finalization & Red Team ✅
 **Validation:**

@@ -57,6 +57,7 @@ const prefectLimit = Number.parseInt(process.env.PREFECT_RATE_LIMIT ?? '120', 10
 const marquezLimit = Number.parseInt(process.env.MARQUEZ_RATE_LIMIT ?? '60', 10)
 const IMPORT_ROOT = process.env.HOTPASS_IMPORT_ROOT || path.join(process.cwd(), 'dist', 'import')
 const CONTRACTS_ROOT = process.env.HOTPASS_CONTRACT_ROOT || path.join(process.cwd(), 'dist', 'contracts')
+const QA_ROOT = process.env.HOTPASS_QA_ROOT || path.join(process.cwd(), 'dist', 'quality-gates')
 const MAX_IMPORT_FILE_SIZE = Number.parseInt(process.env.HOTPASS_IMPORT_MAX_FILE_SIZE ?? `${1024 * 1024 * 1024}`, 10)
 const MAX_IMPORT_FILES = Number.parseInt(process.env.HOTPASS_IMPORT_MAX_FILES ?? '10', 10)
 const PIPELINE_RUN_LIMIT = Number.parseInt(process.env.HOTPASS_PIPELINE_RUN_LIMIT ?? '100', 10)
@@ -1055,6 +1056,96 @@ app.get('/api/contracts/:name/download', async (req, res) => {
       console.error('[contracts] failed to download contract', error)
       sendError(res, 500, 'Unable to download contract', { message: error.message })
     }
+  }
+})
+
+const normaliseRuleId = (value) => (value ?? '').toString().trim().toLowerCase()
+
+const extractRuleSnippet = (content, ruleId) => {
+  const lines = content.split(/\r?\n/)
+  const target = normaliseRuleId(ruleId)
+  for (const line of lines) {
+    if (normaliseRuleId(line).includes(target)) {
+      return line.trim().slice(0, 320)
+    }
+  }
+  return null
+}
+
+app.get('/api/contracts/rules/:ruleId', async (req, res) => {
+  const ruleIdRaw = req.params.ruleId
+  const ruleId = normaliseRuleId(ruleIdRaw)
+  if (!ruleId) {
+    return sendError(res, 400, 'Rule identifier is required')
+  }
+
+  try {
+    const contracts = await listContracts()
+    for (const contract of contracts) {
+      const filePath = path.join(CONTRACTS_ROOT, contract.name)
+      try {
+        const content = await readFile(filePath, 'utf8')
+        if (!normaliseRuleId(content).includes(ruleId)) {
+          continue
+        }
+        const snippet = extractRuleSnippet(content, ruleId)
+        const downloadUrl = `/api/contracts/${encodeURIComponent(contract.name)}/download`
+        return res.json({
+          ruleId: ruleIdRaw,
+          contract: {
+            id: contract.id,
+            name: contract.name,
+            format: contract.format,
+            updatedAt: contract.updatedAt,
+            downloadUrl,
+          },
+          snippet,
+        })
+      } catch (error) {
+        console.warn('[contracts] failed to inspect contract for rule', { ruleId, filePath, error })
+      }
+    }
+    sendError(res, 404, `Rule "${ruleIdRaw}" not found in available contracts`)
+  } catch (error) {
+    console.error('[contracts] failed to resolve rule reference', error)
+    sendError(res, 500, 'Unable to resolve contract rule reference', { message: error.message })
+  }
+})
+
+const resolveLatestQaSummaryPath = async () => {
+  const summaryPath = path.join(QA_ROOT, 'qg2-data-quality', 'latest.json')
+  try {
+    const stats = await stat(summaryPath)
+    if (!stats.isFile()) {
+      return null
+    }
+    return summaryPath
+  } catch {
+    return null
+  }
+}
+
+app.get('/api/qa/latest', async (_req, res) => {
+  try {
+    const summaryPath = await resolveLatestQaSummaryPath()
+    if (!summaryPath) {
+      return sendError(res, 404, 'Latest QA summary not found')
+    }
+
+    const raw = await readFile(summaryPath, 'utf8')
+    const summary = JSON.parse(raw)
+
+    const dataDocsPath = typeof summary?.data_docs === 'string'
+      ? path.relative(process.cwd(), summary.data_docs)
+      : null
+
+    res.json({
+      summary,
+      dataDocsPath: dataDocsPath ? `/${dataDocsPath.split(path.sep).join('/')}` : null,
+    })
+  } catch (error) {
+    console.error('[qa] failed to load latest QA summary', error)
+    sendError(res, 500, 'Unable to load QA summary', { message: error.message })
   }
 })
 

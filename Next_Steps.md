@@ -3,10 +3,9 @@
 ## Web UI implementation priorities
 
 - **React Flow lineage graph**: unblock Stage 3.1 by wiring the React Flow visualisation and surfacing SSE-backed run summaries in RunDetails.
-- **Realtime transport decisions**: finalise SSE vs polling for DatasetImportPanel, LiveProcessingWidget, and Activity feeds; propagate Prefect/Marquez outages into the TelemetryStrip.
+- **Telemetry guardrails**: propagate Prefect/Marquez outages into the TelemetryStrip and Admin banner; consolidate polling intervals now that transport badges are in place.
 - **Accessibility & responsiveness**: complete the WCAG 2.1 AA audit, strengthen focus outlines, and deliver <1024px table strategies with keyboard navigation coverage.
-- **Research & governance surfaces**: ship the Planner tab (`plan research` + site manifest output), Contracts explorer, and global Data Docs modal.
-- **Human-in-the-loop UX**: integrate PendingApprovalsPanel, comment/annotation threads, and approval audit timeline to close Stage 5 gaps.
+- **Template-aware assistant actions**: allow the chat assistant to list/import templates and trigger runs with `--import-template`, including dry-run previews.
 - **Template management**: add TemplatePicker/Manager drawer, mapping & rule toggle steps, and ConsolidationPreview downloads so Smart Import is operator-ready.
 
 Operator prompts to anticipate (and exactly how the agent should respond)

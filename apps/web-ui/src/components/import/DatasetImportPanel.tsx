@@ -224,6 +224,7 @@ export function DatasetImportPanel({ flowRuns, hilApprovals, isLoadingRuns, onOp
   const [submissionError, setSubmissionError] = useState<string | null>(null)
   const [csrfError, setCsrfError] = useState<string | null>(null)
   const [connectionError, setConnectionError] = useState<string | null>(null)
+  const [lastUpdateAt, setLastUpdateAt] = useState<Date | null>(null)
   const [importJob, setImportJob] = useState<ImportJobState | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [csrfToken, setCsrfToken] = useState<string | null>(null)
@@ -369,6 +370,7 @@ export function DatasetImportPanel({ flowRuns, hilApprovals, isLoadingRuns, onOp
       }
 
       eventSource.addEventListener('snapshot', (event) => {
+        setLastUpdateAt(new Date())
         const data = parseEvent(event)
         if (!data || !isJobSummary(data.job)) {
           return
@@ -390,6 +392,7 @@ export function DatasetImportPanel({ flowRuns, hilApprovals, isLoadingRuns, onOp
       })
 
       eventSource.addEventListener('stage', (event) => {
+        setLastUpdateAt(new Date())
         const data = parseEvent(event)
         if (!data) return
         updateImportJob(prev => {
@@ -410,6 +413,7 @@ export function DatasetImportPanel({ flowRuns, hilApprovals, isLoadingRuns, onOp
       })
 
       eventSource.addEventListener('file-accepted', (event) => {
+        setLastUpdateAt(new Date())
         const data = parseEvent(event)
         if (!data) return
         const accepted = sanitizeFiles(data.file ? [data.file] : undefined)
@@ -430,6 +434,7 @@ export function DatasetImportPanel({ flowRuns, hilApprovals, isLoadingRuns, onOp
       })
 
       eventSource.addEventListener('log', (event) => {
+        setLastUpdateAt(new Date())
         const data = parseEvent(event)
         const logMessage = data && typeof data.message === 'string' ? data.message : null
         if (!logMessage) return
@@ -444,6 +449,7 @@ export function DatasetImportPanel({ flowRuns, hilApprovals, isLoadingRuns, onOp
       })
 
       eventSource.addEventListener('artifact-ready', (event) => {
+        setLastUpdateAt(new Date())
         const data = parseEvent(event)
         if (!data) return
         const artifacts = sanitizeArtifacts(data.artifacts)
@@ -465,6 +471,7 @@ export function DatasetImportPanel({ flowRuns, hilApprovals, isLoadingRuns, onOp
       })
 
       eventSource.addEventListener('error', () => {
+        setLastUpdateAt(new Date())
         updateImportJob(prev => {
           if (!prev) return prev
           return {
@@ -475,6 +482,7 @@ export function DatasetImportPanel({ flowRuns, hilApprovals, isLoadingRuns, onOp
       })
 
       eventSource.addEventListener('finished', (event) => {
+        setLastUpdateAt(new Date())
         const data = parseEvent(event)
         updateImportJob(prev => {
           if (!prev) return prev
@@ -515,6 +523,7 @@ export function DatasetImportPanel({ flowRuns, hilApprovals, isLoadingRuns, onOp
       })
 
       eventSource.onerror = () => {
+        setLastUpdateAt(new Date())
         eventSource.close()
         if (eventSourceRef.current === eventSource) {
           eventSourceRef.current = null
@@ -737,6 +746,7 @@ export function DatasetImportPanel({ flowRuns, hilApprovals, isLoadingRuns, onOp
       setShouldAttachProfile(true)
       profileKeyRef.current = null
       connectToJob(job.id)
+      setLastUpdateAt(new Date())
     } catch (startError) {
       console.error('[import] request failed', startError)
       setSubmissionError(startError instanceof Error ? startError.message : 'Failed to submit import request')
@@ -935,6 +945,20 @@ export function DatasetImportPanel({ flowRuns, hilApprovals, isLoadingRuns, onOp
               className="hidden"
               onChange={(event) => handleFiles(event.target.files)}
             />
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            <Badge
+              variant="outline"
+              className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+            >
+              Live (SSE)
+            </Badge>
+            <span>
+              {lastUpdateAt
+                ? `Last event ${formatDistanceToNow(lastUpdateAt, { addSuffix: true })}`
+                : 'Awaiting first event'}
+            </span>
           </div>
 
           <div className="mt-6 space-y-4">
@@ -1358,7 +1382,11 @@ export function DatasetImportPanel({ flowRuns, hilApprovals, isLoadingRuns, onOp
                     <p className="text-sm font-semibold">Logs</p>
                     <span className="text-xs text-muted-foreground">{importJob.logs.length} lines</span>
                   </div>
-                  <div className="mt-2 max-h-48 overflow-y-auto rounded-xl bg-background/90 p-3 font-mono text-xs">
+                  <div
+                    className="mt-2 max-h-48 overflow-y-auto rounded-xl bg-background/90 p-3 font-mono text-xs"
+                    aria-live="polite"
+                    role="log"
+                  >
                     {importJob.logs.length === 0 ? (
                       <p className="text-muted-foreground">Logs will appear once the pipeline starts.</p>
                     ) : (

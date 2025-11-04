@@ -107,6 +107,8 @@ const summariseRuns = (runs: PipelineRun[]) => {
   )
 }
 
+const PIPELINE_REFRESH_SECONDS = 15
+
 export interface PipelineActivityPanelProps {
   className?: string
 }
@@ -257,6 +259,9 @@ export function PipelineActivityPanel({ className }: PipelineActivityPanelProps)
             </CardDescription>
           </div>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Badge variant="outline" className="bg-blue-500/10 text-blue-600 dark:text-blue-300">
+              Live (Polling {PIPELINE_REFRESH_SECONDS}s)
+            </Badge>
             {data?.lastUpdated && (
               <span>
                 Last sync {formatRelative(data.lastUpdated)}

@@ -17,7 +17,7 @@ import { useFeedback } from '@/components/feedback/FeedbackProvider'
 
 const REFRESH_INTERVAL = 15_000
 const ACTIVITY_LIMIT = 50
-const HIGHLIGHT_WINDOW_MS = 60_000
+const HIGHLIGHT_WINDOW_MS = 3_000
 
 interface AgentActivityPanelProps {
   open: boolean
@@ -32,6 +32,7 @@ export function AgentActivityPanel({ open, onOpenChange }: AgentActivityPanelPro
   const sseErrorAnnouncedRef = useRef(false)
 
   const pollingEnabled = !open || sseStatus !== 'open'
+  const transportLabel = sseStatus === 'open' ? 'Live (SSE)' : `Live (Polling ${REFRESH_INTERVAL / 1000}s)`
 
   const {
     data: events = [],
@@ -132,6 +133,10 @@ export function AgentActivityPanel({ open, onOpenChange }: AgentActivityPanelPro
         : !['failed', 'errored', 'rejected', 'failed-to-start'].includes(status)
 
     const timestamp = new Date(event.timestamp)
+    const timestampSAST = timestamp.toLocaleString('en-ZA', {
+      timeZone: 'Africa/Johannesburg',
+      hour12: false,
+    })
     const isRecent = timestamp.getTime() >= highlightCutoff
 
     let icon = Activity
@@ -173,6 +178,7 @@ export function AgentActivityPanel({ open, onOpenChange }: AgentActivityPanelPro
       category,
       timestamp,
       isRecent,
+      timestampSAST,
     }
   })
 
@@ -185,6 +191,9 @@ export function AgentActivityPanel({ open, onOpenChange }: AgentActivityPanelPro
           <div className="flex items-center gap-2">
             <Activity className="h-5 w-5" />
             <SheetTitle>Agent Activity</SheetTitle>
+            <Badge variant="outline" className="bg-blue-500/10 text-blue-600 dark:text-blue-300">
+              {transportLabel}
+            </Badge>
           </div>
         </SheetHeader>
         <SheetBody>
@@ -203,8 +212,8 @@ export function AgentActivityPanel({ open, onOpenChange }: AgentActivityPanelPro
               Loading recent activity…
             </div>
           )}
-          <div className="space-y-1">
-            {mappedEvents.map(({ raw, icon: Icon, title, detailParts, success, category, timestamp, isRecent }) => {
+          <div className="space-y-1" aria-live="polite" role="log">
+            {mappedEvents.map(({ raw, icon: Icon, title, detailParts, success, category, timestamp, timestampSAST, isRecent }) => {
               return (
                 <div
                   key={raw.id}
@@ -248,8 +257,9 @@ export function AgentActivityPanel({ open, onOpenChange }: AgentActivityPanelPro
                             </Fragment>
                           ))}
                         </div>
-                        <div className="text-xs text-muted-foreground">
-                          {formatDistanceToNow(timestamp, { addSuffix: true })}
+                        <div className="text-xs text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1">
+                          <span>{formatDistanceToNow(timestamp, { addSuffix: true })}</span>
+                          <span className="text-[11px] text-muted-foreground/80">SAST {timestampSAST}</span>
                         </div>
                       </div>
                     </div>

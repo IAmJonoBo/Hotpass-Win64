@@ -4,7 +4,7 @@
  * Interactive chat interface for the Hotpass assistant with tool execution and streaming feedback.
  */
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Send, Bot, User } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -30,6 +30,18 @@ import { useQuery } from "@tanstack/react-query";
 import { prefectApi } from "@/api/prefect";
 import { useLineageTelemetry } from "@/hooks/useLineageTelemetry";
 import { useFeedback } from "@/components/feedback/FeedbackProvider";
+import { useAuth } from "@/auth";
+
+const TOOL_ROLE_REQUIREMENTS: Record<string, readonly string[]> = {
+  runRefine: ["operator", "admin"],
+  runEnrich: ["operator", "admin"],
+  runQa: ["operator", "admin"],
+  runContracts: ["admin"],
+  runPlanResearch: ["operator", "admin"],
+  runOperatorWizard: ["admin"],
+  runOperatorConnect: ["admin"],
+  generateEnvFile: ["admin"],
+};
 
 const COMMAND_TOOL_NAMES = new Set([
   "runRefine",
@@ -82,26 +94,33 @@ function extractRowId(text: string): number | undefined {
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
-function buildSuggestionList(contract: Array<{ name?: string }>): string[] {
-  const base = [
-    "run refine profile=aviation",
-    "run enrich allow network",
-    "run qa target=all",
-    "plan research row 5 dataset=./dist/refined.xlsx",
-    "run contracts profile=generic",
-    "list flows",
-    "list lineage namespace=hotpass",
-    "operator wizard host=bastion.staging.internal",
-    "open tunnels detach host=bastion.staging.internal",
-    "generate env target=staging include credentials",
-    "open run RUN_ID",
+function buildSuggestionList(
+  contract: Array<{ name?: string }>,
+  isAllowed: (toolName: string) => boolean,
+): string[] {
+  const base: Array<{ label: string; tool?: string }> = [
+    { label: "run refine profile=aviation", tool: "runRefine" },
+    { label: "run enrich allow network", tool: "runEnrich" },
+    { label: "run qa target=all", tool: "runQa" },
+    { label: "plan research row 5 dataset=./dist/refined.xlsx", tool: "runPlanResearch" },
+    { label: "run contracts profile=generic", tool: "runContracts" },
+    { label: "list flows", tool: "listFlows" },
+    { label: "list lineage namespace=hotpass", tool: "listLineage" },
+    { label: "operator wizard host=bastion.staging.internal", tool: "runOperatorWizard" },
+    { label: "open tunnels detach host=bastion.staging.internal", tool: "runOperatorConnect" },
+    { label: "generate env target=staging include credentials", tool: "generateEnvFile" },
+    { label: "open run RUN_ID", tool: "openRun" },
   ];
+  const baseSuggestions = base
+    .filter((entry) => !entry.tool || isAllowed(entry.tool))
+    .map((entry) => entry.label);
   const contractNames = contract
     .map((tool) => tool.name)
     .filter(
-      (name): name is string => typeof name === "string" && name.length > 0,
+      (name): name is string =>
+        typeof name === "string" && name.length > 0 && isAllowed(name),
     );
-  return Array.from(new Set([...base, ...contractNames]));
+  return Array.from(new Set([...baseSuggestions, ...contractNames]));
 }
 
 export function AssistantChat({
@@ -120,9 +139,25 @@ export function AssistantChat({
   const [input, setInput] = useState(initialMessage || "");
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastToolCall, setLastToolCall] = useState<ToolCall | null>(null);
-  const [contract, setContract] = useState(toolContract);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { addFeedback } = useFeedback();
+  const { hasRole } = useAuth();
+
+  const isToolAllowed = useCallback(
+    (name?: string) => {
+      if (!name) return true;
+      const requirements = TOOL_ROLE_REQUIREMENTS[name];
+      if (!requirements || requirements.length === 0) {
+        return true;
+      }
+      return hasRole(requirements);
+    },
+    [hasRole],
+  );
+
+  const [contract, setContract] = useState(() =>
+    toolContract.filter((definition) => isToolAllowed(definition.name)),
+  );
 
   // Fetch telemetry data
   const { data: flowRuns = [] } = useQuery({
@@ -157,10 +192,15 @@ export function AssistantChat({
   }, [initialMessage]);
 
   useEffect(() => {
+    setContract((previous) => previous.filter((definition) => isToolAllowed(definition.name)));
+  }, [isToolAllowed]);
+
+  useEffect(() => {
     refreshToolContract()
+      .then((definitions) => definitions.filter((definition) => isToolAllowed(definition.name)))
       .then(setContract)
       .catch(() => {});
-  }, []);
+  }, [isToolAllowed]);
 
   const handleSendMessage = async (messageText?: string) => {
     const text = messageText ?? input.trim();
@@ -338,6 +378,23 @@ export function AssistantChat({
       toolName = "getFlowRuns";
     }
 
+    if (toolName && !isToolAllowed(toolName)) {
+      const requiredRoles = TOOL_ROLE_REQUIREMENTS[toolName] ?? [];
+      const requirementSummary =
+        requiredRoles.length > 0 ? ` (${requiredRoles.join(" or ")})` : "";
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `assistant-${Date.now()}`,
+          role: "assistant",
+          content: `I’m sorry, but you don’t have permission to run ${toolName}${requirementSummary}. Please contact an administrator if you need access.`,
+          timestamp: new Date(),
+        },
+      ]);
+      setIsProcessing(false);
+      return;
+    }
+
     const isCommandTool = COMMAND_TOOL_NAMES.has(toolName);
     let pendingAssistantId: string | null = null;
     let pendingToolCallId: string | null = null;
@@ -454,7 +511,7 @@ export function AssistantChat({
           });
         }
       } else {
-        const suggestions = buildSuggestionList(contract);
+        const suggestions = buildSuggestionList(contract, isToolAllowed);
         responseContent = `I understand you want help, but I didn't recognise a specific command.\nTry:\n${suggestions.map((item) => `• ${item}`).join("\n")}`;
       }
 

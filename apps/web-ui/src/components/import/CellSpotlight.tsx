@@ -1,9 +1,10 @@
-import { Sparkles, ArrowUpRight, MessageSquare } from 'lucide-react'
+import { Sparkles, ArrowUpRight, MessageSquare, Loader2 } from 'lucide-react'
 import type { ImportProfile } from '@/types'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { useContractRule } from '@/api/contracts'
 
 export interface CellSpotlightProps {
   logs: string[]
@@ -31,7 +32,7 @@ const RULE_PATTERN = /(rule|validator|check)[:\s]+(?<rule>[A-Za-z0-9_.-]+)/i
 const normaliseSheetName = (value?: string | null) =>
   value ? value.trim().replace(/\s+/g, ' ') : undefined
 
-const findLatestSpotlight = (logs: readonly unknown[]): SpotlightInfo | null => {
+export const findLatestSpotlight = (logs: readonly unknown[]): SpotlightInfo | null => {
   if (!Array.isArray(logs) || logs.length === 0) return null
   for (let index = logs.length - 1; index >= 0; index -= 1) {
     const entry = logs[index]
@@ -66,6 +67,11 @@ const findLatestSpotlight = (logs: readonly unknown[]): SpotlightInfo | null => 
 
 export function CellSpotlight({ logs, profile, onOpenAssistant, onOpenHelp, className }: CellSpotlightProps) {
   const spotlight = findLatestSpotlight(logs)
+  const {
+    data: ruleReference,
+    isLoading: isRuleLoading,
+    isError: ruleError,
+  } = useContractRule(spotlight?.rule ?? null)
 
   let sheetProfile: ImportProfile['sheets'][number] | null = null
   if (spotlight?.sheet && profile) {
@@ -104,20 +110,52 @@ export function CellSpotlight({ logs, profile, onOpenAssistant, onOpenHelp, clas
               )}
               <span>Cell {spotlight.cell ?? '—'}</span>
               {spotlight.rule && (
-                <button
-                  type="button"
-                  className="inline-flex items-center gap-1 text-primary underline-offset-2 hover:underline"
-                  onClick={() => onOpenHelp?.('format-and-validate')}
-                >
+                <div className="flex items-center gap-2 text-primary">
                   <ArrowUpRight className="h-3 w-3" aria-hidden="true" />
-                  Rule {spotlight.rule}
-                </button>
+                  {ruleReference?.contract ? (
+                    <a
+                      href={ruleReference.contract.downloadUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="underline-offset-2 hover:underline"
+                    >
+                      View rule {spotlight.rule}
+                    </a>
+                  ) : isRuleLoading ? (
+                    <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                      <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
+                      Loading rule…
+                    </span>
+                  ) : ruleError ? (
+                    <button
+                      type="button"
+                      className="text-primary underline-offset-2 hover:underline"
+                      onClick={() => onOpenHelp?.('format-and-validate')}
+                    >
+                      Rule {spotlight.rule}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="text-primary underline-offset-2 hover:underline"
+                      onClick={() => onOpenHelp?.('format-and-validate')}
+                    >
+                      Rule {spotlight.rule}
+                    </button>
+                  )}
+                </div>
               )}
             </div>
 
             <div className="rounded-xl border border-border/60 bg-background/90 p-3 font-mono text-[11px] leading-relaxed text-foreground shadow-inner">
               {spotlight.message}
             </div>
+
+            {ruleReference?.snippet && (
+              <div className="rounded-xl border border-border/50 bg-muted/30 p-3 text-[10px] text-muted-foreground">
+                {ruleReference.snippet}
+              </div>
+            )}
 
             {sheetProfile && (
               <div className="rounded-xl border border-border/60 bg-background/90 p-3 text-[11px] text-muted-foreground">

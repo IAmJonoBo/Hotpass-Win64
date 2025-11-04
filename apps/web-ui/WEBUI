@@ -85,8 +85,8 @@
 
 - [x] Stream live logs (SSE) with tail component.
 - [x] New events (logs, cell-fixed, validation-failed) should briefly glow (≤200 ms) and then settle to normal state.
-- [ ] Provide link-back to source rule / contract when an auto-fix is displayed, so users can stay in-app (no hard context switch to docs).
-- [ ] QA viewer embedded from `dist/data-docs` (iframe) & JSON summary.
+  - [x] Provide link-back to source rule / contract when an auto-fix is displayed, so users can stay in-app (no hard context switch to docs).
+  - [x] QA viewer embedded from `dist/data-docs` (iframe) & JSON summary.
 - [x] Buttons for `Re-run`, `Enrich`, `Plan research`, `Explain provenance`.
 - [x] Approval audit timeline (backend data).
 
@@ -98,8 +98,8 @@
 
 ### 3.4 Power tools
 
-- [ ] Replace “copy command” with invocation via `/api/commands/run`.
-- [ ] Provide log modal with tail + download.
+  - [x] Replace “copy command” with invocation via `/api/commands/run`.
+  - [x] Provide log modal with tail + download.
 
 ### 3.5 Template management & consolidation preview
 
@@ -114,8 +114,8 @@
 ## Stage 5 – Live refinement/approvals replacement (real data)
 
 - [x] Leverage `useAuth().hasRole` to toggle advanced controls.
-- [ ] Persist view preference (simple vs advanced) per user.
-- [ ] Ensure assistant respects role gating (tool contract filtered by role).
+  - [x] Persist view preference (simple vs advanced) per user.
+  - [x] Ensure assistant respects role gating (tool contract filtered by role).
 
 ---
 
@@ -123,11 +123,11 @@
 
 ### 5.1 Real-time updates
 
-- [ ] Decide SSE vs polling for each panel (DatasetImport, LiveRefinement, Activity).
-- [ ] Prefer SSE for one-way, high-frequency updates from import/validation pipelines (see patterns in Ably, FreeCodeCamp, and recent SSE vs WebSocket guidance).
-- [ ] Fall back to polling (5–10 s) only for Prefect/Marquez endpoints that cannot stream.
-- [ ] Cap live UI lists to 20–50 items to avoid reflow/jank and archive older events server-side.
-- [ ] Add skeleton loaders & “last updated” capsules (per DESIGN_REVIEW).
+  - [x] Decide SSE vs polling for each panel (DatasetImport, LiveRefinement, Activity).
+  - [ ] Prefer SSE for one-way, high-frequency updates from import/validation pipelines (see patterns in Ably, FreeCodeCamp, and recent SSE vs WebSocket guidance).
+  - [ ] Fall back to polling (5–10 s) only for Prefect/Marquez endpoints that cannot stream.
+  - [x] Cap live UI lists to 20–50 items to avoid reflow/jank and archive older events server-side.
+  - [x] Add skeleton loaders & “last updated” capsules (per DESIGN_REVIEW).
 
 ### 5.2 Error banners & transparency
 
@@ -143,7 +143,7 @@
 
 - [ ] Upload dropzone: on drop → scale to 1.02 and swap to parsing state; on success → morph into summary card (sheet count, rows, timestamp).
 - [ ] Buttons that trigger long-running jobs should show in-button progress (spinner + "Working…") for first 1–2 s and then hand over to the live processing panel. Avoid only-global toasts.
-- [ ] Activity feed entries should be timestamped in SAST (UTC+2) and badge for 3 s when new.
+  - [x] Activity feed entries should be timestamped in SAST (UTC+2) and badge for 3 s when new.
 - [ ] All animations ≤200 ms; no opacity-only animations—combine slight translate to convey direction.
 
 ### 5.5 Template-aware assistant actions

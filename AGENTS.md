@@ -406,6 +406,7 @@ Response includes all 5 tools with their schemas.
 - **File access**: Follows workspace permissions
 - **API keys**: Read from environment variables only (never in tool arguments)
 - **Audit logging**: MCP calls logged for compliance (when configured)
+- **Role-based gating**: UI and assistant surfaces filter hotpass.* tools based on the current user's roles (e.g. `runRefine`/`runEnrich` require operator or admin); unauthorised commands return a friendly permissions error.
 
 ### Using MCP with Copilot CLI
 

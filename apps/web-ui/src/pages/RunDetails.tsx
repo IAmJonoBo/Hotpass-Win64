@@ -11,18 +11,21 @@
 import { useParams, Link, useOutletContext, useSearchParams } from 'react-router-dom'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowLeft, Clock, Tag, UserCheck, GitBranch, Loader2, Terminal, Link2 } from 'lucide-react'
+import { ArrowLeft, Clock, Tag, UserCheck, GitBranch, Loader2, Terminal, Link2, Sparkles, AlertTriangle } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ApiBanner } from '@/components/feedback/ApiBanner'
 import { prefectApi, mockPrefectData } from '@/api/prefect'
+import { useContractRule } from '@/api/contracts'
+import { useLatestQaSummary } from '@/api/qa'
 import { useLineageTelemetry } from '@/hooks/useLineageTelemetry'
 import { cn, formatDuration, getStatusColor } from '@/lib/utils'
 import { ApprovalPanel } from '@/components/hil/ApprovalPanel'
 import type { QAResult } from '@/types'
 import { useAuth } from '@/auth'
+import { findLatestSpotlight } from '@/components/import/CellSpotlight'
 
 interface OutletContext {
   openAssistant: (message?: string) => void
@@ -197,8 +200,23 @@ export function RunDetails() {
     isFetching: isFetchingTelemetry,
   } = useLineageTelemetry()
 
-  // Mock QA results (in production, these would come from dist/data-docs or the run artifacts)
-  const mockQAResults: QAResult[] = []
+  const latestAutoFix = useMemo(
+    () => findLatestSpotlight(logEntries.map((entry) => entry.message)),
+    [logEntries],
+  )
+  const {
+    data: autoFixRuleReference,
+    isLoading: isAutoFixRuleLoading,
+    isError: autoFixRuleError,
+  } = useContractRule(latestAutoFix?.rule ?? null)
+
+  const {
+    data: qaSummaryData,
+    isLoading: isQaLoading,
+    error: qaSummaryError,
+  } = useLatestQaSummary()
+
+  const qaResults: QAResult[] = qaSummaryData?.results ?? []
 
   if (!run && !showSkeleton) {
     return (
@@ -225,7 +243,11 @@ export function RunDetails() {
   const qaUiUrl = run?.parameters && typeof run.parameters === 'object'
     ? (run.parameters as Record<string, unknown>).data_docs_url
     : undefined
-  const qaDocUrl = typeof qaUiUrl === 'string' && qaUiUrl.length > 0 ? qaUiUrl : '/data-docs/index.html'
+  const fallbackQaDocUrl = typeof qaUiUrl === 'string' && qaUiUrl.length > 0 ? qaUiUrl : '/data-docs/index.html'
+  const qaDocUrl =
+    typeof qaSummaryData?.dataDocsPath === 'string' && qaSummaryData.dataDocsPath.length > 0
+      ? qaSummaryData.dataDocsPath
+      : fallbackQaDocUrl
 
   return (
     <div className="space-y-6">
@@ -397,6 +419,67 @@ export function RunDetails() {
         </Card>
       </div>
 
+      {latestAutoFix && (
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Sparkles className="h-4 w-4 text-primary" />
+                Latest Auto-fix
+              </CardTitle>
+              <CardDescription>
+                Highlights the most recent automatic correction emitted during this run.
+              </CardDescription>
+            </div>
+            {latestAutoFix.sheet && (
+              <Badge variant="secondary" className="rounded-full px-2 py-0.5 text-[10px] uppercase tracking-wide">
+                {latestAutoFix.sheet}
+              </Badge>
+            )}
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+              <span>Cell {latestAutoFix.cell ?? '—'}</span>
+              {latestAutoFix.rule && (
+                <div className="flex items-center gap-1">
+                  <ArrowUpRight className="h-3 w-3 text-primary" aria-hidden="true" />
+                  {autoFixRuleReference?.contract ? (
+                    <a
+                      href={autoFixRuleReference.contract.downloadUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-primary underline-offset-2 hover:underline"
+                    >
+                      View rule {latestAutoFix.rule}
+                    </a>
+                  ) : isAutoFixRuleLoading ? (
+                    <span className="inline-flex items-center gap-1 text-muted-foreground">
+                      <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
+                      Resolving rule…
+                    </span>
+                  ) : autoFixRuleError ? (
+                    <span className="inline-flex items-center gap-1 text-muted-foreground">
+                      <AlertTriangle className="h-3 w-3 text-amber-500" aria-hidden="true" />
+                      Rule reference unavailable
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">Rule {latestAutoFix.rule}</span>
+                  )}
+                </div>
+              )}
+            </div>
+            <div className="rounded-xl border border-border/60 bg-background/95 p-3 font-mono text-xs leading-relaxed text-foreground shadow-inner">
+              {latestAutoFix.message}
+            </div>
+            {autoFixRuleReference?.snippet && (
+              <div className="rounded-lg border border-border/40 bg-muted/20 p-3 text-xs text-muted-foreground">
+                {autoFixRuleReference.snippet}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
@@ -438,11 +521,55 @@ export function RunDetails() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {qaSummaryError && (
+            <ApiBanner
+              variant="warning"
+              title="QA summary unavailable"
+              description={qaSummaryError instanceof Error ? qaSummaryError.message : 'Unable to load the latest QA results.'}
+            />
+          )}
           <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
             <span>Data Docs source:</span>
             <a href={qaDocUrl} className="text-primary hover:underline" target="_blank" rel="noreferrer">
               {qaDocUrl}
             </a>
+          </div>
+          <div className="rounded-xl border border-border/60 bg-background/95 p-3">
+            {isQaLoading ? (
+              <div className="space-y-2">
+                <Skeleton className="h-5 w-48" />
+                <Skeleton className="h-5 w-56" />
+                <Skeleton className="h-5 w-40" />
+              </div>
+            ) : qaResults.length === 0 ? (
+              <p className="text-xs text-muted-foreground">
+                No structured QA checks recorded for this run yet.
+              </p>
+            ) : (
+              <div className="space-y-2 text-xs">
+                {qaResults.map((result) => (
+                  <div
+                    key={result.check}
+                    className={cn(
+                      'rounded-lg border px-3 py-2',
+                      result.status === 'passed'
+                        ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
+                        : result.status === 'warning'
+                          ? 'border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300'
+                          : 'border-rose-500/40 bg-rose-500/10 text-rose-700 dark:text-rose-300',
+                    )}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-medium">{result.check}</span>
+                      <span className="uppercase text-[10px] tracking-wide">{result.status}</span>
+                    </div>
+                    {result.message && (
+                      <p className="mt-1 text-muted-foreground">{result.message}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
           <div className="rounded-xl border border-border/60 bg-background">
             {showSkeleton ? (
@@ -619,7 +746,7 @@ export function RunDetails() {
           open={approvalPanelOpen}
           onOpenChange={setApprovalPanelOpen}
           run={run}
-          qaResults={mockQAResults}
+          qaResults={qaResults}
           onOpenAssistant={openAssistant}
           canApprove={canApprove}
         />

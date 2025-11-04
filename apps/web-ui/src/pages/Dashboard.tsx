@@ -7,6 +7,7 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { Link, useOutletContext } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import { Activity, Clock, GitBranch, CheckCircle, XCircle, AlertCircle, HelpCircle } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -28,6 +29,7 @@ import { ResearchPlannerCard } from '@/components/research/ResearchPlannerCard'
 import { DataDocsViewerCard } from '@/components/governance/DataDocsViewerCard'
 import { useLineageTelemetry, jobHasHotpassFacet } from '@/hooks/useLineageTelemetry'
 import { useConsolidationTelemetry } from '@/api/imports'
+import { useAuth } from '@/auth'
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null
@@ -48,6 +50,34 @@ interface OutletContext {
 
 export function Dashboard() {
   const { openAssistant, openHelp } = useOutletContext<OutletContext>()
+  const { user } = useAuth()
+  const storageKey = useMemo(
+    () => (user?.id ? `hotpass_dashboard_view_${user.id}` : 'hotpass_dashboard_view_anonymous'),
+    [user?.id],
+  )
+  const [viewMode, setViewMode] = useState<'simple' | 'advanced'>('advanced')
+  const isAdvancedView = viewMode === 'advanced'
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !storageKey) return
+    try {
+      const stored = window.localStorage.getItem(storageKey)
+      if (stored === 'simple' || stored === 'advanced') {
+        setViewMode(stored)
+      }
+    } catch {
+      // ignore read errors
+    }
+  }, [storageKey])
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !storageKey) return
+    try {
+      window.localStorage.setItem(storageKey, viewMode)
+    } catch {
+      // ignore write errors
+    }
+  }, [storageKey, viewMode])
 
   // Fetch Prefect flow runs from last 24h
   const flowRunsQuery = useQuery({
@@ -275,12 +305,40 @@ export function Dashboard() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground">
-          Monitor pipeline runs, track performance, and explore data lineage
-        </p>
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-muted-foreground">
+            Monitor pipeline runs, track performance, and explore data lineage
+          </p>
+        </div>
+        <div className="inline-flex items-center gap-2 rounded-lg border border-border/60 bg-muted/30 p-1">
+          <Button
+            size="sm"
+            variant={viewMode === 'simple' ? 'default' : 'ghost'}
+            onClick={() => setViewMode('simple')}
+            aria-pressed={viewMode === 'simple'}
+          >
+            Simple view
+          </Button>
+          <Button
+            size="sm"
+            variant={viewMode === 'advanced' ? 'default' : 'ghost'}
+            onClick={() => setViewMode('advanced')}
+            aria-pressed={viewMode === 'advanced'}
+          >
+            Advanced view
+          </Button>
+        </div>
       </div>
+
+      {viewMode === 'simple' && (
+        <ApiBanner
+          variant="info"
+          title="Simple view active"
+          description="Showing a streamlined overview. Switch to Advanced view to access imports, approvals, governance, and live telemetry controls."
+        />
+      )}
 
       <LatestRefinedWorkbookCard
         run={latestRefineSummary}
@@ -290,21 +348,32 @@ export function Dashboard() {
         trend={trend}
       />
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-        <DatasetImportPanel
-          flowRuns={flowRuns}
-          hilApprovals={hilApprovals}
-          isLoadingRuns={isLoadingPrefect}
-          onOpenAssistant={openAssistant}
-          onOpenHelp={(topicId) => openHelp({ topicId })}
-        />
-        <PendingApprovalsPanel
-          approvals={hilApprovals}
-          runs={flowRuns}
-          isLoading={hilApprovalsLoading || isLoadingPrefect}
-          onOpenAssistant={openAssistant}
-        />
-      </div>
+      {isAdvancedView ? (
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+          <DatasetImportPanel
+            flowRuns={flowRuns}
+            hilApprovals={hilApprovals}
+            isLoadingRuns={isLoadingPrefect}
+            onOpenAssistant={openAssistant}
+            onOpenHelp={(topicId) => openHelp({ topicId })}
+          />
+          <PendingApprovalsPanel
+            approvals={hilApprovals}
+            runs={flowRuns}
+            isLoading={hilApprovalsLoading || isLoadingPrefect}
+            onOpenAssistant={openAssistant}
+          />
+        </div>
+      ) : (
+        <Card className="rounded-3xl border border-dashed border-border/70 bg-muted/20">
+          <CardHeader>
+            <CardTitle className="text-base font-semibold">Advanced controls hidden</CardTitle>
+            <CardDescription>
+              Switch to Advanced view to upload workbooks, monitor approvals, and manage team automations.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      )}
 
       {prefectError && (
         <ApiBanner
@@ -491,78 +560,82 @@ export function Dashboard() {
         </Card>
       )}
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-        <PipelineActivityPanel />
+      {isAdvancedView && (
+        <>
+          <div className="grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+            <PipelineActivityPanel />
 
-        <div className="space-y-6">
-          <Card>
-            <CardHeader className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-              <div>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <GitBranch className="h-4 w-4" />
-                  Lineage Telemetry
-                </CardTitle>
-                <CardDescription>
-                  Snapshot of Marquez activity feeding the telemetry strip. Updates every minute.
-                </CardDescription>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  title="Learn about lineage telemetry"
-                  aria-label="Open lineage telemetry documentation"
-                  onClick={() => openHelp({ topicId: 'live-process-tracking' })}
-                >
-                  <HelpCircle className="h-4 w-4" />
-                </Button>
-                {isFetchingTelemetry && <span className="text-xs text-muted-foreground">Refreshing…</span>}
-              </div>
-            </CardHeader>
-            <CardContent>
-              {isFetchingTelemetry && !lineageTelemetry ? (
-                <div className="grid gap-3 md:grid-cols-2">
-                  <Skeleton className="h-24" />
-                  <Skeleton className="h-24" />
-                </div>
-              ) : (
-                <div className="grid gap-3">
-                  <div className="rounded-2xl border border-border/60 p-4">
-                    <div className="text-xs uppercase tracking-wide text-muted-foreground">Jobs Today</div>
-                    <div className="mt-2 text-2xl font-semibold">
-                      {lineageTelemetry?.jobsToday ?? 0}
-                    </div>
+            <div className="space-y-6">
+              <Card>
+                <CardHeader className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <GitBranch className="h-4 w-4" />
+                      Lineage Telemetry
+                    </CardTitle>
+                    <CardDescription>
+                      Snapshot of Marquez activity feeding the telemetry strip. Updates every minute.
+                    </CardDescription>
                   </div>
-                  <div className="rounded-2xl border border-border/60 p-4">
-                    <div className="text-xs uppercase tracking-wide text-muted-foreground">Failed Today</div>
-                    <div className="mt-2 text-2xl font-semibold text-red-600 dark:text-red-400">
-                      {lineageTelemetry?.failedToday ?? 0}
-                    </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      title="Learn about lineage telemetry"
+                      aria-label="Open lineage telemetry documentation"
+                      onClick={() => openHelp({ topicId: 'live-process-tracking' })}
+                    >
+                      <HelpCircle className="h-4 w-4" />
+                    </Button>
+                    {isFetchingTelemetry && <span className="text-xs text-muted-foreground">Refreshing…</span>}
                   </div>
-                  <div className="rounded-2xl border border-border/60 p-4">
-                    <div className="text-xs uppercase tracking-wide text-muted-foreground">Incomplete Facets</div>
-                    <div className="mt-2 text-2xl font-semibold text-yellow-700 dark:text-yellow-400">
-                      {lineageTelemetry?.incompleteFacets ?? 0}
+                </CardHeader>
+                <CardContent>
+                  {isFetchingTelemetry && !lineageTelemetry ? (
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <Skeleton className="h-24" />
+                      <Skeleton className="h-24" />
                     </div>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                  ) : (
+                    <div className="grid gap-3">
+                      <div className="rounded-2xl border border-border/60 p-4">
+                        <div className="text-xs uppercase tracking-wide text-muted-foreground">Jobs Today</div>
+                        <div className="mt-2 text-2xl font-semibold">
+                          {lineageTelemetry?.jobsToday ?? 0}
+                        </div>
+                      </div>
+                      <div className="rounded-2xl border border-border/60 p-4">
+                        <div className="text-xs uppercase tracking-wide text-muted-foreground">Failed Today</div>
+                        <div className="mt-2 text-2xl font-semibold text-red-600 dark:text-red-400">
+                          {lineageTelemetry?.failedToday ?? 0}
+                        </div>
+                      </div>
+                      <div className="rounded-2xl border border-border/60 p-4">
+                        <div className="text-xs uppercase tracking-wide text-muted-foreground">Incomplete Facets</div>
+                        <div className="mt-2 text-2xl font-semibold text-yellow-700 dark:text-yellow-400">
+                          {lineageTelemetry?.incompleteFacets ?? 0}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
 
-          <PowerTools onOpenAssistant={() => openAssistant()} />
-          <ContractsExplorer
-            onOpenAssistant={openAssistant}
-            onOpenHelp={(topicId) => openHelp({ topicId })}
-          />
-        </div>
-      </div>
+              <PowerTools onOpenAssistant={() => openAssistant()} />
+              <ContractsExplorer
+                onOpenAssistant={openAssistant}
+                onOpenHelp={(topicId) => openHelp({ topicId })}
+              />
+            </div>
+          </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <ResearchPlannerCard onOpenAssistant={openAssistant} />
-        <DataDocsViewerCard />
-      </div>
+          <div className="grid gap-4 lg:grid-cols-2">
+            <ResearchPlannerCard onOpenAssistant={openAssistant} />
+            <DataDocsViewerCard />
+          </div>
+        </>
+      )}
 
       {/* Latest Spreadsheets */}
       <Card>

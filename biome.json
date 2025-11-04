@@ -1,5 +1,8 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.3.3/schema.json",
+  "files": {
+    "includes": ["apps/web-ui/**/*"]
+  },
   "formatter": {
     "enabled": true,
     "indentStyle": "space",

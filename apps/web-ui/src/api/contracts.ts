@@ -11,6 +11,18 @@ export interface ContractSummary {
   downloadUrl: string
 }
 
+export interface ContractRuleReference {
+  ruleId: string
+  contract: {
+    id: string
+    name: string
+    format: string
+    updatedAt: string
+    downloadUrl: string
+  }
+  snippet?: string | null
+}
+
 const limiter = createRateLimiter(6, 30_000)
 
 const fetchWithLimiter = <T>(input: RequestInfo | URL, init?: RequestInit) =>
@@ -44,5 +56,40 @@ export function useContracts() {
     queryKey: ['contracts'],
     queryFn: listContracts,
     staleTime: 60_000,
+  })
+}
+
+export async function getContractRule(ruleId: string): Promise<ContractRuleReference> {
+  if (!ruleId || ruleId.trim().length === 0) {
+    throw new Error('Rule identifier is required')
+  }
+  const response = await fetch(`/api/contracts/rules/${encodeURIComponent(ruleId)}`, {
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+    },
+  })
+  if (!response.ok) {
+    let message = response.statusText || 'Failed to resolve rule reference'
+    try {
+      const payload = await response.json()
+      if (payload && typeof payload.error === 'string') {
+        message = payload.error
+      }
+    } catch {
+      // ignore parse errors
+    }
+    throw new Error(message)
+  }
+  const payload = await response.json() as ContractRuleReference
+  return payload
+}
+
+export function useContractRule(ruleId?: string | null) {
+  return useQuery({
+    queryKey: ['contract-rule', ruleId],
+    queryFn: () => getContractRule(ruleId ?? ''),
+    enabled: Boolean(ruleId && ruleId.trim().length > 0),
+    staleTime: 5 * 60_000,
   })
 }
