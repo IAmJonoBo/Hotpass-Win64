@@ -11,11 +11,10 @@
 import { useParams, Link, useOutletContext, useSearchParams } from 'react-router-dom'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowLeft, CheckCircle2, XCircle, AlertTriangle, Clock, Tag, UserCheck, GitBranch, Loader2, Terminal } from 'lucide-react'
+import { ArrowLeft, Clock, Tag, UserCheck, GitBranch, Loader2, Terminal, Link2 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ApiBanner } from '@/components/feedback/ApiBanner'
 import { prefectApi, mockPrefectData } from '@/api/prefect'
@@ -199,32 +198,7 @@ export function RunDetails() {
   } = useLineageTelemetry()
 
   // Mock QA results (in production, these would come from dist/data-docs or the run artifacts)
-  const mockQAResults: QAResult[] = [
-    {
-      check: 'Schema Validation',
-      status: 'passed',
-      message: 'All required columns present',
-      details: { columns: 45, validated: 45 },
-    },
-    {
-      check: 'Data Quality',
-      status: 'passed',
-      message: 'No duplicate records found',
-      details: { total_rows: 1234, duplicates: 0 },
-    },
-    {
-      check: 'Completeness',
-      status: 'warning',
-      message: '2% of records have missing phone numbers',
-      details: { total: 1234, missing: 25 },
-    },
-    {
-      check: 'Provenance',
-      status: 'passed',
-      message: 'All records have provenance metadata',
-      details: { tracked: 1234 },
-    },
-  ]
+  const mockQAResults: QAResult[] = []
 
   if (!run && !showSkeleton) {
     return (
@@ -247,6 +221,11 @@ export function RunDetails() {
 
   const rawMarquezUrl = import.meta.env.OPENLINEAGE_URL || import.meta.env.VITE_MARQUEZ_API_URL || ''
   const marquezUiBase = rawMarquezUrl.replace(/\/api(?:\/v1)?$/, '')
+
+  const qaUiUrl = run?.parameters && typeof run.parameters === 'object'
+    ? (run.parameters as Record<string, unknown>).data_docs_url
+    : undefined
+  const qaDocUrl = typeof qaUiUrl === 'string' && qaUiUrl.length > 0 ? qaUiUrl : '/data-docs/index.html'
 
   return (
     <div className="space-y-6">
@@ -397,7 +376,8 @@ export function RunDetails() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">QA Status</CardTitle>
+            <CardTitle className="text-sm font-medium">QA Artifacts</CardTitle>
+            <Link2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             {showSkeleton ? (
@@ -406,12 +386,12 @@ export function RunDetails() {
                 <Skeleton className="h-4 w-28" />
               </div>
             ) : (
-              <>
-                <div className="text-2xl font-bold">
-                  {mockQAResults.filter(r => r.status === 'passed').length}/{mockQAResults.length}
-                </div>
-                <p className="text-xs text-muted-foreground">Checks passed</p>
-              </>
+              <div className="flex flex-col gap-2 text-xs text-muted-foreground">
+                <p>Latest Data Docs bundle is available for this run.</p>
+                <a href={qaDocUrl} className="text-primary hover:underline" target="_blank" rel="noreferrer">
+                  Open Data Docs
+                </a>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -450,74 +430,32 @@ export function RunDetails() {
       </CardContent>
     </Card>
 
-      {/* QA Results */}
       <Card>
         <CardHeader>
-          <CardTitle>Quality Assurance Results</CardTitle>
+          <CardTitle>Quality Assurance</CardTitle>
           <CardDescription>
-            Validation checks from the pipeline execution
+            Embedded Great Expectations validation artefacts for this run.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Check</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Message</TableHead>
-                <TableHead className="text-right">Details</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {showSkeleton
-                ? Array.from({ length: 4 }).map((_, index) => (
-                    <TableRow key={`qa-skeleton-${index}`}>
-                      <TableCell><Skeleton className="h-4 w-40" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-64" /></TableCell>
-                      <TableCell className="text-right"><Skeleton className="ml-auto h-4 w-20" /></TableCell>
-                    </TableRow>
-                  ))
-                : mockQAResults.map((result, index) => (
-                    <TableRow key={index}>
-                      <TableCell className="font-medium">{result.check}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {result.status === 'passed' && (
-                            <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
-                          )}
-                          {result.status === 'failed' && (
-                            <XCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
-                          )}
-                          {result.status === 'warning' && (
-                            <AlertTriangle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
-                          )}
-                          <Badge
-                            variant="outline"
-                            className={cn(
-                              result.status === 'passed'
-                                ? 'text-green-600 dark:text-green-400'
-                                : result.status === 'failed'
-                                ? 'text-red-600 dark:text-red-400'
-                                : 'text-yellow-600 dark:text-yellow-400'
-                            )}
-                          >
-                            {result.status}
-                          </Badge>
-                        </div>
-                      </TableCell>
-                      <TableCell>{result.message}</TableCell>
-                      <TableCell className="text-right text-sm text-muted-foreground">
-                        {result.details && (
-                          <code className="text-xs">
-                            {JSON.stringify(result.details).slice(0, 50)}...
-                          </code>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-            </TableBody>
-          </Table>
+        <CardContent className="space-y-4">
+          <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+            <span>Data Docs source:</span>
+            <a href={qaDocUrl} className="text-primary hover:underline" target="_blank" rel="noreferrer">
+              {qaDocUrl}
+            </a>
+          </div>
+          <div className="rounded-xl border border-border/60 bg-background">
+            {showSkeleton ? (
+              <Skeleton className="h-80 w-full" />
+            ) : (
+              <iframe
+                key={qaDocUrl}
+                src={qaDocUrl}
+                title="Great Expectations Data Docs"
+                className="h-80 w-full rounded-xl"
+              />
+            )}
+          </div>
         </CardContent>
       </Card>
 
