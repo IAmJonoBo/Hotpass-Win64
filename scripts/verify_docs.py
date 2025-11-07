@@ -199,7 +199,7 @@ def extract_env_vars_from_source(repo_root: Path) -> set[str]:
     patterns = [
         re.compile(r'os\.environ\.get\(["\']([A-Z_][A-Z0-9_]*)["\']'),
         re.compile(r'os\.getenv\(["\']([A-Z_][A-Z0-9_]*)["\']'),
-        re.compile(r'environ\[["\'](A-Z_][A-Z0-9_]*)["\']'),
+        re.compile(r'environ\[["\']([A-Z_][A-Z0-9_]*)["\']'),
         re.compile(r'env\(["\']([A-Z_][A-Z0-9_]*)["\']'),  # Function call pattern
         re.compile(r'"([A-Z_][A-Z0-9_]*)"[,\]]'),  # String literals in arrays/dicts
     ]
@@ -401,7 +401,6 @@ def main() -> int:
     parser.add_argument(
         "--fail-on-issues",
         action="store_true",
-        default=False,
         help="Exit with non-zero status if issues found (default: False for now)",
     )
 
