@@ -1,0 +1,92 @@
+%% Hotpass End-to-End Data Flow
+%% Shows how data moves through the platform from raw input to governed output
+
+flowchart LR
+    subgraph Input["Input Stage"]
+        Raw[Raw Workbooks<br/>data/*.xlsx<br/>Messy spreadsheets]
+        Profile[Profile Config<br/>profiles/*.toml<br/>Validation rules]
+    end
+
+    subgraph Refinement["Refinement Pipeline"]
+        Load[Load & Parse<br/>Excel engine]
+        Normalise[Normalise<br/>Headers, types, formats]
+        Dedupe[Deduplicate<br/>First occurrence kept]
+        Validate[Validate<br/>Great Expectations]
+        Score[Quality Score<br/>Completeness metrics]
+    end
+
+    subgraph Output["Primary Output"]
+        Refined[Refined Dataset<br/>dist/refined.xlsx<br/>Single source of truth]
+        Parquet[Parquet Export<br/>dist/refined.parquet<br/>Analytics ready]
+        Archive[Timestamped Archive<br/>.hotpass/archives/<br/>Reproducibility]
+    end
+
+    subgraph Enrichment["Enrichment Stage (Optional)"]
+        DetEnrich[Deterministic<br/>Offline lookups]
+        NetEnrich[Network Research<br/>--allow-network flag]
+        Provenance[Provenance Tracking<br/>Source attribution]
+    end
+
+    subgraph Resolution["Entity Resolution (Optional)"]
+        Linkage[Splink Linkage<br/>Probabilistic matching]
+        Clusters[Cluster Formation<br/>Entity groups]
+        Review[Label Studio<br/>Human review queue]
+    end
+
+    subgraph Quality["Quality Assurance"]
+        GE[Great Expectations<br/>Expectation suites]
+        Contracts[Frictionless Contracts<br/>Schema validation]
+        DataDocs[Data Docs<br/>dist/data-docs/]
+        Notices[Contract Notices<br/>Duplicate logs]
+    end
+
+    subgraph Governance["Governance Outputs"]
+        Schemas[Schema Exports<br/>dist/schemas/]
+        Audit[Audit Artefacts<br/>Provenance + intent]
+        Compliance[POPIA Reports<br/>PII handling logs]
+    end
+
+    Raw --> Load
+    Profile --> Load
+    Load --> Normalise
+    Normalise --> Dedupe
+    Dedupe --> Validate
+    Validate --> Score
+    Score --> Refined
+    Refined --> Parquet
+    Refined --> Archive
+
+    Refined --> DetEnrich
+    DetEnrich --> NetEnrich
+    NetEnrich --> Provenance
+    Provenance --> Refined
+
+    Refined --> Linkage
+    Linkage --> Clusters
+    Clusters --> Review
+    Review --> Refined
+
+    Validate --> GE
+    Refined --> Contracts
+    GE --> DataDocs
+    Dedupe --> Notices
+
+    Contracts --> Schemas
+    Provenance --> Audit
+    Validate --> Compliance
+
+    classDef inputStyle fill:#f8f9fa,stroke:#495057,stroke-width:2px
+    classDef pipelineStyle fill:#d4edda,stroke:#225c2f,stroke-width:2px
+    classDef outputStyle fill:#e1f5ff,stroke:#17415f,stroke-width:2px
+    classDef enrichStyle fill:#d1ecf1,stroke:#0c5460,stroke-width:2px
+    classDef resolveStyle fill:#fff3cd,stroke:#856404,stroke-width:2px
+    classDef qaStyle fill:#f8d7da,stroke:#721c24,stroke-width:2px
+    classDef govStyle fill:#e2e3e5,stroke:#383d41,stroke-width:2px
+
+    class Raw,Profile inputStyle
+    class Load,Normalise,Dedupe,Validate,Score pipelineStyle
+    class Refined,Parquet,Archive outputStyle
+    class DetEnrich,NetEnrich,Provenance enrichStyle
+    class Linkage,Clusters,Review resolveStyle
+    class GE,Contracts,DataDocs,Notices qaStyle
+    class Schemas,Audit,Compliance govStyle

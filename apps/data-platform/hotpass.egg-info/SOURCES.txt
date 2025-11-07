@@ -42,6 +42,8 @@ apps/data-platform/hotpass.egg-info/top_level.txt
 apps/data-platform/hotpass/automation/__init__.py
 apps/data-platform/hotpass/automation/hooks.py
 apps/data-platform/hotpass/automation/http.py
+apps/data-platform/hotpass/aws/__init__.py
+apps/data-platform/hotpass/aws/endpoints.py
 apps/data-platform/hotpass/cli/__init__.py
 apps/data-platform/hotpass/cli/builder.py
 apps/data-platform/hotpass/cli/configuration.py
@@ -136,11 +138,11 @@ apps/data-platform/hotpass/ml/tracking.py
 apps/data-platform/hotpass/pipeline/__init__.py
 apps/data-platform/hotpass/pipeline/aggregation.py
 apps/data-platform/hotpass/pipeline/base.py
-apps/data-platform/hotpass/pipeline/helpers.py
 apps/data-platform/hotpass/pipeline/config.py
 apps/data-platform/hotpass/pipeline/enrichment.py
 apps/data-platform/hotpass/pipeline/events.py
 apps/data-platform/hotpass/pipeline/export.py
+apps/data-platform/hotpass/pipeline/helpers.py
 apps/data-platform/hotpass/pipeline/ingestion.py
 apps/data-platform/hotpass/pipeline/orchestrator.py
 apps/data-platform/hotpass/pipeline/quality_summary.py
@@ -201,6 +203,7 @@ schemas/ssot.schema.json
 tests/test_acquisition_guardrails.py
 tests/test_agentic_orchestration.py
 tests/test_artifacts.py
+tests/test_aws_endpoints.py
 tests/test_benchmarks.py
 tests/test_benchmarks_unit.py
 tests/test_bootstrap.py

@@ -2,6 +2,8 @@
 
 You use Hotpass to turn messy spreadsheet collections into governed, analysis-ready workbooks. The CLI and MCP tooling share the same verbs, so you can refine, enrich, run QA, and orchestrate flows from the terminal, an agent, or CI without rewriting steps.
 
+## Quick Overview
+
 ```mermaid
 flowchart LR
     Raw[Raw workbooks<br/>data/*.xlsx] --> Refine[`uv run hotpass refine`]
@@ -16,6 +18,8 @@ flowchart LR
     class Refine,QA,Enrich,Contracts,Research cmd
     class Archive artifact
 ```
+
+*For detailed architecture diagrams, see [System Architecture](docs/diagrams/system-architecture.mmd), [Data Flow](docs/diagrams/data-flow.mmd), and [Run Lifecycle](docs/diagrams/run-lifecycle.mmd).*
 
 ## Why teams choose Hotpass
 
@@ -310,6 +314,47 @@ After each deploy, confirm the runtime surfaces are healthy before handing over 
 - **Lineage UI** – follow the [lineage smoke test runbook](docs/operations/lineage-smoke-tests.md) to verify Marquez ingests new runs, capture the datasets/jobs graph, and archive API payloads under `dist/staging/marquez/`.
 - **Prefect guardrails** – run the [Prefect backfill guardrail rehearsal](docs/operations/prefect-backfill-guardrails.md) to ensure concurrency limits remain intact and Prefect logs are stored in `dist/staging/backfill/`.
 - **OpenTelemetry exporters** – review the [observability registry overview](docs/observability/index.md) and confirm OTLP endpoints receive spans/metrics (or console exporters flush) using the compose stack shipped in `deploy/docker/docker-compose.yml`. Document any overrides in `Next_Steps.md` before declaring the release healthy.
+
+## Architecture
+
+Hotpass is built with a modular architecture that separates concerns across CLI, pipeline, orchestration, and governance layers. Three diagrams provide complementary views:
+
+### System Architecture
+
+The [system architecture diagram](docs/diagrams/system-architecture.mmd) shows all major components and their relationships:
+
+- **CLI & Operators**: `hotpass` CLI (28 commands), `hotpass-operator` wizard, and MCP server
+- **Core Pipeline**: Refinement, enrichment, entity resolution, and QA engines
+- **Orchestration**: Prefect workflows, Marquez lineage, OpenTelemetry observability
+- **Storage**: MinIO/S3, LocalStack, timestamped archives
+- **Research**: SearXNG meta-search, rate-limited crawlers, optional LLM integration
+- **Governance**: Data contracts (Frictionless), Great Expectations docs, Presidio PII redaction, POPIA compliance
+- **Infrastructure**: SSH/SSM tunnels, GitHub ARC runners, Prefect/K8s context bootstrap
+
+### Data Flow
+
+The [data flow diagram](docs/diagrams/data-flow.mmd) traces how data transforms from raw input to governed output:
+
+1. **Input Stage**: Raw workbooks + profile configuration
+2. **Refinement Pipeline**: Load → normalise → deduplicate → validate → score quality
+3. **Primary Output**: Refined XLSX/Parquet + timestamped archives
+4. **Enrichment** (optional): Deterministic lookups → network research (when `--allow-network`) → provenance tracking
+5. **Entity Resolution** (optional): Splink linkage → cluster formation → Label Studio review
+6. **Quality Assurance**: Great Expectations validation → Frictionless contracts → Data Docs generation
+7. **Governance Outputs**: Schema exports, audit artefacts, POPIA compliance reports
+
+### Run Lifecycle
+
+The [run lifecycle diagram](docs/diagrams/run-lifecycle.mmd) is a sequence diagram showing a complete `hotpass refine` → `hotpass qa` → `hotpass enrich` cycle with all integrations:
+
+- Profile loading and validation
+- OpenTelemetry trace spans
+- Marquez lineage recording
+- Great Expectations validation
+- Archive and storage operations
+- Optional QA, enrichment, and research planning steps
+
+All diagrams are maintained as [Mermaid](https://mermaid.js.org/) source files under `docs/diagrams/` and kept in sync with code changes through automated documentation verification (see `scripts/verify_docs.py`).
 
 ## Documentation
 

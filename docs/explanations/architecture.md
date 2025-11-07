@@ -1,12 +1,22 @@
 ---
 title: Explanation — architecture overview
 summary: High-level view of Hotpass components and how data flows between them.
-last_updated: 2025-11-18
+last_updated: 2025-11-07
 ---
 
 # Architecture overview
 
 Hotpass ingests spreadsheet workbooks and orchestrated research crawlers, applies cleaning, backfilling, relationship mapping, validation, and enrichment logic, and emits governed, analysis-ready outputs. The platform is composed of the following layers.
+
+## Architecture diagrams
+
+Hotpass maintains three complementary Mermaid diagrams that provide different perspectives on the system:
+
+1. **[System Architecture](../diagrams/system-architecture.mmd)** — shows all major components (CLI, pipeline, orchestration, storage, research, governance, infrastructure) and their relationships
+2. **[Data Flow](../diagrams/data-flow.mmd)** — traces data transformation from raw workbooks through refinement, enrichment, resolution, and QA to governed outputs
+3. **[Run Lifecycle](../diagrams/run-lifecycle.mmd)** — sequence diagram of a complete refine/enrich/qa cycle including all integrations (Prefect, Marquez, OpenTelemetry)
+
+These diagrams are automatically verified against the source code via `scripts/verify_docs.py` to maintain accuracy as the codebase evolves.
 
 ## System context diagram
 
