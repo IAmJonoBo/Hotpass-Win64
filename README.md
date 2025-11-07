@@ -97,19 +97,18 @@ flowchart LR
 
    ```bash
    uv run hotpass refine \
-     --profile quickstart \
-     --profile-search-path ./config/profiles \
-     --config ./config/pipeline.quickstart.toml \
-     --log-format json
+     --input-dir ./data/e2e \
+     --output-path ./dist/refined.xlsx \
+     --profile generic \
+     --expectation-suite reachout_organisation \
+     --archive
    ```
 
-   ```
-   {"event": "pipeline.summary", "data": {"total_records": 1033,
-    "invalid_records": 0, "recommendations":
-    ["CRITICAL: Average data quality score is below 50%. Review data sources and validation rules."],
-    "performance_metrics": {"total_seconds": 4.31}, "source_breakdown":
-    {"Reachout Database": 1034}}}
-   ```
+   The command writes refined outputs to `dist/refined.xlsx` and publishes the
+   latest Great Expectations Data Docs under `dist/data-docs/`.
+   Use `--input-dir ./data` when you want to exercise the full messy workbook
+   set; the curated `data/e2e` sample keeps contract validation green for quick
+   verification runs.
 
    Outputs land under `dist/` (`refined.xlsx`, `refined.parquet`, and a timestamped archive). The warning reminds you to triage the low data-quality score before sharing the workbook.
 

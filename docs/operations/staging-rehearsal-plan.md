@@ -38,8 +38,49 @@ This document captures the scheduled rehearsal windows, owners, and artefacts th
 - **Prefect backfill guardrails**
   - Deployment log, metadata, and screenshot recorded under `dist/staging/backfill/20251101T171853Z/` for the `hotpass-e2e-staging` dry run.
 
+## Evidence layout (per rehearsal)
+
+| Rehearsal | Directory | Required files |
+|-----------|-----------|----------------|
+| Marquez lineage smoke | `dist/staging/marquez/{timestamp}/` | `cli.log`, `graph.png` |
+| ARC lifecycle | `dist/staging/arc/{timestamp}/` | `lifecycle.json`, `sts.txt`, workflow URL noted in docs |
+| Prefect backfill guardrails | `dist/staging/backfill/{timestamp}/` | `prefect.log`, `summary.json`, `cli.sh`, optional `artifacts/` subdirectory for downloaded outputs |
+| Full E2E preflight | `dist/staging/e2e/{timestamp}/` | `overview.log`, `refine.log`, `enrich.log`, `qa.log`, plus any additional command outputs referenced in the run-book |
+
 ## Follow-up Actions
 
 - Update `Next_Steps.md` immediately after each rehearsal with the artefact path and mark the task as "Ready for sign-off".
 - Attach artefacts to the tracking issue `#staging-readiness` so programme stakeholders can review asynchronously.
 - Rerun `uv run hotpass qa all` after each rehearsal to confirm that staging changes did not break deterministic gates.
+
+## Pending Rehearsals (Awaiting Access)
+
+### Prefect Backfill Guardrails
+
+1. Reconcile manifests and guardrails locally before touching staging:
+   ```bash
+   uv run hotpass deploy --flow backfill --manifest-dir prefect
+   uv run hotpass qa ta
+   ```
+   These commands confirm the `concurrency_limit`/`concurrency_key` settings baked into `prefect/backfill.yaml`.
+2. Trigger the backfill flow in `hotpass-staging` using the `hotpass-e2e-staging` work pool:
+   ```bash
+   PREFECT_API_URL="https://api.prefect.cloud/api/accounts/.../workspaces/..." \
+   PREFECT_API_KEY="***" \
+   uv run prefect deployment run hotpass-backfill \
+     --params '{"pipeline": {"backfill": true, "incremental": false}}'
+   ```
+   Capture flow logs to `dist/staging/backfill/{timestamp}/prefect.log` and persist guardrail assertions (concurrency limits, contract outcomes) to `summary.json`.
+3. Record CLI command history and configuration flags in `dist/staging/backfill/{timestamp}/cli.sh` for audit, including the specific `PREFECT_API_URL`/work pool identifiers used during the run.
+
+### Full E2E Preflight
+
+1. Execute the canonical pipeline sequence:
+   ```bash
+   uv run hotpass overview
+   uv run hotpass refine --input-dir ./data --output-path ./dist/staging/refined.xlsx --profile staging --archive
+   uv run hotpass enrich --input ./dist/staging/refined.xlsx --output ./dist/staging/enriched.xlsx --profile staging --allow-network=true
+   uv run hotpass qa all
+   ```
+2. Capture artefacts under `dist/staging/e2e/{timestamp}/` (CLI output, QA report, enrichment logs).
+3. Update `Next_Steps.md` and `Next_Steps_Log.md` with links to the artefact directory and any deviations observed.

@@ -54,7 +54,7 @@ def build(
             "Execute the Hotpass pipeline under Prefect with feature toggles for entity "
             "resolution, enrichment, compliance, and observability."
         ),
-        parents=[shared.base, shared.pipeline, shared.excel],
+        parents=[shared.base, shared.pipeline, shared.reporting, shared.excel],
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(

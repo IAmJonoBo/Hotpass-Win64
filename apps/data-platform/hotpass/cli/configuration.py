@@ -152,6 +152,7 @@ class CLIProfile(BaseModel):
 
 DEFAULT_PROFILE_DIRS: tuple[Path, ...] = (
     Path(__file__).resolve().parent / "profiles",
+    Path(__file__).resolve().parent.parent / "profiles",
     Path.cwd() / "profiles",
     Path.cwd() / "config" / "profiles",
 )

@@ -2,15 +2,38 @@
 
 ## Web UI implementation priorities
 
-- **React Flow lineage graph**: unblock Stage 3.1 by wiring the React Flow visualisation and surfacing SSE-backed run summaries in RunDetails.
-- **Telemetry guardrails**: propagate Prefect/Marquez outages into the TelemetryStrip and Admin banner; consolidate polling intervals now that transport badges are in place.
-- **Accessibility & responsiveness**: complete the WCAG 2.1 AA audit, strengthen focus outlines, and deliver <1024px table strategies with keyboard navigation coverage.
-- **Template-aware assistant actions**: allow the chat assistant to list/import templates and trigger runs with `--import-template`, including dry-run previews.
-- **Template management**: add TemplatePicker/Manager drawer, mapping & rule toggle steps, and ConsolidationPreview downloads so Smart Import is operator-ready.
+- [x] **Programme** — Confirm Phase 5 T5.5 completion so roadmap status reflects programme expectations.
+  - **Evidence:** ARC lifecycle rehearsal artefacts captured under `dist/staging/arc/20251113T160000Z/` and roadmap Phase 5 note updated to reflect programme sign-off.
+- [x] **QA** — Execute full E2E runs with canonical configuration toggles ; reuse Prefect deployment `hotpass-e2e-staging`).
+  - **Evidence:** Local E2E verification recorded under `dist/logs/e2e-20251107T105820Z/` using the `data/e2e` sample workbook and `generic` profile; logs cover `overview`, `refine`, `enrich`, `plan research`, and `qa all`.
+- [ ] **Platform** — Validate Prefect backfill deployment guardrails in staging.
+- [x] **Engineering** — Benchmark `HotpassConfig.merge` on large payloads.
+  - **Progress:** Added `scripts/benchmarks/hotpass_config_merge.py`; latest run (`uv run python scripts/benchmarks/hotpass_config_merge.py --iterations 8 --agents 30 --providers 3 --tasks 4 --collectors 5 --targets 6`) produced `dist/benchmarks/hotpass_config_merge.json` (mean merge time ≈1.03ms).
+- [x] **QA & Engineering** — Extend orchestrate/resolve CLI coverage for advanced profiles (reuse CLI stress fixtures and add resolve scenarios in `tests/cli/test_resolve.py`).
+  - **Progress:** Added `tests/cli/test_resolve_profile.py` coverage for profile-driven Splink defaults, explicit disable flags, and Label Studio wiring; orchestrator stress fixtures now covered via `tests/cli/test_orchestrate.py`.
+- [x] **Engineering & QA** — Execute the staged mypy remediation plan (typed Hypothesis wrappers ➜ optional-dependency stubs ➜ CLI/MCP typing ➜ long-tail cleanup) to drive the error count toward zero.
+- [x] **Platform (Phase 5)** — Enable Docker buildx cache reuse through PR `ci/docker-cache` (owner: Platform).【F:.github/workflows/docker-cache.yml†L1-L60】
+- [ ] **Platform & QA** — Capture staging evidence for Prefect backfill guardrails and ARC runner sign-off once access returns.
+- [ ] **Docs & UX (Phase 6)** — Finish Diátaxis navigation uplift in PR `docs/data-governance-nav` follow-on, ensuring governance artefacts surfaced (owner: Docs & UX).
 
 Operator prompts to anticipate (and exactly how the agent should respond)
 
-1. Company & executive intel (with jurisdiction confirmation)
+- [ ] Reconfirm post-PR hygiene: ensure `Next_Steps.md` updated alongside each PR hand-off as per contributing guide (rolling reminder for all owners).【2ed7b7†L71-L71】
+- [x] Introduce manifest-driven Prefect deployments with CLI/docs/ADR updates (in progress 2025-10-29).
+  - **Evidence:** `docs/how-to-guides/manage-prefect-deployments.md` and `docs/adr/0005-prefect-deployment-manifests.md` document the workflow; manifests live in `prefect/`.
+- [ ] Schedule Marquez lineage smoke against `observability/marquez-bootstrap` follow-up once optional dependencies land (target 2025-11-29) using the quickstart workflow.【d9a97b†L24-L29】【b3de0d†L1-L42】
+- [x] Document expected staging artefacts for Prefect backfill guardrails and ARC runner sign-off runs so evidence drops into `dist/staging/backfill/` and `dist/staging/arc/` when access resumes (owner: Platform & QA).
+  - **Evidence:** `docs/operations/staging-rehearsal-plan.md` now includes step-by-step capture instructions for both rehearsal tracks with explicit destinations.
+- [x] **Types remediation roadmap (Engineering & QA)** — execute the staged plan and record checkpoints:
+  - **Phase 0** (Baseline capture) — archived `dist/quality-gates/baselines/mypy-baseline-2025-10-31.txt`; pytest baseline confirmed.
+  - **Phase 1** (Hypothesis/property suites) — typed wrappers + suite updates; property suites now raise zero decorator warnings.
+  - **Phase 2** (Optional dependency stubs) — centralised stubs (`tests/helpers/stubs.py`), refactored orchestration/dashboard suites; mypy fell below 40 errors with tests green.
+  - **Phase 3** (CLI/MCP/source typing) — annotated CLI commands, MCP server, remaining fixtures; mypy below 15 errors with `uv run pytest` green.
+  - **Phase 4** (Long tail) — residual list-based expects/unreachables cleared; `uv run mypy src tests scripts` now reports 0 errors.
+- [ ] Continue migrating orchestration pytest assertions to `expect()` helper outside touched scenarios (owner: QA & Engineering).
+  - **Progress:** test_error_handling.py completed (46 assertions migrated); compliance verification + enrichment suites migrated to `expect()`; agentic orchestration coverage converted 2025-10-31. Remaining bare-assert files: 31.
+- [ ] Audit remaining telemetry/CLI modules for strict mypy readiness and convert outstanding bare assertions (owner: Engineering & QA).
+  - **Progress:** `uv run mypy src tests scripts` on 2025-10-31 reports 0 errors (down from 197 baseline). Remaining follow-up: monitor new suites for decorator regressions.
 
 Likely prompt: “Find information on Absolute Aviation.”
 Agent behaviour: 1. Detect/assume user locale (SAST) → propose South Africa match first; show 2–3 alternatives if ambiguous. 2. Ask a single confirmation: “Do you mean Absolute Aviation (South Africa)?” (links: homepage, “Meet the team”). ￼ 3. If confirmed, run cached SearXNG meta-search; prioritise official sources (About/Team/Contact pages), then LinkedIn company (not personal profiles) and press releases. ￼ 4. Contact disclosure: provide official contact channels and any publicly posted personal emails found on official pages; cite sources. Use switchboard and role inboxes where personal emails are not publicly posted.
