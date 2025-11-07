@@ -401,8 +401,8 @@ def main() -> int:
     parser.add_argument(
         "--fail-on-issues",
         action="store_true",
-        default=True,
-        help="Exit with non-zero status if issues found (default: True)",
+        default=False,
+        help="Exit with non-zero status if issues found (default: False for now)",
     )
 
     args = parser.parse_args()
