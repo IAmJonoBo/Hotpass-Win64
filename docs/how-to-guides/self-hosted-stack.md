@@ -179,6 +179,21 @@ editing `deploy/docker/otel-collector-config.yaml`.
 | `FEATURE_ENABLE_REMOTE_RESEARCH` | Enables research workflows (defaults to `false`).    |
 | `ALLOW_NETWORK_RESEARCH`        | Opt-in to network calls when compliance allows.      |
 
+## CI smoke test
+
+The repository includes a GitHub Actions workflow ([`.github/workflows/self-hosted-smoke.yml`](../../.github/workflows/self-hosted-smoke.yml)) that
+starts the same Compose stack (plus the Hotpass web container), waits for each service to report healthy, and then shuts everything down.
+Run the workflow manually or replicate it locally with:
+
+```bash
+cd deploy/docker
+docker compose up -d --build prefect marquez marquez-db otel-collector minio minio-setup localstack searxng hotpass-web
+docker compose logs --tail=50
+docker compose down -v
+```
+
+Use this smoke test whenever you change Dockerfiles, Compose manifests, or the web documentation sync to guarantee self-hosted parity before opening a PR.
+
 ## Verification checklist
 
 1. `docker compose ps` → all services healthy.

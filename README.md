@@ -24,6 +24,56 @@ flowchart LR
 - **Operable from day one**: Prefect orchestration, OpenTelemetry exporters, and a Streamlit dashboard ship ready to run; tunnels, context bootstrap, and ARC checks are first-class CLI verbs.
 - **Research ready**: Deterministic enrichment works offline. When you enable network research, throttled crawlers and provenance tracking keep audits defensible.
 
+## Local-first operating model
+
+- **Run everything locally first.** `deploy/docker/docker-compose.yml` already ships Prefect, Marquez, Hotpass Web, MinIO, LocalStack, SearXNG, the OTLP collector, and an optional Ollama sidecar. Use it to unblock Prefect/Marquez reachability before reaching for VPNs or bastions.
+- **Self-host the core services.** Export the endpoints listed below (or generate them via `hotpass env`) so swapping environments is just a profile change.
+- **Swap AWS for LocalStack/MinIO in dev.** Prefect blocks and pipeline storage point at MinIO by default; LocalStack provides the remaining AWS APIs while you stay offline.
+- **ARC runners and LLMs stay local.** ARC runs on kind/minikube, and the Compose `llm` profile routes LLM traffic to Ollama until you intentionally opt into Groq/OpenRouter.
+- **Networked enrichment stays opt-in.** Offline is the default (`--allow-network` omitted). Point enrichment at the bundled SearXNG instance when you need deterministic search, and only enable remote calls once compliance guardrails are in place.
+
+Bring up the stack:
+
+```bash
+cd deploy/docker
+# Prefect, Marquez, MinIO, LocalStack, SearXNG, OTLP, Hotpass web
+docker compose up -d --build
+# Optional Ollama sidecar
+docker compose --profile llm up -d
+```
+
+Services and default endpoints:
+
+| Service              | Ports | Environment variable                                  |
+|----------------------|-------|-------------------------------------------------------|
+| Prefect server       | 4200  | `PREFECT_API_URL=http://127.0.0.1:4200/api`           |
+| Marquez              | 5002  | `OPENLINEAGE_URL=http://127.0.0.1:5002/api/v1`        |
+| OTLP collector       | 4317/4318 | `OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4318` |
+| MinIO (S3)           | 9000  | `HOTPASS_S3_ENDPOINT=http://127.0.0.1:9000`           |
+| LocalStack           | 4566  | `LOCALSTACK_ENDPOINT=http://127.0.0.1:4566`           |
+| SearXNG              | 8080  | `HOTPASS_SEARX_URL=http://127.0.0.1:8080`             |
+| Ollama (profile `llm`) | 11434 | `HOTPASS_LLM_BASE_URL=http://127.0.0.1:11434`      |
+
+Generate a `.env` file that points at the local stack (add `--include-credentials` to reuse values from `hotpass credentials wizard`):
+
+```bash
+uv run hotpass env --target local \
+  --prefect-url http://127.0.0.1:4200/api \
+  --openlineage-url http://127.0.0.1:5002/api/v1 \
+  --force
+```
+
+The command now records `HOTPASS_S3_ENDPOINT` and `LOCALSTACK_ENDPOINT`, so Prefect workers, ARC diagnostics, and CLI commands inherit the MinIO/LocalStack defaults without extra flags.
+
+Import the matching Prefect profile so CLI, Prefect UI, and workers share the same defaults:
+
+```bash
+prefect profile import prefect/profiles/local.toml
+prefect profile use hotpass-local
+```
+
+Toggle `--allow-network` only when you intentionally want online enrichment. Reuse the same commands with staging/production URLs and profile overlays so the workflow stays identical.
+
 ## 10-minute quickstart
 
 1. **Create an environment**
@@ -244,6 +294,7 @@ Run these gates before opening a pull request so local results align with CI:
 - `uv run python ops/quality/fitness_functions.py` — exercises the
   architectural fitness checks documented in `docs/architecture/fitness-functions.md`.
 - `uv run pytest -n auto` — executes the full test suite in parallel (mirrors CI’s xdist configuration).
+- `cd deploy/docker && docker compose up -d --build` — verify the self-hosted stack locally (the [`self-hosted-smoke`](.github/workflows/self-hosted-smoke.yml) workflow runs the same Compose bundle plus Hotpass Web in CI). Tear it down with `docker compose down -v` when finished.
 - Optional: set `HOTPASS_ENABLE_PRESIDIO=1` before running if you need Presidio-backed
   PII redaction. By default Hotpass skips the heavy Presidio models to keep offline
   runs self-contained.

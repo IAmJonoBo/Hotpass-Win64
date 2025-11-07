@@ -167,9 +167,20 @@ graph TD
      --include-credentials --force
    ```
 
-   Set `--allow-network` only when you intentionally opt into remote enrichment. The command writes `.env.local` so you can
-   `source` it before running other verbs. When you need staging or production, rerun the command with remote URLs and the same
-   target name so the rest of the workflow remains unchanged.
+   Set `--allow-network/--no-allow-network` when you intentionally opt into (or disable) remote enrichment. The command writes
+   `.env.local` so you can `source` it before running other verbs, and now also records `HOTPASS_S3_ENDPOINT` plus `LOCALSTACK_ENDPOINT`
+   so Prefect workers and ARC diagnostics inherit the MinIO/LocalStack defaults automatically. Use `--s3-endpoint` or
+   `--localstack-endpoint` to override the derived values.
+
+   Import the ready-made Prefect profile for localhost endpoints:
+
+   ```bash
+   prefect profile import prefect/profiles/local.toml
+   prefect profile use hotpass-local
+   ```
+
+   When you need staging or production, rerun `hotpass env` with remote URLs (and the same target name) so the rest of the workflow
+   remains unchanged.
 
 2. Validate prerequisites:
 

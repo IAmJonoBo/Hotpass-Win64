@@ -100,7 +100,8 @@ prefect profile use hotpass-local
 ```
 
 Hotpass CLI commands pick up that profile automatically, and `hotpass env --target local --prefect-url http://127.0.0.1:4200/api`
-writes a matching `.env.local`. When you need staging, keep the manifests identical and only switch the
+writes a matching `.env.local`. The command now also records `HOTPASS_S3_ENDPOINT` and `LOCALSTACK_ENDPOINT`, so workers inherit
+the MinIO/LocalStack defaults without editing manifests. When you need staging, keep the manifests identical and only switch the
 endpoint/profile so configuration drift stays near zero. See [How-to — self-host the Hotpass stack](self-hosted-stack.md)
 for the full list of services and environment variables.
 
