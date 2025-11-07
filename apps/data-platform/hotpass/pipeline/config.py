@@ -128,6 +128,8 @@ class PipelineConfig:
     import_mappings: list[Mapping[str, Any]] = field(default_factory=list)
     import_rules: list[Mapping[str, Any]] = field(default_factory=list)
     dist_dir: Path = field(default_factory=lambda: Path.cwd() / "dist")
+    s3_endpoint_url: str | None = None
+    aws_endpoint_url: str | None = None
 
 
 @dataclass

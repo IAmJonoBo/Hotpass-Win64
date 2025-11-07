@@ -17,6 +17,7 @@ operator-runbook
 setup-wizard
 bootstrap-execute-mode
 self-hosted-stack
+e2e-walkthrough
 ```
 
 ```{toctree}

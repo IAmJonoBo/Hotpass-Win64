@@ -46,7 +46,12 @@ Services and ports:
 | Ollama (profile `llm`) | Local LLM serving                      | 11434        | `HOTPASS_LLM_BASE_URL=http://127.0.0.1:11434` |
 
 Hotpass automatically defaults to localhost endpoints, but you can generate a matching
-`.env` file with:
+`.env` file and Prefect profile with:
+
+```bash
+prefect profile import prefect/profiles/local.toml
+prefect profile use hotpass-local
+```
 
 ```bash
 uv run hotpass env --target local --prefect-url http://127.0.0.1:4200/api \
@@ -54,7 +59,8 @@ uv run hotpass env --target local --prefect-url http://127.0.0.1:4200/api \
 ```
 
 Add `--include-credentials` if you previously ran `hotpass credentials wizard` and
-want API keys injected.
+want API keys injected. The generated `.env.local` automatically records `HOTPASS_S3_ENDPOINT`
+and `LOCALSTACK_ENDPOINT` so workers, Prefect profiles, and ARC diagnostics inherit the same defaults.
 
 ## Prefect (flows/orchestration)
 

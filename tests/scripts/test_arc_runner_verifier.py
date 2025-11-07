@@ -229,9 +229,15 @@ def test_identity_verifier_prefers_boto3_when_available() -> None:
         def __init__(self, profile_name: str | None = None) -> None:
             captured["profile"] = profile_name
 
-        def client(self, service_name: str, region_name: str | None = None) -> _StubClient:
+        def client(
+            self,
+            service_name: str,
+            region_name: str | None = None,
+            endpoint_url: str | None = None,
+        ) -> _StubClient:
             expect(service_name == "sts", "Identity verifier should request an STS client")
             captured["region"] = region_name
+            captured["endpoint_url"] = endpoint_url
             return _StubClient(profile=captured.get("profile"))
 
     def _load_boto3() -> Any:
@@ -247,6 +253,32 @@ def test_identity_verifier_prefers_boto3_when_available() -> None:
     expect(summary.account == "123456789012", "Account should surface from STS response")
     expect(captured.get("region") == "eu-west-1", "Region should be forwarded to boto3")
     expect(captured.get("profile") == "staging", "Profile should be forwarded to boto3")
+    expect(captured.get("endpoint_url") is None, "LocalStack endpoint should be optional")
+
+
+def test_identity_verifier_passes_localstack_endpoint_to_boto3() -> None:
+    captured: dict[str, Any] = {}
+
+    class _StubClient:
+        def get_caller_identity(self) -> dict[str, str]:
+            return {"Account": "000", "Arn": "arn", "UserId": "user"}
+
+    class _StubSession:
+        def client(self, service_name: str, endpoint_url: str | None = None, **_: Any) -> _StubClient:
+            captured["service"] = service_name
+            captured["endpoint_url"] = endpoint_url
+            return _StubClient()
+
+    def _load_boto3() -> Any:
+        return SimpleNamespace(session=SimpleNamespace(Session=_StubSession))
+
+    lifecycle.AwsIdentityVerifier(
+        boto3_loader=_load_boto3,
+        localstack_endpoint="http://localhost:4566",
+    ).verify()
+
+    expect(captured.get("service") == "sts", "STS client should be requested")
+    expect(captured.get("endpoint_url") == "http://localhost:4566", "Endpoint should point at LocalStack")
 
 
 def test_identity_verifier_falls_back_to_cli() -> None:
@@ -279,6 +311,37 @@ def test_identity_verifier_falls_back_to_cli() -> None:
     expect(command.calls[0][0] == "aws", "CLI fallback should invoke the aws executable")
     expect("--profile" in command.calls[0], "Profile should be passed to the CLI")
     expect("--region" in command.calls[0], "Region should be passed to the CLI")
+
+
+def test_cli_endpoint_flag_is_injected() -> None:
+    command = _Command(
+        results=iter(
+            [
+                json.dumps(
+                    {
+                        "Account": "123",
+                        "Arn": "arn:localstack",
+                        "UserId": "local",
+                    }
+                )
+            ]
+        )
+    )
+
+    def _missing_boto3() -> ModuleType:
+        raise ModuleNotFoundError("boto3")
+
+    lifecycle.AwsIdentityVerifier(
+        boto3_loader=_missing_boto3,
+        run_command=command,
+        localstack_endpoint="http://localhost:4566",
+    ).verify()
+
+    expect("--endpoint-url" in command.calls[0], "CLI invocation should include endpoint override")
+    expect(
+        "http://localhost:4566" in command.calls[0],
+        "Endpoint override should point at LocalStack",
+    )
 
 
 def test_identity_verifier_handles_generic_import_error() -> None:

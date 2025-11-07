@@ -16,6 +16,8 @@ from typing import Any, Protocol, cast
 
 import requests
 
+from hotpass.aws import resolve_localstack_endpoint
+
 
 @dataclass(frozen=True)
 class AwsIdentitySummary:
@@ -66,11 +68,13 @@ class AwsIdentityVerifier:
         profile: str | None = None,
         boto3_loader: Callable[[], ModuleType | _Boto3Module] | None = None,
         run_command: CommandRunner | None = None,
+        localstack_endpoint: str | None = None,
     ) -> None:
         self.region = region
         self.profile = profile
         self._load_boto3 = boto3_loader or self._import_boto3
         self._run_command = run_command or self._default_run_command
+        self._localstack_endpoint = localstack_endpoint or resolve_localstack_endpoint()
 
     @staticmethod
     def _import_boto3() -> ModuleType:
@@ -99,7 +103,12 @@ class AwsIdentityVerifier:
                 if not callable(session_ctor):
                     raise AttributeError("boto3 session factory missing")
                 session = cast(_Boto3Session, session_ctor(**session_kwargs))
-                client = session.client("sts", region_name=self.region)
+                client_kwargs: dict[str, Any] = {}
+                if self.region:
+                    client_kwargs["region_name"] = self.region
+                if self._localstack_endpoint:
+                    client_kwargs["endpoint_url"] = self._localstack_endpoint
+                client = session.client("sts", **client_kwargs)
                 response = client.get_caller_identity()
                 return AwsIdentitySummary(
                     account=str(response.get("Account", "")),
@@ -115,6 +124,8 @@ class AwsIdentityVerifier:
         command.extend(["sts", "get-caller-identity", "--output", "json"])
         if self.region:
             command.extend(["--region", self.region])
+        if self._localstack_endpoint:
+            command.extend(["--endpoint-url", self._localstack_endpoint])
         try:
             raw_output = self._run_command(command)
         except FileNotFoundError as exc:  # pragma: no cover - covered via tests

@@ -16,6 +16,7 @@ from pydantic import (
     model_validator,
 )
 
+from hotpass.aws import resolve_localstack_endpoint, resolve_s3_endpoint
 from hotpass.automation.http import (
     AutomationCircuitBreakerPolicy,
     AutomationHTTPConfig,
@@ -605,6 +606,8 @@ class HotpassConfig(BaseModel):
         )
 
         config.automation_http = self.pipeline.automation_http.to_dataclass()
+        config.s3_endpoint_url = resolve_s3_endpoint(config.s3_endpoint_url)
+        config.aws_endpoint_url = resolve_localstack_endpoint(config.aws_endpoint_url)
 
         if self.pipeline.research is not None:
             research_settings = self.pipeline.research.model_dump(mode="python")

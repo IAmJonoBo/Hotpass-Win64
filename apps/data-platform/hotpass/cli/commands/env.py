@@ -14,6 +14,7 @@ from ops.net.tunnels import latest_session
 from ..builder import CLICommand, SharedParsers
 from ..configuration import CLIProfile
 from ..state import load_state
+from ...aws import resolve_localstack_endpoint, resolve_s3_endpoint
 
 CREDENTIAL_STATE_FILE = "credentials.json"
 CTX_STATE_FILE = "contexts.json"
@@ -58,6 +59,14 @@ def build(
         help="Toggle network enrichment-related environment variables",
     )
     parser.add_argument(
+        "--s3-endpoint",
+        help="Override the S3/MinIO endpoint (defaults to HOTPASS_S3_ENDPOINT or http://127.0.0.1:9000)",
+    )
+    parser.add_argument(
+        "--localstack-endpoint",
+        help="Override the LocalStack endpoint (defaults to LOCALSTACK_ENDPOINT or http://127.0.0.1:4566)",
+    )
+    parser.add_argument(
         "--include-credentials",
         action=argparse.BooleanOptionalAction,
         default=False,
@@ -96,6 +105,10 @@ def _command_handler(namespace: argparse.Namespace, profile: CLIProfile | None) 
     openlineage_url = namespace.openlineage_url or _derive_openlineage_url()
     allow_network = namespace.allow_network
     dry_run = namespace.dry_run
+    s3_endpoint = namespace.s3_endpoint or resolve_s3_endpoint("http://127.0.0.1:9000")
+    localstack_endpoint = (
+        namespace.localstack_endpoint or resolve_localstack_endpoint("http://127.0.0.1:4566")
+    )
 
     credentials_store: dict[str, Any] | None = None
     if namespace.include_credentials:
@@ -114,6 +127,8 @@ def _command_handler(namespace: argparse.Namespace, profile: CLIProfile | None) 
         prefect_url=prefect_url,
         openlineage_url=openlineage_url,
         allow_network=allow_network,
+        s3_endpoint=s3_endpoint,
+        localstack_endpoint=localstack_endpoint,
         credentials=credentials_store,
     )
 
@@ -140,12 +155,18 @@ def _build_env_lines(
     prefect_url: str,
     openlineage_url: str,
     allow_network: bool,
+    s3_endpoint: str | None,
+    localstack_endpoint: str | None,
     credentials: dict[str, Any] | None,
 ) -> list[str]:
     lines = [
         f"PREFECT_API_URL={prefect_url}",
         f"OPENLINEAGE_URL={openlineage_url}",
     ]
+    if s3_endpoint:
+        lines.append(f"HOTPASS_S3_ENDPOINT={s3_endpoint}")
+    if localstack_endpoint:
+        lines.append(f"LOCALSTACK_ENDPOINT={localstack_endpoint}")
     ctx_state = load_state(CTX_STATE_FILE, default={"entries": []}) or {"entries": []}
     entries = ctx_state.get("entries", [])
     if entries:

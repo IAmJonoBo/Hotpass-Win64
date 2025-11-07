@@ -5,20 +5,24 @@ FROM node:24-alpine AS builder
 
 ARG PREFECT_API_URL=http://localhost:4200/api
 ARG OPENLINEAGE_URL=http://localhost:5000/api/v1
+ARG E2E_GUIDE_URL=/docs/e2e-walkthrough.md
 
 ENV PREFECT_API_URL=${PREFECT_API_URL}
 ENV OPENLINEAGE_URL=${OPENLINEAGE_URL}
 ENV VITE_PREFECT_API_URL=${PREFECT_API_URL}
 ENV VITE_MARQUEZ_API_URL=${OPENLINEAGE_URL}
-ENV SKIP_TOOLS_SYNC=1
+ENV VITE_E2E_GUIDE_URL=${E2E_GUIDE_URL}
 
 WORKDIR /app
 
-COPY package*.json pnpm-lock.yaml ./
+COPY apps/web-ui/package*.json ./
+COPY apps/web-ui/pnpm-lock.yaml ./
 RUN npm install -g pnpm && pnpm install --frozen-lockfile
 
-COPY public/tools.json ./public/tools.json
-COPY . .
+COPY apps/web-ui ./
+RUN mkdir -p public/docs
+COPY docs/how-to-guides/e2e-walkthrough.md public/docs/e2e-walkthrough.md
+COPY tools.json public/tools.json
 RUN pnpm run build
 
 FROM node:24-alpine AS runner
@@ -31,7 +35,8 @@ RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
 WORKDIR /app
 
-COPY package*.json pnpm-lock.yaml ./
+COPY apps/web-ui/package*.json ./
+COPY apps/web-ui/pnpm-lock.yaml ./
 RUN npm install -g pnpm && pnpm install --frozen-lockfile --prod
 
 COPY --from=builder /app/dist ./dist

@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "prebuild": "node scripts/sync-tools.js",
+    "predev": "node scripts/sync-tools.js",
+    "prestart": "node scripts/sync-tools.js",
     "dev": "vite",
     "build": "tsc && vite build",
     "start": "node server/index.mjs",

@@ -27,6 +27,7 @@ import { PendingApprovalsPanel } from '@/components/hil/PendingApprovalsPanel'
 import { ContractsExplorer } from '@/components/governance/ContractsExplorer'
 import { ResearchPlannerCard } from '@/components/research/ResearchPlannerCard'
 import { DataDocsViewerCard } from '@/components/governance/DataDocsViewerCard'
+import { E2EWalkthroughCard } from '@/components/guides/E2EWalkthroughCard'
 import { useLineageTelemetry, jobHasHotpassFacet } from '@/hooks/useLineageTelemetry'
 import { useConsolidationTelemetry } from '@/api/imports'
 import { useAuth } from '@/auth'
@@ -633,6 +634,7 @@ export function Dashboard() {
           <div className="grid gap-4 lg:grid-cols-2">
             <ResearchPlannerCard onOpenAssistant={openAssistant} />
             <DataDocsViewerCard />
+            <E2EWalkthroughCard className="lg:col-span-2" />
           </div>
         </>
       )}

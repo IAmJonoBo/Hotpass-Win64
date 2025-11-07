@@ -1,0 +1,81 @@
+name: Self-hosted Stack Smoke Test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    paths:
+      - 'deploy/docker/**'
+      - 'apps/web-ui/**'
+      - 'docs/how-to-guides/self-hosted-stack.md'
+      - '.github/workflows/self-hosted-smoke.yml'
+      - 'prefect/profiles/**'
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start core services
+        working-directory: deploy/docker
+        run: |
+          docker compose up -d --build prefect marquez marquez-db otel-collector minio minio-setup localstack searxng
+
+      - name: Build and start Hotpass web
+        working-directory: deploy/docker
+        run: |
+          docker compose build hotpass-web
+          docker compose up -d hotpass-web
+
+      - name: Wait for Prefect API
+        run: |
+          for i in {1..30}; do
+            if curl -fs http://127.0.0.1:4200/api/health >/dev/null 2>&1; then
+              echo "Prefect healthy"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Prefect API did not become healthy in time" >&2
+          exit 1
+
+      - name: Validate Marquez admin
+        run: |
+          for i in {1..30}; do
+            if curl -fs http://127.0.0.1:5003/healthcheck >/dev/null 2>&1; then
+              echo "Marquez healthy"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Marquez admin endpoint not reachable" >&2
+          exit 1
+
+      - name: Validate MinIO health
+        run: curl -fs http://127.0.0.1:9000/minio/health/live
+
+      - name: Validate LocalStack health
+        run: curl -fs http://127.0.0.1:4566/_localstack/health
+
+      - name: Validate SearXNG
+        run: curl -fs http://127.0.0.1:8080 >/dev/null
+
+      - name: Validate Hotpass Web UI
+        run: |
+          for i in {1..40}; do
+            if curl -fs http://127.0.0.1:3001 >/dev/null 2>&1; then
+              echo "Web UI healthy"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Web UI did not respond on port 3001" >&2
+          exit 1
+
+      - name: Teardown
+        if: always()
+        working-directory: deploy/docker
+        run: docker compose down -v

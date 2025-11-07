@@ -1,0 +1,9 @@
+[profile]
+name = "hotpass-local"
+
+[settings]
+PREFECT_API_URL = "http://127.0.0.1:4200/api"
+PREFECT_UI_URL = "http://127.0.0.1:4200"
+PREFECT_RESULTS_DEFAULT_SERIALIZER = "prefect.serializers.JSONSerializer"
+HOTPASS_S3_ENDPOINT = "http://127.0.0.1:9000"
+LOCALSTACK_ENDPOINT = "http://127.0.0.1:4566"

@@ -95,8 +95,8 @@ server until you intentionally opt into Prefect Cloud:
 cd deploy/docker
 docker compose up -d prefect
 
-prefect profile use hotpass-local || prefect profile create hotpass-local
-prefect config set PREFECT_API_URL=\"http://127.0.0.1:4200/api\"
+prefect profile import prefect/profiles/local.toml
+prefect profile use hotpass-local
 ```
 
 Hotpass CLI commands pick up that profile automatically, and `hotpass env --target local --prefect-url http://127.0.0.1:4200/api`

@@ -139,10 +139,10 @@ Toggle `--allow-network` only when you intentionally want online enrichment. Whe
    ```bash
    uv run hotpass refine \
      --input-dir ./data/e2e \
-     --output-path ./dist/refined.xlsx \
-     --profile generic \
-     --expectation-suite reachout_organisation \
-     --archive
+      --output-path ./dist/refined.xlsx \
+      --profile generic \
+      --expectation-suite reachout_organisation \
+      --archive
    ```
 
    The command writes refined outputs to `dist/refined.xlsx` and publishes the
@@ -150,6 +150,8 @@ Toggle `--allow-network` only when you intentionally want online enrichment. Whe
    Use `--input-dir ./data` when you want to exercise the full messy workbook
    set; the curated `data/e2e` sample keeps contract validation green for quick
    verification runs.
+
+   📘 Prefer a guided rehearsal? Follow [docs/how-to-guides/e2e-walkthrough.md](docs/how-to-guides/e2e-walkthrough.md) or open `http://localhost:3001/docs/e2e-walkthrough.md` once the Docker stack is running. The guide mirrors the staging checklist end-to-end.
 
    Outputs land under `dist/` (`refined.xlsx`, `refined.parquet`, and a timestamped archive). The warning reminds you to triage the low data-quality score before sharing the workbook.
 
@@ -244,8 +246,10 @@ The CLI now provides one-command automation for tunnels, AWS identity checks, co
 - Generate an `.env` file aligned with the current session:
 
   ```bash
-  hotpass env --target staging
+  hotpass env --target staging --force
   ```
+
+  Include `--include-credentials` to inject stored secrets into the generated file. The command also writes `HOTPASS_S3_ENDPOINT` and `LOCALSTACK_ENDPOINT` automatically so Prefect workers, ARC diagnostics, and CI jobs inherit the same MinIO/LocalStack endpoints without extra flags.
 
 ## Inventory configuration
 

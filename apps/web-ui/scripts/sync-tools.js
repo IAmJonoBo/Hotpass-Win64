@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { copyFileSync, mkdirSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdirSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import process from 'node:process'
@@ -13,9 +13,23 @@ if (process.env.SKIP_TOOLS_SYNC === '1') {
 }
 
 const repoRoot = resolve(__dirname, '..', '..', '..')
-const source = resolve(repoRoot, 'tools.json')
-const destDir = resolve(__dirname, '..', 'public')
-const dest = resolve(destDir, 'tools.json')
+const publicDir = resolve(__dirname, '..', 'public')
+const copies = [
+  {
+    source: resolve(repoRoot, 'tools.json'),
+    dest: resolve(publicDir, 'tools.json'),
+  },
+  {
+    source: resolve(repoRoot, 'docs', 'how-to-guides', 'e2e-walkthrough.md'),
+    dest: resolve(publicDir, 'docs', 'e2e-walkthrough.md'),
+  },
+]
 
-mkdirSync(destDir, { recursive: true })
-copyFileSync(source, dest)
+for (const { source, dest } of copies) {
+  if (!existsSync(source)) {
+    console.warn(`[sync-tools] skipping missing ${source}`)
+    continue
+  }
+  mkdirSync(dirname(dest), { recursive: true })
+  copyFileSync(source, dest)
+}

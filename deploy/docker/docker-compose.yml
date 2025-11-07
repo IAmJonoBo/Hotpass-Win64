@@ -9,17 +9,19 @@ services:
   # Hotpass Web UI
   hotpass-web:
     build:
-      context: ../../apps/web-ui
-      dockerfile: Dockerfile
+      context: ../..
+      dockerfile: apps/web-ui/Dockerfile
       args:
         PREFECT_API_URL: http://prefect:4200/api
         OPENLINEAGE_URL: http://marquez:5000/api/v1
+        E2E_GUIDE_URL: ${HOTPASS_E2E_GUIDE_URL:-/docs/e2e-walkthrough.md}
     ports:
       - "3001:3000"
     environment:
       - PREFECT_API_URL=http://prefect:4200/api
       - OPENLINEAGE_URL=http://marquez:5000/api/v1
       - HOTPASS_ENVIRONMENT=docker
+      - HOTPASS_E2E_GUIDE_URL=${HOTPASS_E2E_GUIDE_URL:-/docs/e2e-walkthrough.md}
     depends_on:
       prefect:
         condition: service_healthy

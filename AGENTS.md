@@ -138,6 +138,15 @@ python -m hotpass refine \
   backend at the local SearXNG instance and pass `--allow-network` with the relevant profile guardrails enabled.
 - Only pivot to staging/cloud endpoints after the local stack is green. The same env file works by swapping the URLs, so
   CI/CD remains deterministic.
+- `hotpass env` now writes `HOTPASS_S3_ENDPOINT` and `LOCALSTACK_ENDPOINT` automatically so Prefect workers and ARC diagnostics inherit the same MinIO/LocalStack defaults without extra flags.
+- Import the ready-made Prefect profile to stay aligned with the Compose defaults:
+
+  ```bash
+  prefect profile import prefect/profiles/local.toml
+  prefect profile use hotpass-local
+  ```
+
+- Full walkthrough: [docs/how-to-guides/e2e-walkthrough.md](docs/how-to-guides/e2e-walkthrough.md) (also hosted locally at `http://localhost:3001/docs/e2e-walkthrough.md`).
 
 See [How-to — self-host the Hotpass stack](docs/how-to-guides/self-hosted-stack.md) for deeper context.
 

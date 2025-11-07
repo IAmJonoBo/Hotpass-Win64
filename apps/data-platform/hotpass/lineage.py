@@ -47,8 +47,8 @@ DEFAULT_PRODUCER = "https://hotpass.dev/lineage"
 DatasetSpec = str | Path | Mapping[str, object]
 
 try:
-    _HOTPASS_VERSION = metadata.version("hotpass")
-except metadata.PackageNotFoundError:  # pragma: no cover - during editable installs
+    _HOTPASS_VERSION = metadata.version("hotpass")  # type: ignore[assignment]
+except Exception:  # pragma: no cover - during editable installs or metadata edge cases
     _HOTPASS_VERSION = "unknown"
 
 
