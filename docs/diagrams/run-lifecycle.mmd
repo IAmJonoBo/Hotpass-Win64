@@ -1,0 +1,89 @@
+%% Hotpass Run Lifecycle
+%% Detailed view of what happens during a refine/enrich/qa cycle
+
+sequenceDiagram
+    autonumber
+    actor Operator
+    participant CLI as hotpass CLI
+    participant Profile as Profile Loader
+    participant Pipeline as Pipeline Engine
+    participant GE as Great Expectations
+    participant Storage as Storage Layer
+    participant Lineage as Marquez Lineage
+    participant OTLP as OpenTelemetry
+
+    Operator->>CLI: uv run hotpass refine
+    CLI->>Profile: Load profile config
+    Profile-->>CLI: Validation rules + intent
+
+    CLI->>OTLP: Start trace span
+    CLI->>Lineage: Create run record
+
+    CLI->>Pipeline: Initialise refinement
+
+    Pipeline->>Pipeline: Load raw workbooks
+    Pipeline->>Pipeline: Normalise headers & types
+    Pipeline->>Pipeline: Deduplicate rows
+
+    Pipeline->>GE: Validate expectations
+    GE-->>Pipeline: Validation results
+
+    Pipeline->>Pipeline: Calculate quality score
+
+    alt Archive enabled
+        Pipeline->>Storage: Write timestamped archive
+        Storage-->>Pipeline: Archive path
+    end
+
+    Pipeline->>Storage: Write refined.xlsx
+    Pipeline->>Storage: Write refined.parquet
+
+    Pipeline->>GE: Generate Data Docs
+    GE->>Storage: Write dist/data-docs/
+
+    Pipeline->>Storage: Write contract notices
+
+    Pipeline-->>CLI: Refinement complete
+
+    CLI->>Lineage: Record datasets & lineage
+    Lineage-->>CLI: Lineage graph
+
+    CLI->>OTLP: Close trace span
+    OTLP-->>CLI: Telemetry exported
+
+    CLI-->>Operator: Summary + quality score
+
+    alt User runs QA
+        Operator->>CLI: uv run hotpass qa all
+        CLI->>GE: Run expectation suites
+        CLI->>CLI: Run fitness functions
+        CLI->>CLI: Check documentation
+        CLI-->>Operator: QA gate results
+    end
+
+    alt User runs enrichment
+        Operator->>CLI: uv run hotpass enrich
+        CLI->>Pipeline: Initialise enrichment
+
+        Pipeline->>Pipeline: Deterministic lookup
+
+        alt Network allowed
+            Pipeline->>Pipeline: Network research
+            Pipeline->>Pipeline: Track provenance
+        end
+
+        Pipeline->>Storage: Write enriched.xlsx
+        Pipeline-->>CLI: Enrichment complete
+        CLI-->>Operator: Enrichment summary
+    end
+
+    alt User plans research
+        Operator->>CLI: uv run hotpass plan research
+        CLI->>Pipeline: Analyse dataset
+        Pipeline-->>CLI: Research plan
+        CLI-->>Operator: Execution plan (offline)
+    end
+
+    Note over Operator,OTLP: All operations respect --profile, --archive, --allow-network flags
+    Note over Pipeline,Storage: Provenance tracked for all transformations
+    Note over OTLP: Observability optional via --observability flag

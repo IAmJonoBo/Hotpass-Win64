@@ -52,3 +52,10 @@ repos:
         entry: uv pip check
         language: system
         pass_filenames: false
+      - id: verify-docs
+        name: Verify documentation parity
+        entry: uv run python scripts/verify_docs.py
+        language: system
+        pass_filenames: false
+        files: \.(md|py)$
+        stages: [pre-commit]

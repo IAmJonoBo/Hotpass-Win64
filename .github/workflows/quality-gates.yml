@@ -162,6 +162,9 @@ jobs:
       - name: QG-5 - Docs/Instructions
         run: uv run pytest tests/cli/test_quality_gates.py::TestQG5DocsInstruction -v
 
+      - name: Verify documentation parity
+        run: uv run python scripts/verify_docs.py
+
       - name: All Quality Gates Summary
         if: always()
         run: |

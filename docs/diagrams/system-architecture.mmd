@@ -1,0 +1,99 @@
+%% Hotpass System Architecture
+%% High-level view of the system components and their relationships
+
+graph TB
+    subgraph "CLI & Operators"
+        CLI[hotpass CLI<br/>28 commands]
+        OpCLI[hotpass-operator<br/>Guided wizard]
+        MCP[MCP Server<br/>stdio/tools]
+    end
+
+    subgraph "Core Pipeline"
+        Refine[Refinement Pipeline<br/>normalise, dedupe, validate]
+        Enrich[Enrichment Engine<br/>deterministic + network]
+        Resolve[Entity Resolution<br/>Splink + RapidFuzz]
+        QA[Quality Assurance<br/>GE + Frictionless]
+    end
+
+    subgraph "Orchestration Layer"
+        Prefect[Prefect<br/>Workflow engine]
+        Marquez[Marquez<br/>Lineage tracking]
+        OTLP[OpenTelemetry<br/>Observability]
+    end
+
+    subgraph "Storage & State"
+        MinIO[MinIO/S3<br/>Artefact storage]
+        LocalStack[LocalStack<br/>AWS simulation]
+        Archive[Archive Store<br/>Timestamped runs]
+    end
+
+    subgraph "Research & Enrichment"
+        SearX[SearXNG<br/>Meta-search]
+        Crawl[Research Crawlers<br/>Rate-limited]
+        LLM[Ollama/LLMs<br/>Optional]
+    end
+
+    subgraph "Governance & Compliance"
+        Contracts[Data Contracts<br/>Frictionless schemas]
+        DataDocs[Great Expectations<br/>Data Docs]
+        Presidio[Presidio<br/>PII redaction]
+        POPIA[POPIA Controls<br/>Compliance checks]
+    end
+
+    subgraph "Infrastructure"
+        Tunnels[SSH/SSM Tunnels<br/>hotpass net]
+        ARC[GitHub ARC<br/>Self-hosted runners]
+        Contexts[Prefect + K8s<br/>Context bootstrap]
+    end
+
+    CLI --> Refine
+    CLI --> Enrich
+    CLI --> Resolve
+    CLI --> QA
+    OpCLI --> CLI
+    MCP --> CLI
+
+    Refine --> QA
+    Refine --> Archive
+    Enrich --> Resolve
+
+    Prefect --> Refine
+    Prefect --> Enrich
+    Marquez --> Prefect
+    OTLP --> Prefect
+
+    Refine --> MinIO
+    Enrich --> MinIO
+    Archive --> MinIO
+
+    Enrich --> SearX
+    Enrich --> Crawl
+    Crawl --> LLM
+
+    QA --> Contracts
+    QA --> DataDocs
+    Refine --> Presidio
+    Refine --> POPIA
+
+    CLI --> Tunnels
+    CLI --> ARC
+    CLI --> Contexts
+
+    Tunnels --> Prefect
+    Tunnels --> Marquez
+
+    classDef cliStyle fill:#e1f5ff,stroke:#17415f,stroke-width:2px
+    classDef pipelineStyle fill:#d4edda,stroke:#225c2f,stroke-width:2px
+    classDef orchStyle fill:#fff3cd,stroke:#856404,stroke-width:2px
+    classDef storageStyle fill:#f8d7da,stroke:#721c24,stroke-width:2px
+    classDef researchStyle fill:#d1ecf1,stroke:#0c5460,stroke-width:2px
+    classDef govStyle fill:#e2e3e5,stroke:#383d41,stroke-width:2px
+    classDef infraStyle fill:#cce5ff,stroke:#004085,stroke-width:2px
+
+    class CLI,OpCLI,MCP cliStyle
+    class Refine,Enrich,Resolve,QA pipelineStyle
+    class Prefect,Marquez,OTLP orchStyle
+    class MinIO,LocalStack,Archive storageStyle
+    class SearX,Crawl,LLM researchStyle
+    class Contracts,DataDocs,Presidio,POPIA govStyle
+    class Tunnels,ARC,Contexts infraStyle
