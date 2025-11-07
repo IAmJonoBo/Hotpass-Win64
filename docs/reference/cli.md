@@ -1,7 +1,7 @@
 ---
 title: Reference — command-line interface
 summary: Detailed options for the unified `hotpass` CLI entry point and its subcommands.
-last_updated: 2025-11-03
+last_updated: 2025-11-07
 ---
 
 # Command-line interface reference
@@ -157,6 +157,19 @@ graph TD
    cd workspace
    ls config/profiles
    ```
+
+2. Generate an `.env` for the self-hosted stack (defaults to `http://127.0.0.1` for Prefect/Marquez):
+
+   ```bash
+   uv run hotpass env --target local \
+     --prefect-url http://127.0.0.1:4200/api \
+     --openlineage-url http://127.0.0.1:5002/api/v1 \
+     --include-credentials --force
+   ```
+
+   Set `--allow-network` only when you intentionally opt into remote enrichment. The command writes `.env.local` so you can
+   `source` it before running other verbs. When you need staging or production, rerun the command with remote URLs and the same
+   target name so the rest of the workflow remains unchanged.
 
 2. Validate prerequisites:
 

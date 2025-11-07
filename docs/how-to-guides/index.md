@@ -16,6 +16,7 @@ toolchain-setup
 operator-runbook
 setup-wizard
 bootstrap-execute-mode
+self-hosted-stack
 ```
 
 ```{toctree}

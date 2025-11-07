@@ -103,7 +103,45 @@ python -m hotpass refine \
 
 ---
 
-### 1.5 Credential acquisition & tunnels
+### 1.5 Local self-hosted stack (default)
+
+- Bring everything up locally by default:
+
+  ```bash
+  cd deploy/docker
+  docker compose up -d --build
+  docker compose --profile llm up -d   # optional Ollama sidecar
+  ```
+
+- Generated services and endpoints:
+
+  | Component          | Env var / URL                                   |
+  |--------------------|-------------------------------------------------|
+  | Prefect            | `PREFECT_API_URL=http://127.0.0.1:4200/api`     |
+  | Marquez            | `OPENLINEAGE_URL=http://127.0.0.1:5002/api/v1`  |
+  | OTLP collector     | `OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4318` |
+  | MinIO (S3)         | `HOTPASS_S3_ENDPOINT=http://127.0.0.1:9000`     |
+  | LocalStack         | `LOCALSTACK_ENDPOINT=http://127.0.0.1:4566`     |
+  | SearXNG            | `HOTPASS_SEARX_URL=http://127.0.0.1:8080`       |
+  | Ollama (optional)  | `HOTPASS_LLM_BASE_URL=http://127.0.0.1:11434`   |
+
+- Generate a matching `.env` file:
+
+  ```bash
+  uv run hotpass env --target local \
+    --prefect-url http://127.0.0.1:4200/api \
+    --openlineage-url http://127.0.0.1:5002/api/v1 \
+    --include-credentials --force
+  ```
+
+- Keep enrichment offline unless a task explicitly requires network access. When you need search, point the enrichment
+  backend at the local SearXNG instance and pass `--allow-network` with the relevant profile guardrails enabled.
+- Only pivot to staging/cloud endpoints after the local stack is green. The same env file works by swapping the URLs, so
+  CI/CD remains deterministic.
+
+See [How-to — self-host the Hotpass stack](docs/how-to-guides/self-hosted-stack.md) for deeper context.
+
+### 1.6 Credential acquisition & tunnels
 
 - Run `hotpass credentials wizard` after syncing dependencies. The wizard can launch `aws sso login`, open provider portals, and persist API keys under `.hotpass/credentials.json` with restrictive permissions. Use `--store-secrets=false` when you want to skip writing secrets to disk.
 - Generate environment files that include saved secrets with `hotpass env --target staging --include-credentials`. The flag injects stored `AWS_*`, `MARQUEZ_API_KEY`, and `PREFECT_API_KEY` values into the output file (skipped by default).

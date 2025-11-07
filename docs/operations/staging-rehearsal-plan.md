@@ -1,7 +1,7 @@
 ---
 title: Staging Rehearsal Plan — Marquez & ARC Lifecycle
 summary: Scheduled activities, owners, and artefact collection steps for the pending staging rehearsals.
-last_updated: 2025-11-02
+last_updated: 2025-11-07
 ---
 
 ## Overview
@@ -12,6 +12,10 @@ Two outstanding readiness items require staging access before they can move from
 2. **ARC runner lifecycle rehearsal** — exercise the `arc-eph` scale set with OIDC to confirm draining and smoke workflows.
 
 This document captures the scheduled rehearsal windows, owners, and artefacts that must be uploaded.
+
+> **Local-first reminder:** Always verify the self-hosted stack (`deploy/docker/docker-compose.yml`) passes the
+> [self-hosting checklist](../how-to-guides/self-hosted-stack.md) before booking staging time. Prefect, Marquez,
+> OTLP, MinIO, LocalStack, and SearXNG run locally; staging access should only be required for final evidence capture.
 
 ## Schedule
 

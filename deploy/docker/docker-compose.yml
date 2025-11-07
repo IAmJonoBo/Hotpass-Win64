@@ -99,6 +99,77 @@ services:
       timeout: 10s
       retries: 3
 
+  # OpenTelemetry Collector
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.101.0
+    command: ["--config=/etc/otel-collector.yaml"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector.yaml:ro
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+    networks:
+      - hotpass-network
+
+  # MinIO - S3 compatible storage
+  minio:
+    image: quay.io/minio/minio:RELEASE.2024-08-09T18-34-07Z
+    environment:
+      - MINIO_ROOT_USER=hotpass
+      - MINIO_ROOT_PASSWORD=hotpass123
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+    networks:
+      - hotpass-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  minio-setup:
+    image: quay.io/minio/mc:RELEASE.2024-08-27T18-16-37Z
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+        set -e;
+        mc alias set hotpass http://minio:9000 hotpass hotpass123;
+        mc mb -p hotpass/hotpass-artifacts || true;
+        mc anonymous set download hotpass/hotpass-artifacts || true;
+        "
+    networks:
+      - hotpass-network
+
+  # LocalStack - optional AWS parity
+  localstack:
+    image: localstack/localstack:4.0.2
+    environment:
+      - SERVICES=s3,sts,iam
+      - LOCALSTACK_AUTH_TOKEN=${LOCALSTACK_AUTH_TOKEN-}
+    ports:
+      - "4566:4566"
+    volumes:
+      - "localstack-data:/var/lib/localstack"
+    networks:
+      - hotpass-network
+
+  # SearXNG - offline meta search for research
+  searxng:
+    image: searxng/searxng:2024.10.07-d83cf1396
+    environment:
+      - BASE_URL=http://localhost:8080/
+      - SEARXNG_HOSTNAME=localhost
+    ports:
+      - "8080:8080"
+    networks:
+      - hotpass-network
+
   llm:
     image: ghcr.io/ollama/ollama:0.3.12
     profiles: ["llm"]
@@ -118,3 +189,5 @@ networks:
 
 volumes:
   marquez-data:
+  minio-data:
+  localstack-data:

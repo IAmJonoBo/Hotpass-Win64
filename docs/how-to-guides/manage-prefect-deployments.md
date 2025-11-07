@@ -1,7 +1,7 @@
 ---
 title: How-to — manage Prefect deployment manifests
 summary: Version, review, and apply Prefect deployment manifests for Hotpass flows.
-last_updated: 2025-11-02
+last_updated: 2025-11-07
 ---
 
 This guide explains how to work with the manifest-based Prefect deployment workflow introduced in October 2025.
@@ -85,6 +85,24 @@ manifest is re-applied.
   capacity to meet SLAs.
 - **Environment parity** — Build workers from the same base image/environment as CI (`uv` + Hotpass extras) so test, staging,
   and production executions behave consistently. Run `make sync` within the worker bootstrap to align dependency extras.
+
+## Prefer the self-hosted Prefect server in dev
+
+The Compose stack under `deploy/docker/` now includes Prefect, so you can operate against a fully local
+server until you intentionally opt into Prefect Cloud:
+
+```bash
+cd deploy/docker
+docker compose up -d prefect
+
+prefect profile use hotpass-local || prefect profile create hotpass-local
+prefect config set PREFECT_API_URL=\"http://127.0.0.1:4200/api\"
+```
+
+Hotpass CLI commands pick up that profile automatically, and `hotpass env --target local --prefect-url http://127.0.0.1:4200/api`
+writes a matching `.env.local`. When you need staging, keep the manifests identical and only switch the
+endpoint/profile so configuration drift stays near zero. See [How-to — self-host the Hotpass stack](self-hosted-stack.md)
+for the full list of services and environment variables.
 
 ## CI and local test cadence
 
