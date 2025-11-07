@@ -24,47 +24,6 @@ flowchart LR
 - **Operable from day one**: Prefect orchestration, OpenTelemetry exporters, and a Streamlit dashboard ship ready to run; tunnels, context bootstrap, and ARC checks are first-class CLI verbs.
 - **Research ready**: Deterministic enrichment works offline. When you enable network research, throttled crawlers and provenance tracking keep audits defensible.
 
-## Local-first operating model
-
-- **Run everything locally first.** The repository already includes a Compose stack (`deploy/docker/docker-compose.yml`) plus CLI helpers for tunnels, contexts, and env files. Use it to unblock Prefect/Marquez reachability problems before you reach for VPNs or bastions.
-- **Self-host the core services.** Prefect server, Marquez (OpenLineage), an OpenTelemetry collector, and MinIO (S3-compatible) all ship as containers. Point Hotpass at those endpoints via environment variables or profiles.
-- **Swap AWS for LocalStack/MinIO in dev.** When S3 or other AWS APIs are unavoidable, map Prefect blocks to MinIO (`endpoint_url=http://127.0.0.1:9000`) and run LocalStack on `http://127.0.0.1:4566` for API parity.
-- **ARC runners and LLMs stay local.** ARC works on kind/minikube; the Compose profile `llm` launches Ollama for offline LLM routing. Switch to Groq/OpenRouter only when you need cloud capacity.
-- **Networked enrichment is opt-in.** Offline remains the default (`--allow-network=false`). Bring up the bundled SearXNG instance locally and enable remote network access only after compliance guardrails are configured.
-
-See [How-to — self-host the Hotpass stack](docs/how-to-guides/self-hosted-stack.md) for the full walkthrough.
-
-### Bring up the self-hosted stack
-
-```bash
-cd deploy/docker
-docker compose up -d --build
-docker compose --profile llm up -d   # optional Ollama sidecar
-```
-
-Services and default endpoints:
-
-| Service              | Host ports | Key env variable                                       |
-|----------------------|------------|--------------------------------------------------------|
-| Prefect server       | 4200       | `PREFECT_API_URL=http://127.0.0.1:4200/api`            |
-| Marquez              | 5002/5003  | `OPENLINEAGE_URL=http://127.0.0.1:5002/api/v1`         |
-| OTel collector       | 4317/4318  | `OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4318`    |
-| MinIO (S3)           | 9000/9001  | `HOTPASS_S3_ENDPOINT=http://127.0.0.1:9000`            |
-| LocalStack           | 4566       | `LOCALSTACK_ENDPOINT=http://127.0.0.1:4566`            |
-| SearXNG              | 8080       | `HOTPASS_SEARX_URL=http://127.0.0.1:8080`              |
-| Ollama (profile llm) | 11434      | `HOTPASS_LLM_BASE_URL=http://127.0.0.1:11434`          |
-
-Generate a `.env` file that points at the local stack:
-
-```bash
-uv run hotpass env --target local \\
-  --prefect-url http://127.0.0.1:4200/api \\
-  --openlineage-url http://127.0.0.1:5002/api/v1 \\
-  --include-credentials --force
-```
-
-Toggle `--allow-network` only when you intentionally want online enrichment. When you need to target staging or production, reuse the same command with remote URLs so the rest of the workflow stays identical.
-
 ## 10-minute quickstart
 
 1. **Create an environment**
@@ -151,8 +110,6 @@ Toggle `--allow-network` only when you intentionally want online enrichment. Whe
    set; the curated `data/e2e` sample keeps contract validation green for quick
    verification runs.
 
-   📘 Prefer a guided rehearsal? Follow [docs/how-to-guides/e2e-walkthrough.md](docs/how-to-guides/e2e-walkthrough.md) or open `http://localhost:3001/docs/e2e-walkthrough.md` once the Docker stack is running. The guide mirrors the staging checklist end-to-end.
-
    Outputs land under `dist/` (`refined.xlsx`, `refined.parquet`, and a timestamped archive). The warning reminds you to triage the low data-quality score before sharing the workbook.
 
    > **Heads-up:** The SACAA workbook includes duplicate organisations. Hotpass now keeps the
@@ -167,7 +124,7 @@ Toggle `--allow-network` only when you intentionally want online enrichment. Whe
      --profile-search-path ../apps/data-platform/hotpass/profiles
    ```
 
-   ```
+   ```bash
    Running: CLI Integrity          ✓ 13/13 checks passed
    Running: Fitness Functions      ✓ All fitness functions satisfied
    Running: Data Quality (GE)      ✓ 7/7 checks passed

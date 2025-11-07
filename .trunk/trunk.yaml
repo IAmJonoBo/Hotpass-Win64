@@ -18,22 +18,29 @@ runtimes:
 # This is the section where you manage your linters. (https://docs.trunk.io/check/configuration)
 lint:
   enabled:
+    - biome@2.3.4
+    - black@25.9.0
+    - dotenv-linter@3.3.0
+    - isort@7.0.0
+    - oxipng@9.1.5
+    - prettier@3.6.2
+    - svgo@4.0.0
     - tflint@0.59.1
-    - gitleaks@8.28.0
+    - gitleaks@8.29.0
     - hadolint@2.14.0
     - shellcheck@0.11.0
     - shfmt@3.6.0
     - actionlint@1.7.8
     - bandit@1.8.6
-    - checkov@3.2.489
+    - checkov@3.2.490
     - git-diff-check
     - markdownlint@0.45.0
     - mypy@1.18.2
     - osv-scanner@2.2.4
-    - renovate@41.167.2
-    - ruff@0.14.3
+    - renovate@42.0.1
+    - ruff@0.14.4
     - taplo@0.10.0
-    - trufflehog@3.90.12
+    - trufflehog@3.90.13
     - yamllint@1.37.1
 actions:
   disabled:
