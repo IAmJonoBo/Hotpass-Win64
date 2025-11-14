@@ -52,10 +52,10 @@ jobs:
         shell: pwsh
 
       - name: Debug — list scripts directory
-          run: |
-            Write-Host "Listing scripts dir: $Env:GITHUB_WORKSPACE\scripts"
-            Get-ChildItem -Path "$Env:GITHUB_WORKSPACE\scripts" -Recurse | Select-Object FullName, Length
-          shell: pwsh
+        run: |
+          Write-Host "Listing scripts dir: $Env:GITHUB_WORKSPACE\scripts"
+          Get-ChildItem -Path "$Env:GITHUB_WORKSPACE\scripts" -Recurse | Select-Object FullName, Length
+        shell: pwsh
 
       - name: Regenerate lockfiles
         shell: pwsh
