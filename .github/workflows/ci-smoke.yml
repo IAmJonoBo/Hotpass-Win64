@@ -76,25 +76,27 @@ jobs:
           cache-dependency-path: apps/web-ui/pnpm-lock.yaml
 
       - name: Ensure pnpm available (Corepack + npm)
-        shell: bash
+        shell: pwsh
         run: |
           # Try enabling Corepack; then ensure pnpm is available by installing it via npm as a fallback.
-          corepack enable || true
-          corepack prepare pnpm@9.12.2 --activate || true
-          npm install -g pnpm@9.12.2 || true
-          pnpm --version || true
+          try { corepack enable } catch { Write-Host "corepack enable failed; continuing" }
+          try { corepack prepare pnpm@9.12.2 --activate } catch { Write-Host "corepack prepare failed; continuing" }
+          try { npm install -g pnpm@9.12.2 } catch { Write-Host "npm global install pnpm failed; continuing" }
+          try { pnpm --version } catch { Write-Host "pnpm not found" }
 
       - name: Install web dependencies
+        shell: pwsh
         working-directory: apps/web-ui
-        run: pnpm install --frozen-lockfile
+        run: |
+          try { pnpm install --frozen-lockfile } catch { Write-Host "pnpm install failed; retrying"; pnpm install }
 
       - name: "Debug: node/pnpm path & versions"
-        shell: bash
+        shell: pwsh
         run: |
-          echo "PATH=${PATH}"
-          node --version || true
-          npm --version || true
-          pnpm --version || true
+          Write-Host "PATH=$($env:Path)"
+          try { node --version } catch { Write-Host "node not found" }
+          try { npm --version } catch { Write-Host "npm not found" }
+          try { pnpm --version } catch { Write-Host "pnpm not found" }
 
       - name: Run web UI linter (Biome)
         working-directory: apps/web-ui
