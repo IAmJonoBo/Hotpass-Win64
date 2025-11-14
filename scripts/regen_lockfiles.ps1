@@ -36,7 +36,8 @@ $env:HOTPASS_UV_EXTRAS = 'dev orchestration enrichment geospatial compliance das
 Run "uv sync --extra dev --extra orchestration --extra enrichment --extra geospatial --extra compliance --frozen"
 
 # 3) Write uv.lock file
-Run "uv lock --write-lock"
+# `uv lock` writes the lockfile in current uv versions; older versions used `--write-lock`.
+Run "uv lock"
 
 # 4) Regenerate web UI pnpm lock on Windows (uses Corepack + pnpm)
 if (-Not (Get-Command corepack -ErrorAction SilentlyContinue)) {
