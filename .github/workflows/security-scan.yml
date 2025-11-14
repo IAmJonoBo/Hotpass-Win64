@@ -3,398 +3,100 @@ name: 'Security: Pip-audit, Bandit & Gitleaks'
 
 on:
   pull_request:
-  push:
-    branches: [main]
-  schedule:
-    - cron: '0 4 * * *'
-  workflow_dispatch:
+  name: "Security: Pip-audit, Bandit & Gitleaks"
 
-permissions:
-  contents: read
-  security-events: write
-  pull-requests: read
+  on:
+    pull_request:
+    push:
+      branches: [main]
+    schedule:
+      - cron: '0 4 * * *'
+    workflow_dispatch:
 
-jobs:
-  security-scan:
-    name: 'Quick: pip-audit + bandit'
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
+  permissions:
+    contents: read
+    security-events: write
+    pull-requests: read
 
-      - name: Set up uv Python
-        uses: astral-sh/setup-uv@v7
-        with:
-          python-version: '3.13'
+  jobs:
+    security-scan:
+      name: 'Quick: pip-audit + bandit'
+      runs-on: ubuntu-latest
+      timeout-minutes: 30
+      steps:
+        - uses: actions/checkout@v5
+          with:
+            fetch-depth: 0
 
-      - name: Sync dev extras
+        - name: Set up uv Python
+          uses: astral-sh/setup-uv@v7
+          with:
+            python-version: '3.13'
+
+        - name: Sync dev extras
+          env:
+            HOTPASS_UV_EXTRAS: dev
+          run: bash ops/uv_sync_extras.sh
+
+        - name: Run pip-audit (fast)
+          run: |
+            mkdir -p dist/security
+            uv run pip-audit --json -o dist/security/pip-audit.json || true
+
+        - name: Run bandit (fast)
+          run: |
+            mkdir -p dist/security
+            uv run bandit -r apps/data-platform ops -f json -o dist/security/bandit.json || true
+
+        - name: Upload security artefacts
+          uses: actions/upload-artifact@v5
+          with:
+            name: security-scan
+            path: |
+              dist/security/pip-audit.json
+              dist/security/bandit.json
+
+    security-suite:
+      name: 'Full Security Suite: Gitleaks + pip-audit + bandit'
+      runs-on: ubuntu-latest
+      steps:
+        - uses: actions/checkout@v5
+          with:
+            fetch-depth: 0
+
+        - name: Gitleaks
+          uses: gitleaks/gitleaks-action@v2
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          with:
+            config-path: .gitleaks.toml
+            additional-args: '--verbose'
+
+        - name: Set up uv and Python
+          uses: astral-sh/setup-uv@v7
+          with:
+            python-version: '3.13'
+
+        - name: Synchronise dependencies
+          env:
+            HOTPASS_UV_EXTRAS: 'dev'
+          run: bash ops/uv_sync_extras.sh
+
+        - name: Run pip-audit (full)
+          run: |
+            mkdir -p dist/security
+            uv run pip-audit --json -o dist/security/pip-audit.json || true
+
+        - name: Run bandit (full)
+          run: |
+            mkdir -p dist/security
+            uv run bandit -r apps/data-platform ops -f json -o dist/security/bandit.json || true
+
+        - name: Upload security suite artefacts
+          uses: actions/upload-artifact@v5
+          with:
+            name: security-suite
+            path: |
+              dist/security/pip-audit.json
+              dist/security/bandit.json
         env:
-          HOTPASS_UV_EXTRAS: dev
-        run: bash ops/uv_sync_extras.sh
-
-      - name: Run pip-audit (fast)
-        run: |
-          mkdir -p dist/security
-          uv run pip-audit --json -o dist/security/pip-audit.json || true
-
-      - name: Run bandit (fast)
-        run: |
-          mkdir -p dist/security
-          uv run bandit -r apps/data-platform ops -f json -o dist/security/bandit.json || true
-
-      - name: Upload security artefacts
-        uses: actions/upload-artifact@v5
-        with:
-          name: security-scan
-          path: |
-            dist/security/pip-audit.json
-            dist/security/bandit.json
-name: "Security Scans"
-
-on:
-  pull_request:
-  push:
-    branches: [main]
-  schedule:
-    - cron: '0 4 * * *'
-
-jobs:
-  security-scan:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-
-      - name: Set up uv Python
-        uses: astral-sh/setup-uv@v7
-        with:
-          python-version: '3.13'
-
-      - name: Sync dev extras
-        env:
-          HOTPASS_UV_EXTRAS: dev
-        run: bash ops/uv_sync_extras.sh
-
-      - name: Run pip-audit
-        run: |
-          mkdir -p dist/security
-          uv run pip-audit --json -o dist/security/pip-audit.json || true
-
-      - name: Run bandit
-        run: |
-          mkdir -p dist/security
-          uv run bandit -r apps/data-platform ops -f json -o dist/security/bandit.json || true
-
-  security-suite:
-    name: 'Full Security Suite: Gitleaks + pip-audit + bandit'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-
-      - name: Gitleaks
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          config-path: .gitleaks.toml
-          additional-args: '--verbose'
-
-      - name: Set up uv and Python
-        uses: astral-sh/setup-uv@v7
-        with:
-          python-version: '3.13'
-
-      - name: Synchronise dependencies
-        env:
-          HOTPASS_UV_EXTRAS: 'dev'
-        run: bash ops/uv_sync_extras.sh
-
-      - name: Run pip-audit (full)
-        run: |
-          mkdir -p dist/security
-          uv run pip-audit --json -o dist/security/pip-audit.json || true
-
-      - name: Run bandit (full)
-        run: |
-          mkdir -p dist/security
-          uv run bandit -r apps/data-platform ops -f json -o dist/security/bandit.json || true
-
-      - name: Upload security suite artefacts
-        uses: actions/upload-artifact@v5
-        with:
-          name: security-suite
-          path: |
-            dist/security/pip-audit.json
-            dist/security/bandit.json
-name: Security Scans
-
-on:
-  pull_request:
-  push:
-    branches: [main]
-  schedule:
-    - cron: '0 4 * * *'
-
-jobs:
-  security-scan:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-
-      - name: Set up uv Python
-        uses: astral-sh/setup-uv@v7
-        with:
-          python-version: '3.13'
-
-      - name: Sync dev extras
-        env:
-          HOTPASS_UV_EXTRAS: dev
-        run: bash ops/uv_sync_extras.sh
-
-      - name: Run pip-audit
-        run: |
-          mkdir -p dist/security
-          uv run pip-audit --json -o dist/security/pip-audit.json || true
-
-      - name: Run bandit
-        run: |
-          mkdir -p dist/security
-          uv run bandit -r apps/data-platform ops -f json -o dist/security/bandit.json || true
-
-      - name: Upload security artefacts
-        uses: actions/upload-artifact@v5
-        with:
-          name: security-scan
-          path: |
-            dist/security/pip-audit.json
-            dist/security/bandit.json
-name: Security Scans
-
-on:
-  pull_request:
-  push:
-    branches: [main]
-  schedule:
-    - cron: '0 4 * * *'
-
-jobs:
-  security-scan:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-
-      - name: Set up uv Python
-        uses: astral-sh/setup-uv@v7
-        with:
-          python-version: '3.13'
-
-      - name: Sync dev extras
-        env:
-          HOTPASS_UV_EXTRAS: dev
-        run: bash ops/uv_sync_extras.sh
-
-      - name: Run pip-audit
-        run: |
-          mkdir -p dist/security
-          uv run pip-audit --json -o dist/security/pip-audit.json || true
-
-      - name: Run bandit
-        run: |
-          mkdir -p dist/security
-          uv run bandit -r apps/data-platform ops -f json -o dist/security/bandit.json || true
-
-      - name: Upload security artefacts
-        uses: actions/upload-artifact@v5
-        with:
-          name: security-scan
-          path: |
-            dist/security/pip-audit.json
-            dist/security/bandit.json
-name: Security Scans
-
-on:
-  pull_request:
-  push:
-    branches: [main]
-  schedule:
-    - cron: '0 4 * * *'
-
-jobs:
-  security-scan:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-
-      - name: Set up uv Python
-        uses: astral-sh/setup-uv@v7
-        with:
-          python-version: '3.13'
-
-      - name: Sync dev extras
-        env:
-          HOTPASS_UV_EXTRAS: dev
-        run: bash ops/uv_sync_extras.sh
-
-      - name: Run pip-audit
-        run: |
-          mkdir -p dist/security
-          uv run pip-audit --json -o dist/security/pip-audit.json || true
-
-      - name: Run bandit
-        run: |
-          mkdir -p dist/security
-          uv run bandit -r apps/data-platform ops -f json -o dist/security/bandit.json || true
-
-      - name: Upload security artefacts
-        uses: actions/upload-artifact@v5
-        with:
-          name: security-scan
-          path: |
-            dist/security/pip-audit.json
-            dist/security/bandit.json
-name: Security Scans
-
-on:
-  pull_request:
-  push:
-    branches: [main]
-  schedule:
-    - cron: '0 4 * * *'
-
-jobs:
-  security-scan:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-
-      - name: Set up uv Python
-        uses: astral-sh/setup-uv@v7
-        with:
-          python-version: '3.13'
-
-      - name: Sync dev extras
-        env:
-          HOTPASS_UV_EXTRAS: dev
-        run: bash ops/uv_sync_extras.sh
-
-      - name: Run pip-audit
-        run: |
-          uv run pip-audit --json -o dist/security/pip-audit.json || true
-
-      - name: Run bandit
-        run: |
-          uv run bandit -r apps/data-platform ops -f json -o dist/security/bandit.json || true
-
-      - name: Upload security artefacts
-        uses: actions/upload-artifact@v5
-        with:
-          name: security-scan
-          path: |
-            dist/security/pip-audit.json
-            dist/security/bandit.json
-name: Security & Supply Chain
-
-on:
-  pull_request:
-    branches: [main]
-  workflow_dispatch:
-
-permissions:
-  contents: read
-  security-events: write
-  pull-requests: read
-
-jobs:
-  security-suite:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
-
-      - name: Gitleaks
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          config-path: .gitleaks.toml
-          additional-args: '--verbose'
-
-      - name: Set up uv and Python
-        uses: astral-sh/setup-uv@85856786d1ce8acfbcc2f13a5f3fbd6b938f9f41 # v7
-        with:
-          python-version: '3.13'
-
-      - name: Synchronise dependencies
-        env:
-          HOTPASS_UV_EXTRAS: 'ci dev orchestration'
-        run: bash ops/uv_sync_extras.sh
-
-      - name: pip-audit
-        run: uv tool run pip-audit --strict
-
-      - name: Pytest
-        run: uv run pytest
-
-      - name: Build distribution artifacts
-        run: uv run python -m build
-
-      - name: Generate CycloneDX SBOM
-        run: uv run python ops/supply_chain/generate_sbom.py --output-dir dist/sbom
-
-      - name: Generate provenance statement
-        run: uv run python ops/supply_chain/generate_provenance.py --output-dir dist/provenance
-
-      - name: Setup Node.js
-        uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6
-        with:
-          node-version: '24'
-          cache: 'pnpm'
-          cache-dependency-path: apps/web-ui/pnpm-lock.yaml
-
-      - name: Enable pnpm via Corepack
-        run: |
-          corepack enable pnpm
-          corepack prepare pnpm@9.12.2 --activate
-
-      - name: Install web UI dependencies
-        working-directory: apps/web-ui
-        run: pnpm install --frozen-lockfile
-
-      - name: Install Playwright browsers
-        working-directory: apps/web-ui
-        run: npx playwright install --with-deps
-
-      - name: Playwright tests
-        working-directory: apps/web-ui
-        env:
-          CI: 'true'
-        run: pnpm run test:e2e
-
-      - name: Upload SBOM artifact
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
-        with:
-          name: hotpass-sbom
-          path: dist/sbom
-
-      - name: Upload provenance artifact
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
-        with:
-          name: hotpass-provenance
-          path: dist/provenance
