@@ -52,8 +52,9 @@ jobs:
         shell: pwsh
 
       - name: Regenerate lockfiles
-        run: & '.\scripts\regen_lockfiles.ps1' --Commit '${{ inputs.commit }}' -BranchName "${{ inputs.branch }}"
         shell: pwsh
+        run: |
+          & '.\scripts\regen_lockfiles.ps1' --Commit '${{ inputs.commit }}' -BranchName "${{ inputs.branch }}"
 
       - name: Upload lockfile artifacts
         uses: actions/upload-artifact@v5
