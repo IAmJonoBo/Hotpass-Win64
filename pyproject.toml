@@ -40,7 +40,12 @@ dependencies = [
   "streamlit>=1.51.0",
   "logfire>=4.14.2",
 ]
-
+[tool.isort]
+profile = "black"
+line_length = 100
+known_first_party = ["hotpass", "ops"]
+default_section = "THIRDPARTY"
+multi_line_output = 3
 [project.optional-dependencies]
 orchestration = [
   "prefect>=3.5.0",
@@ -82,13 +87,9 @@ ci = [
 dev = [
   "pytest>=8.4.2",
   "pytest-cov>=7.0.0",
-  "pytest-asyncio>=1.2.0",
-  "pytest-xdist>=3.6.1",
-  "hypothesis>=6.142.5",
-  "mypy>=1.18.2",
-  "ruff>=0.14.3",
-  "bandit>=1.8.6",
   "pre-commit>=4.3.0",
+  "bandit>=1.7.10",
+  "ruff>=0.6.9",
   "detect-secrets>=1.5.0",
   "types-PyYAML>=6.0.12.20250915",
   "cyclonedx-bom>=7.2.1",
@@ -144,20 +145,7 @@ asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 
 [tool.mypy]
-python_version = "3.13"
-namespace_packages = true
-mypy_path = ["apps/data-platform"]
-files = [
-  "apps/data-platform/hotpass/pipeline/config.py",
-  "apps/data-platform/hotpass/storage/adapters.py",
-  "apps/data-platform/hotpass/domain/party/schemas.py",
-  "apps/data-platform/hotpass/_compat_nameparser.py",
-  "apps/data-platform/hotpass/orchestration.py",
-  "apps/data-platform/hotpass/pipeline/orchestrator.py",
-  "apps/data-platform/hotpass/telemetry/bootstrap.py",
-  "apps/data-platform/hotpass/telemetry/registry.py",
-  "ops/quality/fitness_functions.py",
-]
+
 warn_unused_configs = true
 warn_redundant_casts = true
 warn_unused_ignores = true

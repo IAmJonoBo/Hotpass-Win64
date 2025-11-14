@@ -16,12 +16,12 @@ from pydantic import (
     model_validator,
 )
 
-from hotpass.aws import resolve_localstack_endpoint, resolve_s3_endpoint
 from hotpass.automation.http import (
     AutomationCircuitBreakerPolicy,
     AutomationHTTPConfig,
     AutomationRetryPolicy,
 )
+from hotpass.aws import resolve_localstack_endpoint, resolve_s3_endpoint
 from hotpass.compliance import DataClassification, LawfulBasis, PIIRedactionConfig
 
 

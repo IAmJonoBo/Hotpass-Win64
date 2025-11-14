@@ -11,10 +11,10 @@ from rich.panel import Panel
 
 from ops.net.tunnels import latest_session
 
+from ...aws import resolve_localstack_endpoint, resolve_s3_endpoint
 from ..builder import CLICommand, SharedParsers
 from ..configuration import CLIProfile
 from ..state import load_state
-from ...aws import resolve_localstack_endpoint, resolve_s3_endpoint
 
 CREDENTIAL_STATE_FILE = "credentials.json"
 CTX_STATE_FILE = "contexts.json"
