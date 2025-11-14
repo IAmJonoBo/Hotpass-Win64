@@ -29,7 +29,7 @@ jobs:
       - name: Set up uv and Python
         uses: astral-sh/setup-uv@v7
         with:
-          python-version: '3.13'
+          python-version: "3.13"
 
       - name: Synchronise dependencies (smoke extras)
         env:
@@ -76,12 +76,11 @@ jobs:
           npm install -g pnpm@9.12.2 || true
           pnpm --version || true
 
-
       - name: Install web dependencies
         working-directory: apps/web-ui
         run: pnpm install --frozen-lockfile
 
-      - name: Debug: node/pnpm path & versions
+      - name: "Debug: node/pnpm path & versions"
         shell: bash
         run: |
           echo "PATH=${PATH}"
