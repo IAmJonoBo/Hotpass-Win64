@@ -51,7 +51,7 @@ jobs:
           Get-ChildItem -Path . -Recurse -Depth 2 | Select-Object FullName, Length
         shell: pwsh
 
-        - name: Debug — list scripts directory
+      - name: Debug — list scripts directory
           run: |
             Write-Host "Listing scripts dir: $Env:GITHUB_WORKSPACE\scripts"
             Get-ChildItem -Path "$Env:GITHUB_WORKSPACE\scripts" -Recurse | Select-Object FullName, Length
