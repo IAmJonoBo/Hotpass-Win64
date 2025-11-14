@@ -1,0 +1,73 @@
+name: Regenerate lockfiles (Windows)
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: "Commit regenerated lockfiles and push to branch"
+        required: false
+        default: "false"
+      branch:
+        description: "Branch name to push lockfile commit to"
+        required: false
+        default: "regenerate/lockfiles-windows"
+
+permissions:
+  contents: write
+
+jobs:
+  regen-locks-windows:
+    name: Regenerate locks on Windows
+    runs-on: windows-latest
+    concurrency:
+      group: regenerate-locks-windows
+      cancel-in-progress: true
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install uv
+        run: python -m pip install -U uv
+        shell: pwsh
+
+      - name: Ensure node + corepack
+        run: |
+          choco install -y nodejs-lts || echo "choco not available; assuming Node is preinstalled"
+          refreshenv || true
+          corepack enable pnpm
+          corepack prepare pnpm@9.12.2 --activate
+        shell: pwsh
+
+      - name: Debug — show files & verify script location
+        run: |
+          Write-Host "PWD: $PWD"
+          Get-ChildItem -Path . -Recurse -Depth 2 | Select-Object FullName, Length
+        shell: pwsh
+
+      - name: Debug — list scripts directory
+        run: |
+          Write-Host "Listing scripts dir: $Env:GITHUB_WORKSPACE\scripts"
+          Get-ChildItem -Path "$Env:GITHUB_WORKSPACE\scripts" -Recurse | Select-Object FullName, Length
+        shell: pwsh
+
+      - name: Regenerate lockfiles
+        shell: pwsh
+        run: |
+          $script = Join-Path $Env:GITHUB_WORKSPACE 'scripts\regen_lockfiles.ps1'
+          Write-Host "Script path -> $script"
+          & $script --Commit '${{ inputs.commit }}' -BranchName "${{ inputs.branch }}"
+
+      - name: Upload lockfile artifacts
+        uses: actions/upload-artifact@v5
+        with:
+          name: lockfiles
+          path: |
+            uv.lock
+            apps/web-ui/pnpm-lock.yaml
