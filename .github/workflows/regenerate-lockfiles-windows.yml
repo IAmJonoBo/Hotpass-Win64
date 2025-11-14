@@ -39,9 +39,14 @@ jobs:
 
       - name: Ensure node + corepack
         run: |
-          choco install -y nodejs-lts || echo "choco not available; assuming Node is preinstalled"
-          refreshenv || true
-          corepack enable pnpm
+          try {
+            choco install -y nodejs-lts
+            refreshenv
+          } catch {
+            Write-Host "choco not available; assuming Node is preinstalled"
+          }
+          # Enable and activate pnpm via Corepack; fallback will be handled when pnpm is used
+          corepack enable
           corepack prepare pnpm@9.12.2 --activate
         shell: pwsh
 

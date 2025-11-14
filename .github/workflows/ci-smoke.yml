@@ -37,12 +37,19 @@ jobs:
         run: bash ops/uv_sync_extras.sh
 
       - name: Run smoke pytest suite and quick lint checks with coverage
-        shell: bash
+        shell: pwsh
         run: |
           # Ensure Trunk is installed when present; allow to fail if missing to keep smoke quick.
-          curl https://get.trunk.io -fsSL | bash -s -- -y || true
-          echo "$HOME/.trunk/bin" >> "$GITHUB_PATH" || true
-          trunk --version || true
+          try {
+            Invoke-WebRequest -Uri 'https://get.trunk.io' -UseBasicParsing -OutFile "$env:TEMP\trunk_installer.ps1"
+            & "$env:TEMP\trunk_installer.ps1" -y
+          } catch {
+            Write-Host "Trunk install failed: $_"
+          }
+          # Append Trunk bin to $GITHUB_PATH so following steps get PATH updated
+          Add-Content -Path $env:GITHUB_PATH -Value "$env:USERPROFILE\\.trunk\\bin"
+          # Attempt to detect trunk; ignore errors but keep going
+          try { & "$env:USERPROFILE\\.trunk\\bin\\trunk" --version } catch { Write-Host "trunk not available yet" }
           uv run ruff check apps/data-platform ops
           uv run pytest -m "smoke" --maxfail=1
           # TODO: Raise coverage threshold gradually (target: 70%)
@@ -112,8 +119,8 @@ jobs:
       - name: Persist Vitest HTML coverage summary
         if: always()
         working-directory: apps/web-ui
-        shell: bash
+        shell: pwsh
         run: |
-          if [ -f coverage/unit/index.html ]; then
-            echo "Vitest coverage report saved under coverage/unit" >> "$GITHUB_STEP_SUMMARY"
-          fi
+          if (Test-Path 'coverage/unit/index.html') {
+            Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "Vitest coverage report saved under coverage/unit"
+          }
