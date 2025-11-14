@@ -67,16 +67,13 @@ jobs:
           cache: pnpm
           cache-dependency-path: apps/web-ui/pnpm-lock.yaml
 
-      - name: Enable pnpm via Corepack (robust)
+      - name: Ensure pnpm available (Corepack + npm)
         shell: bash
         run: |
-          # Enable corepack and prepare pnpm. If corepack isn't available, install pnpm via npm as a fallback.
+          # Try enabling Corepack; then ensure pnpm is available by installing it via npm as a fallback.
           corepack enable || true
           corepack prepare pnpm@9.12.2 --activate || true
-          if ! command -v pnpm >/dev/null 2>&1; then
-            echo "pnpm not found; installing via npm..."
-            npm install -g pnpm@9.12.2
-          fi
+          npm install -g pnpm@9.12.2 || true
           pnpm --version || true
 
 
