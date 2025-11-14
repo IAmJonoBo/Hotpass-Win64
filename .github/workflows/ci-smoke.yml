@@ -19,6 +19,13 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      - name: Cache Trunk tools
+        uses: actions/cache@v4
+        with:
+          path: ~/.trunk
+          key: trunk-${{ runner.os }}-${{ hashFiles('.trunk/trunk.yaml') }}
+          restore-keys: trunk-${{ runner.os }}-
+
       - name: Set up uv and Python
         uses: astral-sh/setup-uv@v7
         with:
@@ -29,8 +36,13 @@ jobs:
           HOTPASS_UV_EXTRAS: "dev orchestration"
         run: bash ops/uv_sync_extras.sh
 
-      - name: Run smoke pytest suite with coverage
+      - name: Run smoke pytest suite and quick lint checks with coverage
         run: |
+          # Ensure Trunk is installed when present; allow to fail if missing to keep smoke quick.
+          curl https://get.trunk.io -fsSL | bash -s -- -y || true
+          echo "$HOME/.trunk/bin" >> "$GITHUB_PATH" || true
+          trunk --version || true
+          uv run ruff check apps/data-platform ops
           uv run pytest -m "smoke" --maxfail=1
           # TODO: Raise coverage threshold gradually (target: 70%)
           uv run coverage report --fail-under=20
@@ -50,16 +62,29 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: 24
-          cache: npm
-          cache-dependency-path: apps/web-ui/package-lock.json
+          cache: pnpm
+          cache-dependency-path: apps/web-ui/pnpm-lock.yaml
+
+      - name: Enable pnpm via Corepack
+        run: |
+          corepack enable pnpm
+          corepack prepare pnpm@9.12.2 --activate
 
       - name: Install web dependencies
         working-directory: apps/web-ui
-        run: npm ci
+        run: pnpm install --frozen-lockfile
+
+      - name: Run web UI linter (Biome)
+        working-directory: apps/web-ui
+        run: pnpm run lint
 
       - name: Run Vitest unit suite with coverage
         working-directory: apps/web-ui
-        run: npm run test:unit
+        run: pnpm run test:unit
+
+      - name: Run pre-commit (quick checks)
+        run: |
+          PRECOMMIT_TIMEOUT=300 uv run pre-commit run --all-files --show-diff-on-failure --max-workers 1
 
       - name: Upload web coverage artefacts
         uses: actions/upload-artifact@v5

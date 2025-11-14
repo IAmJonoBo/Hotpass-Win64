@@ -5,9 +5,11 @@ This directory contains Mermaid diagram source files that document the Hotpass s
 ## Diagrams
 
 ### [system-architecture.mmd](system-architecture.mmd)
+
 **Purpose:** High-level component view showing all major subsystems and their relationships.
 
 **Contents:**
+
 - CLI & Operators layer (hotpass, hotpass-operator, MCP server)
 - Core Pipeline (refinement, enrichment, resolution, QA)
 - Orchestration Layer (Prefect, Marquez, OpenTelemetry)
@@ -19,9 +21,11 @@ This directory contains Mermaid diagram source files that document the Hotpass s
 **Use when:** You need to understand how components interact or where to add new functionality.
 
 ### [data-flow.mmd](data-flow.mmd)
+
 **Purpose:** End-to-end data transformation pipeline from raw input to governed output.
 
 **Flow:**
+
 1. Input Stage (raw workbooks + profiles)
 2. Refinement Pipeline (load → normalise → dedupe → validate → score)
 3. Primary Output (refined datasets + archives)
@@ -33,9 +37,11 @@ This directory contains Mermaid diagram source files that document the Hotpass s
 **Use when:** You need to trace how data transforms through the system or debug pipeline stages.
 
 ### [run-lifecycle.mmd](run-lifecycle.mmd)
+
 **Purpose:** Sequence diagram showing a complete `hotpass refine` → `qa` → `enrich` cycle.
 
 **Participants:**
+
 - Operator (user)
 - CLI
 - Profile Loader
@@ -50,23 +56,28 @@ This directory contains Mermaid diagram source files that document the Hotpass s
 ## Viewing Diagrams
 
 ### In GitHub
+
 GitHub automatically renders Mermaid diagrams in markdown files. View any diagram by:
+
 1. Opening the `.mmd` file in GitHub
 2. The diagram will render automatically
 
 ### Locally
+
 Several options:
 
 1. **VS Code** with [Mermaid Preview extension](https://marketplace.visualstudio.com/items?itemName=bierner.markdown-mermaid)
 2. **Mermaid Live Editor**: Copy/paste content to [mermaid.live](https://mermaid.live)
 3. **Command line** with [mermaid-cli](https://github.com/mermaid-js/mermaid-cli):
    ```bash
-   npm install -g @mermaid-js/mermaid-cli
+    pnpm add --global @mermaid-js/mermaid-cli
    mmdc -i system-architecture.mmd -o system-architecture.png
    ```
 
 ### In Documentation
+
 Diagrams are embedded in:
+
 - `README.md` (Architecture section)
 - `docs/explanations/architecture.md` (Architecture diagrams section)
 
@@ -75,6 +86,7 @@ Diagrams are embedded in:
 ### When to Update
 
 Update diagrams when you:
+
 - Add/remove CLI commands
 - Add/remove major components or subsystems
 - Change data flow or pipeline stages
@@ -117,11 +129,13 @@ For full syntax, see [Mermaid documentation](https://mermaid.js.org/intro/).
 ## Verification
 
 All diagram references in documentation are automatically verified by `scripts/verify_docs.py`:
+
 - Pre-commit hook runs on every commit touching `.md` or `.py` files
 - CI runs verification in the quality-gates workflow
 - Currently informational (non-blocking) to allow gradual cleanup
 
 To manually verify:
+
 ```bash
 uv run python scripts/verify_docs.py
 ```
@@ -138,6 +152,7 @@ uv run python scripts/verify_docs.py
 ## Color Scheme
 
 Consistent colors across diagrams:
+
 - **CLI/Interface:** `#e1f5ff` (light blue)
 - **Pipeline/Processing:** `#d4edda` (light green)
 - **Orchestration:** `#fff3cd` (light yellow)

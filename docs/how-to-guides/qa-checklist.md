@@ -18,7 +18,7 @@ The target runs `scripts/testing/smoke.sh`, which in turn calls:
 
 - `uv run ruff check` and `uv run ruff format --check`
 - `uv run pytest -m smoke tests`
-- `npm run test:unit`
+- `pnpm run test:unit`
 - `uv run pre-commit run --all-files`
 
 **Artefacts:** HTML coverage reports under `htmlcov/` and `apps/web-ui/coverage/unit/`.
@@ -49,13 +49,13 @@ uv run pytest tests/cli/test_quality_gates.py -v
 
 You should see the following passes:
 
-| Gate | Purpose | Checks |
-| ---- | ------- | ------ |
-| QG-1 CLI integrity | Ensure CLI verbs remain discoverable. | `hotpass --help`, `overview`, `refine`, `enrich`, `qa`, `contracts`, `setup`, `net`, `aws`, `ctx`, `env`, `arc`, `distro`, `run`, `backfill`, `doctor`, `orchestrate`, `resolve`, `dashboard`, `deploy`, `init`, `version`. |
-| QG-2 Data quality | Exercise Great Expectations suites and Data Docs. | `ops/quality/run_qg2.py --json` emits stats plus the Data Docs path under `dist/quality-gates/qg2-data-quality/`. |
-| QG-3 Enrichment chain | Validate deterministic enrichment with provenance. | `ops/quality/run_qg3.py --json` produces an enriched workbook containing the five provenance columns. |
-| QG-4 MCP discoverability | Confirm tools exposed by `hotpass.mcp.server`. | `ops/quality/run_qg4.py --json` lists the required stdio tools and ensures registration passes. |
-| QG-5 Docs & instructions | Verify Codex/Copilot guidance stays present. | `ops/quality/run_qg5.py --json` inspects `.github/copilot-instructions.md` and `AGENTS.md` for required terminology. |
+| Gate                     | Purpose                                            | Checks                                                                                                                                                                                                                      |
+| ------------------------ | -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| QG-1 CLI integrity       | Ensure CLI verbs remain discoverable.              | `hotpass --help`, `overview`, `refine`, `enrich`, `qa`, `contracts`, `setup`, `net`, `aws`, `ctx`, `env`, `arc`, `distro`, `run`, `backfill`, `doctor`, `orchestrate`, `resolve`, `dashboard`, `deploy`, `init`, `version`. |
+| QG-2 Data quality        | Exercise Great Expectations suites and Data Docs.  | `ops/quality/run_qg2.py --json` emits stats plus the Data Docs path under `dist/quality-gates/qg2-data-quality/`.                                                                                                           |
+| QG-3 Enrichment chain    | Validate deterministic enrichment with provenance. | `ops/quality/run_qg3.py --json` produces an enriched workbook containing the five provenance columns.                                                                                                                       |
+| QG-4 MCP discoverability | Confirm tools exposed by `hotpass.mcp.server`.     | `ops/quality/run_qg4.py --json` lists the required stdio tools and ensures registration passes.                                                                                                                             |
+| QG-5 Docs & instructions | Verify Codex/Copilot guidance stays present.       | `ops/quality/run_qg5.py --json` inspects `.github/copilot-instructions.md` and `AGENTS.md` for required terminology.                                                                                                        |
 
 ## 4. CLI spot checks
 

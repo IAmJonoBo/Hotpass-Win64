@@ -1,5 +1,6 @@
 .PHONY: qa
 qa:
+	@bash scripts/testing/install_trunk.sh || true
 	TRUNK_ALLOW_MISSING=0 TRUNK_FMT_MODE=check scripts/testing/trunk_check.sh
 	uv run pytest -m "smoke"
 	uv run coverage html
@@ -7,24 +8,34 @@ qa:
 
 .PHONY: qa-full
 qa-full:
+	@bash scripts/testing/install_trunk.sh || true
 	TRUNK_ALLOW_MISSING=0 TRUNK_FMT_MODE=check scripts/testing/trunk_check.sh
 	TRUNK_ALLOW_MISSING=0 TRUNK_SKIP_TRUNK=1 scripts/testing/full.sh
 
 .PHONY: qa-trunk
 qa-trunk:
+	@bash scripts/testing/install_trunk.sh || true
 	TRUNK_ALLOW_MISSING=0 TRUNK_FMT_MODE=check scripts/testing/trunk_check.sh
+
+.PHONY: trunk-install
+trunk-install:
+	@cd apps/web-ui && corepack enable pnpm && pnpm install
+
+.PHONY: trunk-fix
+trunk-fix:
+	@cd apps/web-ui && pnpm run dev
 
 EXTRAS ?= dev orchestration
 MARQUEZ_API_PORT ?= 5000
-MARQUEZ_UI_PORT ?= 3000
+	@cd apps/web-ui && pnpm run build
 
 .PHONY: sync
 sync:
-        @echo "Synchronising extras: $(EXTRAS)"
+	@cd apps/web-ui && pnpm run storybook
         @HOTPASS_UV_EXTRAS="$(EXTRAS)" bash ops/uv_sync_extras.sh
 
 .PHONY: docs
-docs:
+	@cd apps/web-ui && pnpm run lint
 	uv run sphinx-build -n -b html docs docs/_build/html
 	@if [ "$(LINKCHECK)" = "1" ]; then \
 		uv run sphinx-build -b linkcheck docs docs/_build/linkcheck; \
@@ -58,23 +69,23 @@ marquez-down:
 
 .PHONY: web-ui-install
 web-ui-install:
-	@cd apps/web-ui && npm install
+	@cd apps/web-ui && pnpm install
 
 .PHONY: web-ui-dev
 web-ui-dev:
-	@cd apps/web-ui && npm run dev
+	@cd apps/web-ui && pnpm run dev
 
 .PHONY: web-ui-build
 web-ui-build:
-	@cd apps/web-ui && npm run build
+	@cd apps/web-ui && pnpm run build
 
 .PHONY: web-ui-storybook
 web-ui-storybook:
-	@cd apps/web-ui && npm run storybook
+	@cd apps/web-ui && pnpm run storybook
 
 .PHONY: web-ui-lint
 web-ui-lint:
-	@cd apps/web-ui && npm run lint
+	@cd apps/web-ui && pnpm run lint
 
 # Docker Compose commands for full Hotpass stack
 .PHONY: docker-up

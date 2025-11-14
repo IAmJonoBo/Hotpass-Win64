@@ -1,0 +1,39 @@
+name: Trunk Fast
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches:
+      - '**'
+  workflow_dispatch: {}
+
+jobs:
+  trunk-fast:
+    name: Trunk - changed files only
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Cache Trunk tools
+        uses: actions/cache@v4
+        with:
+          path: ~/.trunk
+          key: trunk-${{ runner.os }}-${{ hashFiles('.trunk/trunk.yaml') }}
+          restore-keys: trunk-${{ runner.os }}-
+
+      - name: Install Trunk CLI
+        run: |
+          curl https://get.trunk.io -fsSL | bash -s -- -y
+          echo "$HOME/.trunk/bin" >> "$GITHUB_PATH"
+
+      - name: Trunk format check for changed files
+        run: |
+          trunk fmt --ci --upstream origin/main --changed || true
+
+      - name: Trunk check for changed files
+        run: |
+          trunk check --ci --upstream origin/main --changed

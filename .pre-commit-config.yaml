@@ -19,7 +19,7 @@ repos:
       - id: trailing-whitespace
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.2
+    rev: v0.14.4
     hooks:
       - id: ruff-format
       - id: ruff
@@ -59,3 +59,15 @@ repos:
         pass_filenames: false
         files: \.(md|py)$
         stages: [pre-commit]
+      - id: trunk-fmt-check
+        name: trunk fmt check
+        entry: bash -c "scripts/testing/install_trunk.sh && trunk fmt --ci --no-fix"
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
+      - id: trunk-check-pre-push
+        name: trunk check (pre-push)
+        entry: bash -c "scripts/testing/install_trunk.sh && trunk check --ci --upstream origin/main"
+        language: system
+        pass_filenames: false
+        stages: [pre-push]

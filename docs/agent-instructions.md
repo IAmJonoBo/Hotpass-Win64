@@ -115,8 +115,8 @@ To extend the surface, publish a module that exposes `register_mcp_tools(server)
 | ---------------------------- | ----------- | ------------------------------------------- |
 | Fast validation on PR        | Smoke suite | `scripts/testing/smoke.sh` or `make qa`     |
 | Full regression / nightly    | Full suite  | `scripts/testing/full.sh` or `make qa-full` |
-| Front-end unit coverage only | Vitest      | `cd apps/web-ui && npm run test:unit`       |
-| E2E UX validation            | Playwright  | `cd apps/web-ui && npm run test:e2e`        |
+| Front-end unit coverage only | Vitest      | `cd apps/web-ui && pnpm run test:unit`      |
+| E2E UX validation            | Playwright  | `cd apps/web-ui && pnpm run test:e2e`       |
 
 Smoke executes Ruff lint, the Python smoke marker set, coverage export, and Vitest coverage. Full runs add the entire pytest tree, the coverage guard (`tools/coverage/report_low_coverage.py`), mypy, Bandit, detect-secrets, and pre-commit hooks. See [Engineering → Testing](engineering/testing.md) for thresholds and CI wiring.
 
@@ -150,25 +150,25 @@ Smoke executes Ruff lint, the Python smoke marker set, coverage export, and Vite
 
 ### MCP Tools
 
-| Tool                         | Purpose                             | Signature                                               |
-| ---------------------------- | ----------------------------------- | ------------------------------------------------------- |
-| `hotpass.refine`             | Refinement pipeline                 | `input_path`, `output_path`, `profile`, `archive`       |
-| `hotpass.enrich`             | Deterministic / network enrichment  | `input_path`, `output_path`, `profile`, `allow_network` |
-| `hotpass.qa`                 | Quality checks                      | `target` (`all`, `fitness`, `profiles`, `docs`, `ta`)   |
-| `hotpass.explain_provenance` | Row-level provenance                | `dataset_path`, `row_id`                                |
-| `hotpass.setup`              | Guided setup wizard                 | `preset`, `host`, `skip_steps`, `execute`, `assume_yes` |
-| `hotpass.net`                | Tunnel lifecycle management         | `action`, `host`, `via`, `label`, `detach`              |
-| `hotpass.ctx`                | Prefect/Kubernetes context helper   | `action`, `prefect_profile`, `eks_cluster`, `dry_run`   |
-| `hotpass.env`                | Emit `.env` files                   | `target`, `prefect_url`, `allow_network`, `force`       |
-| `hotpass.aws`                | AWS identity/cluster checks         | `profile`, `region`, `eks_cluster`, `output`            |
-| `hotpass.arc`                | ARC runner verification             | `owner`, `repository`, `scale_set`, `snapshot`, `output` |
+| Tool                         | Purpose                             | Signature                                                      |
+| ---------------------------- | ----------------------------------- | -------------------------------------------------------------- |
+| `hotpass.refine`             | Refinement pipeline                 | `input_path`, `output_path`, `profile`, `archive`              |
+| `hotpass.enrich`             | Deterministic / network enrichment  | `input_path`, `output_path`, `profile`, `allow_network`        |
+| `hotpass.qa`                 | Quality checks                      | `target` (`all`, `fitness`, `profiles`, `docs`, `ta`)          |
+| `hotpass.explain_provenance` | Row-level provenance                | `dataset_path`, `row_id`                                       |
+| `hotpass.setup`              | Guided setup wizard                 | `preset`, `host`, `skip_steps`, `execute`, `assume_yes`        |
+| `hotpass.net`                | Tunnel lifecycle management         | `action`, `host`, `via`, `label`, `detach`                     |
+| `hotpass.ctx`                | Prefect/Kubernetes context helper   | `action`, `prefect_profile`, `eks_cluster`, `dry_run`          |
+| `hotpass.env`                | Emit `.env` files                   | `target`, `prefect_url`, `allow_network`, `force`              |
+| `hotpass.aws`                | AWS identity/cluster checks         | `profile`, `region`, `eks_cluster`, `output`                   |
+| `hotpass.arc`                | ARC runner verification             | `owner`, `repository`, `scale_set`, `snapshot`, `output`       |
 | `hotpass.plan.research`      | Deterministic + network planning    | `profile`, `dataset_path`, `row_id`, `entity`, `allow_network` |
-| `hotpass.crawl`              | Research crawl (requires approvals) | `query_or_url`, `profile`, `backend`, `allow_network`   |
-| `hotpass.search.intelligent` | Generate intelligent search plan    | `profile`, `dataset_path`, `row_id`, `query`, `urls`    |
-| `hotpass.crawl.coordinate`   | Produce crawl coordination schedule | `profile`, `backend`, `dataset_path`, `urls`, `allow_network` |
-| `hotpass.pipeline.supervise` | Inspect pipeline health             | `pipeline` (snapshot mapping)                           |
+| `hotpass.crawl`              | Research crawl (requires approvals) | `query_or_url`, `profile`, `backend`, `allow_network`          |
+| `hotpass.search.intelligent` | Generate intelligent search plan    | `profile`, `dataset_path`, `row_id`, `query`, `urls`           |
+| `hotpass.crawl.coordinate`   | Produce crawl coordination schedule | `profile`, `backend`, `dataset_path`, `urls`, `allow_network`  |
+| `hotpass.pipeline.supervise` | Inspect pipeline health             | `pipeline` (snapshot mapping)                                  |
 | `hotpass.agent.workflow`     | Simulate agent workflow             | `profile`, `row`, `urls`, `pipeline_snapshot`, `crawl_backend` |
-| `hotpass.ta.check`           | Technical acceptance gates          | `gate` (`1`–`5`)                                        |
+| `hotpass.ta.check`           | Technical acceptance gates          | `gate` (`1`–`5`)                                               |
 
 ### Essential Environment Variables
 

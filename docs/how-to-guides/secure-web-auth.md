@@ -17,7 +17,7 @@ This guide explains how to configure the Hotpass web UI with the new Okta/OIDC p
 
 The web UI now ships with an Express edge server (`apps/web-ui/server/index.mjs`) that enforces rate limits and CSRF protection.
 
-1. Build the UI using the updated Dockerfile or run `npm run build && npm run start` locally.
+1. Build the UI using the updated Dockerfile or run `pnpm run build && pnpm run start` locally.
 2. Provide target URLs for the proxy:
    - `PREFECT_API_URL` (defaults to `http://localhost:4200/api`).
    - `MARQUEZ_API_URL` or `OPENLINEAGE_URL` (defaults to `http://localhost:5000/api/v1`).
@@ -34,9 +34,9 @@ The web UI now ships with an Express edge server (`apps/web-ui/server/index.mjs`
 
 The human-in-the-loop audit trail now lives in encrypted IndexedDB storage:
 
-* Encryption keys are derived from the signed-in user’s ID token. In mock mode a per-user seed is used.
-* Approvals and audit entries are only written when the key is available; otherwise UI controls are disabled.
-* Admins can configure retention in **Admin → Human-in-the-loop retention**:
+- Encryption keys are derived from the signed-in user’s ID token. In mock mode a per-user seed is used.
+- Approvals and audit entries are only written when the key is available; otherwise UI controls are disabled.
+- Admins can configure retention in **Admin → Human-in-the-loop retention**:
   - Toggle the policy on/off.
   - Set the retention window (days). Older entries are securely purged when the window is updated.
 
@@ -45,11 +45,11 @@ The human-in-the-loop audit trail now lives in encrypted IndexedDB storage:
 1. **Before deployment**
    - Set the OIDC environment variables and restart the Node server.
    - Confirm rate limits reflect platform SLAs (`PREFECT_RATE_LIMIT`, `MARQUEZ_RATE_LIMIT`).
-   - Verify `npm run start` serves the UI on port 3000 (Docker exposes port 3000).
+   - Verify `pnpm run start` serves the UI on port 3000 (Docker exposes port 3000).
 2. **After deployment**
    - Navigate to `/admin` and check the Prefect/Marquez badges. Use the “Test connection” buttons if available.
    - Confirm the retention card reflects policy defaults and adjust as needed.
-   - Run the Playwright smoke suite (`npm run test:e2e`) to validate auth guardrails.
+   - Run the Playwright smoke suite (`pnpm run test:e2e`) to validate auth guardrails.
 3. **Troubleshooting**
    - If `/admin` renders “Access restricted”, ensure the signed-in identity carries the `admin` role.
    - If approvals are disabled, confirm the browser has a CSRF token (`GET /telemetry/operator-feedback/csrf`) and that IndexedDB is accessible.
@@ -57,6 +57,6 @@ The human-in-the-loop audit trail now lives in encrypted IndexedDB storage:
 
 ## 5. Security notes
 
-* All fetches to Prefect/Marquez now send `credentials: 'include'` so cookies or future session data flow through the proxy.
-* CSRF tokens are short-lived and bound to the HTTP-only cookie issued by the server. Ensure downstream telemetry collectors verify payload origin if forwarding the data.
-* Keep the Node server behind TLS terminators; it relies on the platform to provide HTTPS.
+- All fetches to Prefect/Marquez now send `credentials: 'include'` so cookies or future session data flow through the proxy.
+- CSRF tokens are short-lived and bound to the HTTP-only cookie issued by the server. Ensure downstream telemetry collectors verify payload origin if forwarding the data.
+- Keep the Node server behind TLS terminators; it relies on the platform to provide HTTPS.

@@ -24,8 +24,13 @@ jobs:
         uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6
         with:
           node-version: '24'
-          cache: 'npm'
-          cache-dependency-path: apps/web-ui/package-lock.json
+          cache: 'pnpm'
+          cache-dependency-path: apps/web-ui/pnpm-lock.yaml
+
+      - name: Enable pnpm via Corepack
+        run: |
+          corepack enable pnpm
+          corepack prepare pnpm@9.12.2 --activate
 
       - name: Synchronise dependencies
         env:
@@ -39,18 +44,18 @@ jobs:
 
       - name: Install web UI dependencies
         working-directory: apps/web-ui
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
-      - name: Run npm audit
+      - name: Run pnpm audit
         working-directory: apps/web-ui
         run: |
-          npm audit --json > ../artifacts/security/npm-audit.json || true
+          pnpm audit --json > ../artifacts/security/pnpm-audit.json || true
 
       - name: Render security summary
         run: |
           uv run python ops/supply_chain/render_security_summary.py \
             --pip-audit artifacts/security/pip-audit.json \
-            --npm-audit artifacts/security/npm-audit.json \
+            --pnpm-audit artifacts/security/pnpm-audit.json \
             --output artifacts/security/summary.md
 
       - name: Upload release assets
@@ -60,7 +65,7 @@ jobs:
         run: |
           gh release upload "$RELEASE_TAG" \
             artifacts/security/pip-audit.json \
-            artifacts/security/npm-audit.json \
+            artifacts/security/pnpm-audit.json \
             artifacts/security/summary.md \
             --clobber
 
@@ -73,7 +78,7 @@ jobs:
             const release = context.payload.release;
             const existingBody = release.body ? release.body.trim() + '\n\n' : '';
             const assetBase = `https://github.com/${context.repo.owner}/${context.repo.repo}/releases/download/${release.tag_name}`;
-            const attachmentList = `\n- [pip-audit.json](${assetBase}/pip-audit.json)\n- [npm-audit.json](${assetBase}/npm-audit.json)\n- [security-summary.md](${assetBase}/summary.md)`;
+            const attachmentList = `\n- [pip-audit.json](${assetBase}/pip-audit.json)\n- [pnpm-audit.json](${assetBase}/pnpm-audit.json)\n- [security-summary.md](${assetBase}/summary.md)`;
             await github.rest.repos.updateRelease({
               owner: context.repo.owner,
               repo: context.repo.repo,

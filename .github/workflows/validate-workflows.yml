@@ -1,0 +1,20 @@
+name: 'Validate GitHub Workflow YAMLs'
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  validate:
+    name: 'YAML & Workflow Lint'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Lint workflow YAML files
+        uses: github/super-linter@v4
+        env:
+          VALIDATE_YAML: true
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEFAULT_BRANCH: main
+          FILTER_REGEX_INCLUDE: '^(?:.github/workflows/).*\\.(?:yaml|yml)$'

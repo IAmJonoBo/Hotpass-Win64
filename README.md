@@ -19,7 +19,7 @@ flowchart LR
     class Archive artifact
 ```
 
-*For detailed architecture diagrams, see [System Architecture](docs/diagrams/system-architecture.mmd), [Data Flow](docs/diagrams/data-flow.mmd), and [Run Lifecycle](docs/diagrams/run-lifecycle.mmd).*
+_For detailed architecture diagrams, see [System Architecture](docs/diagrams/system-architecture.mmd), [Data Flow](docs/diagrams/data-flow.mmd), and [Run Lifecycle](docs/diagrams/run-lifecycle.mmd)._
 
 ## Why teams choose Hotpass
 
@@ -48,15 +48,15 @@ docker compose --profile llm up -d
 
 Services and default endpoints:
 
-| Service              | Ports | Environment variable                                  |
-|----------------------|-------|-------------------------------------------------------|
-| Prefect server       | 4200  | `PREFECT_API_URL=http://127.0.0.1:4200/api`           |
-| Marquez              | 5002  | `OPENLINEAGE_URL=http://127.0.0.1:5002/api/v1`        |
-| OTLP collector       | 4317/4318 | `OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4318` |
-| MinIO (S3)           | 9000  | `HOTPASS_S3_ENDPOINT=http://127.0.0.1:9000`           |
-| LocalStack           | 4566  | `LOCALSTACK_ENDPOINT=http://127.0.0.1:4566`           |
-| SearXNG              | 8080  | `HOTPASS_SEARX_URL=http://127.0.0.1:8080`             |
-| Ollama (profile `llm`) | 11434 | `HOTPASS_LLM_BASE_URL=http://127.0.0.1:11434`      |
+| Service                | Ports     | Environment variable                                |
+| ---------------------- | --------- | --------------------------------------------------- |
+| Prefect server         | 4200      | `PREFECT_API_URL=http://127.0.0.1:4200/api`         |
+| Marquez                | 5002      | `OPENLINEAGE_URL=http://127.0.0.1:5002/api/v1`      |
+| OTLP collector         | 4317/4318 | `OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4318` |
+| MinIO (S3)             | 9000      | `HOTPASS_S3_ENDPOINT=http://127.0.0.1:9000`         |
+| LocalStack             | 4566      | `LOCALSTACK_ENDPOINT=http://127.0.0.1:4566`         |
+| SearXNG                | 8080      | `HOTPASS_SEARX_URL=http://127.0.0.1:8080`           |
+| Ollama (profile `llm`) | 11434     | `HOTPASS_LLM_BASE_URL=http://127.0.0.1:11434`       |
 
 Generate a `.env` file that points at the local stack (add `--include-credentials` to reuse values from `hotpass credentials wizard`):
 
@@ -87,33 +87,35 @@ Toggle `--allow-network` only when you intentionally want online enrichment. Reu
    uv sync --extra dev --extra docs
    ```
 
-   Add orchestration or enrichment extras up front (`uv sync --extra dev --extra docs --extra orchestration --extra enrichment`) so the firewall lock-down never blocks later installs.
+````
 
-2. **Discover the CLI surface**
+Add orchestration or enrichment extras up front (`uv sync --extra dev --extra docs --extra orchestration --extra enrichment`) so the firewall lock-down never blocks later installs.
 
-   ```bash
-   uv run hotpass overview
-   ```
+1. **Discover the CLI surface**
 
-   ```
-   ╭─────────────────────────────── About Hotpass ────────────────────────────────╮
-   │ Hotpass Data Refinement Platform                                             │
-   │ Version: 0.2.0                                                               │
-   ╰──────────────────────────────────────────────────────────────────────────────╯
-   ┏━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-   │ Command         │ Description                                                │
-   ┡━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-   │ refine          │ Run the Hotpass refinement pipeline on input data          │
-   │ enrich          │ Enrich refined data with additional information            │
-   │ qa              │ Run quality assurance checks and validation                │
-   │ contracts       │ Emit data contracts and schemas for a profile              │
-   │ setup           │ Run the guided staging wizard (deps, tunnels, contexts,    │
-   │                 │ env)                                                       │
-   │ …               │ …                                                          │
-   └─────────────────┴────────────────────────────────────────────────────────────┘
-   ```
+ ```bash
+ uv run hotpass overview
+````
 
-3. **Bootstrap a workspace**
+```
+ ╭─────────────────────────────── About Hotpass ────────────────────────────────╮
+ │ Hotpass Data Refinement Platform                                             │
+ │ Version: 0.2.0                                                               │
+ ╰──────────────────────────────────────────────────────────────────────────────╯
+ ┏━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+ │ Command         │ Description                                                │
+ ┡━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+ │ refine          │ Run the Hotpass refinement pipeline on input data          │
+ │ enrich          │ Enrich refined data with additional information            │
+ │ qa              │ Run quality assurance checks and validation                │
+ │ contracts       │ Emit data contracts and schemas for a profile              │
+ │ setup           │ Run the guided staging wizard (deps, tunnels, contexts,    │
+ │                 │ env)                                                       │
+ │ …               │ …                                                          │
+ └─────────────────┴────────────────────────────────────────────────────────────┘
+```
+
+1. **Bootstrap a workspace**
 
    ```bash
    uv run hotpass init --path ./hotpass-workspace
@@ -132,7 +134,7 @@ Toggle `--allow-network` only when you intentionally want online enrichment. Reu
      - config/profiles/quickstart.toml
    ```
 
-4. **Load a sample workbook and validate the environment**
+1. **Load a sample workbook and validate the environment**
 
    ```bash
    cp ../data/'Reachout Database.xlsx' data/
@@ -147,7 +149,7 @@ Toggle `--allow-network` only when you intentionally want online enrichment. Reu
    [PASS] governance.data_owner: Data owner registered as 'Data Governance'.
    ```
 
-5. **Run the refinement pipeline with the bundled profile**
+1. **Run the refinement pipeline with the bundled profile**
 
    ```bash
    uv run hotpass refine \
@@ -171,7 +173,7 @@ Toggle `--allow-network` only when you intentionally want online enrichment. Reu
    > `dist/contract-notices/<run-id>/sacaa-cleaned-duplicates.csv`, and surfaces the warning in the
    > quality recommendations so you can review them after the run.
 
-6. **Run the platform QA gates**
+1. **Run the platform QA gates**
 
    ```bash
    uv run hotpass qa all --profile generic \
@@ -186,7 +188,7 @@ Toggle `--allow-network` only when you intentionally want online enrichment. Reu
    ✓ All QA checks passed
    ```
 
-7. **Plan enrichment or research (optional)**
+1. **Plan enrichment or research (optional)**
 
    ```bash
    uv run hotpass plan research \
@@ -302,6 +304,12 @@ Run these gates before opening a pull request so local results align with CI:
 - Optional: set `HOTPASS_ENABLE_PRESIDIO=1` before running if you need Presidio-backed
   PII redaction. By default Hotpass skips the heavy Presidio models to keep offline
   runs self-contained.
+
+## Developer tips: Trunk (format/lint)
+
+- Install the Trunk CLI once to get consistent formatting and security checks across local and CI: `bash scripts/testing/install_trunk.sh`.
+- Use `make qa-trunk` to run only the linting/format checks (Ruff, ruff-format, isort, mypy, bandit, etc.).
+- Use `make qa` for the full local QA suite (adds pytest coverage and pre-commit checks).
 
 On orchestrated environments, register multiple Prefect workers against a shared pool so
 `uv run hotpass qa all` and pipeline runs can execute in parallel. Monitor worker heartbeats

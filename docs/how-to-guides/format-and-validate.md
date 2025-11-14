@@ -10,7 +10,7 @@ Follow this guide when stakeholders expect polished deliverables and tailored qu
 
 - **Python** — Ruff handles both linting and formatting. Run `uv run ruff format` (or `uv run ruff format --check`) before you push. Black is intentionally removed from the toolchain; don’t add it back.
 - **TypeScript / JavaScript / CSS** — Use Biome 2 (`npx @biomejs/biome@2 format --write …`) when you need structured formatting. Prettier is disabled so Biome can operate without conflicts.
-- **Trunk CLI** — `make qa` invokes `scripts/testing/trunk_check.sh`, which shells out to Ruff plus the security/static-analysis suite. Keep it green before opening a PR.
+- **Trunk CLI** — `make qa` invokes `scripts/testing/trunk_check.sh`, which shells out to Ruff plus the security/static-analysis suite. Keep it green before opening a PR. Install with `bash scripts/testing/install_trunk.sh`.
 
 ## Enable premium formatting
 

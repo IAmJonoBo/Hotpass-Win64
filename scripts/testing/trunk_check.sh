@@ -11,17 +11,23 @@ FMT_MODE="${TRUNK_FMT_MODE:-check}"
 UPSTREAM="${TRUNK_UPSTREAM:-origin/main}"
 
 if ! command -v trunk >/dev/null 2>&1; then
-	cat <<'MSG' >&2
-[trunk] CLI not found. Install it with:
-  curl https://get.trunk.io -fsSL | bash
+		if [[ ${ALLOW_MISSING} == "1" ]]; then
+				echo "[trunk] CLI not found but TRUNK_ALLOW_MISSING=1; skipping trunk checks."
+				exit 0
+		fi
+		echo "[trunk] CLI not found; attempting to install via scripts/testing/install_trunk.sh"
+		if bash scripts/testing/install_trunk.sh; then
+				echo "[trunk] CLI installed successfully."
+		else
+				cat <<'MSG' >&2
+[trunk] CLI not found and automatic install failed. Install it with:
+	curl https://get.trunk.io -fsSL | bash
 or
-  brew install trunk
+	brew install trunk
 Set TRUNK_ALLOW_MISSING=1 to skip this check temporarily.
 MSG
-	if [[ ${ALLOW_MISSING} == "1" ]]; then
-		exit 0
-	fi
-	exit 127
+				exit 127
+		fi
 fi
 
 if [[ ${FMT_MODE} != "skip" ]]; then

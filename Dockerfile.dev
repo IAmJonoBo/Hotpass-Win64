@@ -56,10 +56,10 @@ RUN set -eux; \
     apt-get install -y --no-install-recommends gnupg build-essential wget unzip libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libxkbcommon0 libgbm1 libxshmfence1; \
     curl -fsSL https://deb.nodesource.com/setup_${NODE_MAJOR}.x | bash -; \
     apt-get install -y --no-install-recommends nodejs; \
-    npm install -g corepack@0.28.0; \
-    corepack enable; \
-    npm install -g playwright@1.48.0; \
-    npx playwright install --with-deps chromium; \
+    corepack enable pnpm; \
+    corepack prepare pnpm@9.12.2 --activate; \
+    pnpm add --global playwright@1.48.0; \
+    pnpm dlx playwright install --with-deps chromium; \
     apt-get clean; \
     rm -rf /var/lib/apt/lists/*
 

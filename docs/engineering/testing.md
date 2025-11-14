@@ -1,6 +1,6 @@
 # Hotpass Testing & Coverage Strategy
 
-_Last updated: 2025-11-18_
+Last updated: 2025-11-18
 
 **Audience:** release managers, QA contributors, Copilot/Codex agents, and engineers who need to validate Hotpass before shipping changes.
 **Purpose:** explain how to run, extend, and troubleshoot the Hotpass automated test suites so that fast smoke checks and deeper gates stay reliable.
@@ -21,6 +21,7 @@ graph TD
 ```
 
 - **Smoke** keeps branch feedback under five minutes by running lint, targeted pytest, and Vitest coverage.
+  The smoke tier now includes additional quick checks: `ruff` on Python surfaces, a limited `bandit` scan on `apps/data-platform/hotpass` (medium severity) and a CLI sanity check (`uv run hotpass overview --help`). These keep the signal fast while catching common issues earlier.
 - **Full** adds security and style tooling so we catch regressions before a release branch is cut.
 - **Quality gates** assert that the CLI, enrichment, MCP tooling, and docs remain compliant.
 - **Nightly Playwright** replays critical UI journeys with trace capture to guard against drift.
@@ -32,6 +33,8 @@ graph TD
 - Install Python extras once per clone: `make sync EXTRAS="dev orchestration"`.
 - Install UI dependencies once per clone: `make web-ui-install`.
 - Optional (only for Playwright): `cd apps/web-ui && npx playwright install --with-deps`.
+
+Note: CI workflows now cache Trunk tool downloads under `~/.trunk`; this reduces the cost of repeated installs across jobs. If you change the Trunk CLI version in `.trunk/trunk.yaml`, invalidate the cache by changing the cache key (`trunk-${{ runner.os }}-v1`).
 
 ### Steps
 
@@ -76,8 +79,8 @@ If any command fails, the script exits immediately with a non-zero code so CI ca
 **Use when:** iterating on web components without touching the Python stack.
 
 1. `cd apps/web-ui`.
-2. Run `npm run test:unit` (Vitest with coverage).
-3. Optionally follow with `npm run test:e2e` to exercise Playwright journeys locally (ensure you ran `npx playwright install --with-deps` once).
+2. Run `pnpm run test:unit` (Vitest with coverage).
+3. Optionally follow with `pnpm run test:e2e` to exercise Playwright journeys locally (ensure you ran `npx playwright install --with-deps` once).
 
 **Result:** UI-only signal with coverage reports under `apps/web-ui/coverage/unit/`.
 
@@ -95,9 +98,9 @@ If any command fails, the script exits immediately with a non-zero code so CI ca
 
 **Use when:** you need comprehensive linting, formatting validation, or secret scanning before pushing a branch.
 
-1. Install the Trunk CLI once: `curl https://get.trunk.io -fsSL | bash` (or `brew install trunk`).
+1. Install the Trunk CLI once: run `bash scripts/testing/install_trunk.sh` (script wraps the official trunk install). If you're running a macOS laptop and prefer Homebrew, you can also `brew install trunk`.
 2. From the repo root run `make qa-trunk` for lint-only coverage, or rely on `make qa` / `make qa-full` which now invoke Trunk automatically. Pull requests also run `.github/workflows/trunk-format.yml`, which applies `trunk fmt` in fix mode and attaches a patch when formatting is missing.
-3. For CI-style execution call `scripts/testing/trunk_check.sh` directly. Set `TRUNK_FMT_MODE=fix` to apply autofixes locally or keep the default `check` mode to fail on unformatted files.
+3. For CI-style execution call `scripts/testing/trunk_check.sh` directly. Set `TRUNK_FMT_MODE=fix` to apply autofixes locally or keep the default `check` mode to fail on unformatted files. To mass-apply formatting across a branch, use the helper `bash scripts/testing/trunk_fmt_fix.sh`, which will run `trunk fmt --all` and print the diff summary.
 
 **Result:** consistent enforcement of `ruff` (lint + format), `bandit`, `mypy`, `detect-secrets`, YAML/Markdown linters, container linting, and additional security scanners through one orchestrated command.
 
@@ -107,12 +110,12 @@ If any command fails, the script exits immediately with a non-zero code so CI ca
 
 ### Test tiers by scope
 
-| Tier          | Invocation                                        | Components covered                                                                                                     | When to run                                    | Target runtime |
-| ------------- | ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- | -------------- |
-| Smoke         | `scripts/testing/smoke.sh` · `make qa`            | `ruff` (apps/web-ui), `pytest -m "smoke"` with coverage, `uv run coverage html`, Vitest coverage (`npm run test:unit`) | Every PR and before pushing shared branches    | < 5 minutes    |
-| Full          | `scripts/testing/full.sh` · `make qa-full`        | Smoke suite + full `pytest`, HTML/XML coverage, low-coverage audit, `mypy`, `bandit`, `detect-secrets`, `pre-commit`   | Before releases, after dependency upgrades     | < 45 minutes   |
-| Quality gates | `.github/workflows/quality-gates.yml` (scheduled) | Full regression, Quality Gate checks (QG-1…5), Playwright shard                                                        | Nightly on `main`, manual reruns for incidents | < 60 minutes   |
-| Nightly E2E   | `.github/workflows/playwright-nightly.yml`        | Playwright Chromium journeys with trace/HTML reports                                                                   | Nightly or after major UI merges               | < 40 minutes   |
+| Tier          | Invocation                                        | Components covered                                                                                                      | When to run                                    | Target runtime |
+| ------------- | ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- | -------------- |
+| Smoke         | `scripts/testing/smoke.sh` · `make qa`            | `ruff` (apps/web-ui), `pytest -m "smoke"` with coverage, `uv run coverage html`, Vitest coverage (`pnpm run test:unit`) | Every PR and before pushing shared branches    | < 5 minutes    |
+| Full          | `scripts/testing/full.sh` · `make qa-full`        | Smoke suite + full `pytest`, HTML/XML coverage, low-coverage audit, `mypy`, `bandit`, `detect-secrets`, `pre-commit`    | Before releases, after dependency upgrades     | < 45 minutes   |
+| Quality gates | `.github/workflows/quality-gates.yml` (scheduled) | Full regression, Quality Gate checks (QG-1…5), Playwright shard                                                         | Nightly on `main`, manual reruns for incidents | < 60 minutes   |
+| Nightly E2E   | `.github/workflows/playwright-nightly.yml`        | Playwright Chromium journeys with trace/HTML reports                                                                    | Nightly or after major UI merges               | < 40 minutes   |
 
 ### Coverage expectations
 

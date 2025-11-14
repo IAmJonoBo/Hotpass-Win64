@@ -17,5 +17,10 @@
       "source.fixAll.ruff": "always",
       "source.organizeImports.ruff": "always"
     }
+  },
+  "chat.mcp.serverSampling": {
+    "Hotpass/.vscode/mcp.json: 0": {
+      "allowedModels": []
+    }
   }
 }

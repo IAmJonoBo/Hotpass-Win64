@@ -2,18 +2,18 @@
 
 ## Baseline tooling results
 
-| Command | Status | Notes |
-| --- | --- | --- |
-| `TRUNK_SKIP_TRUNK=1 scripts/testing/full.sh` | ⚠️ Timed out after ~225s | Pytest xdist run completed successfully (565 tests, coverage XML generated). Remaining post-processing steps were executed manually (see below). Consider raising the automation timeout to ≥6 min if we keep the full suite in one shell. |
-| `uv run coverage html` / `uv run python tools/coverage/report_low_coverage.py ...` | ✅ | HTML report at `htmlcov/`; all modules meet configured thresholds. |
-| `uv run mypy apps/data-platform/hotpass/pipeline/config.py ...` | ✅ | No type errors. |
-| `uv run bandit -r apps/data-platform ops` | ✅ | No high/medium findings (only previously allow-listed low-confidence warnings). |
-| `uv run python -m detect_secrets scan ...` | ✅ | Clean run with pnpm lockfile excluded per policy. |
-| `uv run pre-commit run --all-files` | ✅ | All hooks green after removing `ruff-format` duplication. |
-| `uv run python -m build` | ✅ | Wheel + sdist emitted under `dist/`. |
-| `npm run lint` | ✅ | ESLint passes with React Compiler optimisations intact. |
-| `npm run test:unit` | ✅ | Vitest suite (34 tests) with coverage 88.5% statements. |
-| `npx playwright test` | ✅ | Accessibility suite clean on `/`, `/lineage`, `/admin`, `/assistant`. |
+| Command                                                                            | Status                   | Notes                                                                                                                                                                                                                                      |
+| ---------------------------------------------------------------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `TRUNK_SKIP_TRUNK=1 scripts/testing/full.sh`                                       | ⚠️ Timed out after ~225s | Pytest xdist run completed successfully (565 tests, coverage XML generated). Remaining post-processing steps were executed manually (see below). Consider raising the automation timeout to ≥6 min if we keep the full suite in one shell. |
+| `uv run coverage html` / `uv run python tools/coverage/report_low_coverage.py ...` | ✅                       | HTML report at `htmlcov/`; all modules meet configured thresholds.                                                                                                                                                                         |
+| `uv run mypy apps/data-platform/hotpass/pipeline/config.py ...`                    | ✅                       | No type errors.                                                                                                                                                                                                                            |
+| `uv run bandit -r apps/data-platform ops`                                          | ✅                       | No high/medium findings (only previously allow-listed low-confidence warnings).                                                                                                                                                            |
+| `uv run python -m detect_secrets scan ...`                                         | ✅                       | Clean run with pnpm lockfile excluded per policy.                                                                                                                                                                                          |
+| `uv run pre-commit run --all-files`                                                | ✅                       | All hooks green after removing `ruff-format` duplication.                                                                                                                                                                                  |
+| `uv run python -m build`                                                           | ✅                       | Wheel + sdist emitted under `dist/`.                                                                                                                                                                                                       |
+| `pnpm run lint`                                                                    | ✅                       | ESLint passes with React Compiler optimisations intact.                                                                                                                                                                                    |
+| `pnpm run test:unit`                                                               | ✅                       | Vitest suite (34 tests) with coverage 88.5% statements.                                                                                                                                                                                    |
+| `npx playwright test`                                                              | ✅                       | Accessibility suite clean on `/`, `/lineage`, `/admin`, `/assistant`.                                                                                                                                                                      |
 
 ## Required CI checks / branch protection inputs
 
@@ -21,8 +21,8 @@ Suggested required status checks for `main` and release branches:
 
 1. `pre-commit` (or the individual GitHub Actions job that runs `uv run pre-commit run --all-files`).
 2. `pytest` (ensure the job exports coverage XML for archival).
-3. `npm run lint` (front-end lint job).
-4. `npm run test:unit` (vitest).
+3. `pnpm run lint` (front-end lint job).
+4. `pnpm run test:unit` (vitest).
 5. `npx playwright test` (accessibility + smoke).
 6. `build` (invokes `uv run python -m build` and uploads wheels/sdist).
 7. `detect-secrets` (optional but recommended for supply-chain posture).

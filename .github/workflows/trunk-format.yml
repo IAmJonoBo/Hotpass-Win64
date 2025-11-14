@@ -27,6 +27,13 @@ jobs:
           curl https://get.trunk.io -fsSL | bash -s -- -y
           echo "$HOME/.trunk/bin" >> "$GITHUB_PATH"
 
+      - name: Cache Trunk tools
+        uses: actions/cache@v4
+        with:
+          path: ~/.trunk
+          key: trunk-${{ runner.os }}-${{ hashFiles('.trunk/trunk.yaml') }}
+          restore-keys: trunk-${{ runner.os }}-
+
       - name: Apply formatting with Trunk (changed files only)
         env:
           TRUNK_UPSTREAM: origin/main

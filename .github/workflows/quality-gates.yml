@@ -26,7 +26,7 @@ jobs:
     timeout-minutes: 60
     env:
       UV_EXTRAS: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.uv_extras != '' && github.event.inputs.uv_extras || 'dev' }}
-      TRUNK_ALLOW_MISSING: 1
+      TRUNK_ALLOW_MISSING: 0
     steps:
       - uses: actions/checkout@v5
         with:
@@ -36,11 +36,34 @@ jobs:
         uses: astral-sh/setup-uv@v7
         with:
           python-version: '3.13'
+      - name: Cache Trunk tools
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.trunk
+          key: trunk-${{ runner.os }}-${{ hashFiles('.trunk/trunk.yaml') }}
+          restore-keys: |
+            trunk-${{ runner.os }}-
+
 
       - name: Synchronise dependencies
         env:
           HOTPASS_UV_EXTRAS: ${{ env.UV_EXTRAS }}
         run: bash ops/uv_sync_extras.sh
+
+      - name: Cache Trunk tools
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.trunk
+          key: trunk-${{ runner.os }}-v1
+          restore-keys: |
+            trunk-${{ runner.os }}-
+
+      - name: Install Trunk CLI
+        run: |
+          curl https://get.trunk.io -fsSL | bash -s -- -y
+          echo "$HOME/.trunk/bin" >> "$GITHUB_PATH"
 
       - name: Run full pytest suite with coverage thresholds
         run: |
@@ -109,7 +132,7 @@ jobs:
     needs: pytest-full
     env:
       UV_EXTRAS: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.uv_extras != '' && github.event.inputs.uv_extras || 'dev' }}
-      TRUNK_ALLOW_MISSING: 1
+      TRUNK_ALLOW_MISSING: 0
     steps:
       - uses: actions/checkout@v5
         with:
@@ -124,6 +147,16 @@ jobs:
         env:
           HOTPASS_UV_EXTRAS: ${{ env.UV_EXTRAS }}
         run: bash ops/uv_sync_extras.sh
+
+      - name: Install Trunk CLI
+        run: |
+          curl https://get.trunk.io -fsSL | bash -s -- -y
+          echo "$HOME/.trunk/bin" >> "$GITHUB_PATH"
+
+      - name: QG-0 - Trunk lint checks
+        run: |
+          scripts/testing/install_trunk.sh
+          TRUNK_FMT_MODE=check TRUNK_ALLOW_MISSING=0 TRUNK_UPSTREAM=origin/main scripts/testing/trunk_check.sh
 
       - name: QG-1 - CLI Integrity
         run: uv run pytest tests/cli/test_quality_gates.py::TestQG1CLIIntegrity -v
@@ -179,7 +212,7 @@ jobs:
     needs: pytest-full
     strategy:
       matrix:
-        node-version: [20, 22]
+        node-version: [24]
     steps:
       - uses: actions/checkout@v5
 
@@ -187,18 +220,23 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: ${{ matrix['node-version'] }}
-          cache: npm
-          cache-dependency-path: apps/web-ui/package-lock.json
+          cache: pnpm
+          cache-dependency-path: apps/web-ui/pnpm-lock.yaml
+
+      - name: Enable pnpm via Corepack
+        run: |
+          corepack enable pnpm
+          corepack prepare pnpm@9.12.2 --activate
 
       - name: Install dependencies
         working-directory: apps/web-ui
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Run Vitest unit suite with coverage
         working-directory: apps/web-ui
         env:
           CI: 'true'
-        run: npm test
+        run: pnpm test
 
       - name: Generate web coverage badge
         working-directory: apps/web-ui
@@ -211,7 +249,7 @@ jobs:
 
           const summaryFile = 'coverage/unit/coverage-summary.json'
           const badgeDir = '../dist/ci-badges'
-          const nodeVersion = process.env.NODE_VERSION ?? '20'
+          const nodeVersion = process.env.NODE_VERSION ?? '24'
           try {
             const payload = JSON.parse(readFileSync(summaryFile, 'utf-8'))
             const pct = payload.total?.lines?.pct ?? 0
@@ -267,12 +305,17 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: 24
-          cache: npm
-          cache-dependency-path: apps/web-ui/package-lock.json
+          cache: pnpm
+          cache-dependency-path: apps/web-ui/pnpm-lock.yaml
+
+      - name: Enable pnpm via Corepack
+        run: |
+          corepack enable pnpm
+          corepack prepare pnpm@9.12.2 --activate
 
       - name: Install dependencies
         working-directory: apps/web-ui
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Install Playwright browsers
         working-directory: apps/web-ui
@@ -318,12 +361,17 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: 24
-          cache: npm
-          cache-dependency-path: apps/web-ui/package-lock.json
+          cache: pnpm
+          cache-dependency-path: apps/web-ui/pnpm-lock.yaml
+
+      - name: Enable pnpm via Corepack
+        run: |
+          corepack enable pnpm
+          corepack prepare pnpm@9.12.2 --activate
 
       - name: Install dependencies
         working-directory: apps/web-ui
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Install Playwright browsers
         if: matrix.tool == 'axe'
@@ -341,13 +389,13 @@ jobs:
       - name: Build production bundle
         if: matrix.tool == 'pa11y'
         working-directory: apps/web-ui
-        run: npm run build
+        run: pnpm run build
 
       - name: Serve production bundle
         if: matrix.tool == 'pa11y'
         working-directory: apps/web-ui
         run: |
-          npm run preview:ci &
+          pnpm run preview:ci &
           npx wait-on http://127.0.0.1:4173
 
       - name: Run pa11y-ci scans

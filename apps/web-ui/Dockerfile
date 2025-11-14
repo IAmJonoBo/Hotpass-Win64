@@ -3,6 +3,8 @@
 
 FROM node:24-alpine AS builder
 
+ARG PNPM_VERSION=9.12.2
+
 ARG PREFECT_API_URL=http://localhost:4200/api
 ARG OPENLINEAGE_URL=http://localhost:5000/api/v1
 ARG E2E_GUIDE_URL=/docs/e2e-walkthrough.md
@@ -17,7 +19,9 @@ WORKDIR /app
 
 COPY apps/web-ui/package*.json ./
 COPY apps/web-ui/pnpm-lock.yaml ./
-RUN npm install -g pnpm && pnpm install --frozen-lockfile
+RUN corepack enable pnpm \
+ && corepack prepare pnpm@${PNPM_VERSION} --activate \
+ && pnpm install --frozen-lockfile
 
 COPY apps/web-ui ./
 RUN mkdir -p public/docs
@@ -26,6 +30,8 @@ COPY tools.json public/tools.json
 RUN pnpm run build
 
 FROM node:24-alpine AS runner
+
+ARG PNPM_VERSION=9.12.2
 
 ENV NODE_ENV=production
 ENV PORT=3000
@@ -37,7 +43,9 @@ WORKDIR /app
 
 COPY apps/web-ui/package*.json ./
 COPY apps/web-ui/pnpm-lock.yaml ./
-RUN npm install -g pnpm && pnpm install --frozen-lockfile --prod
+RUN corepack enable pnpm \
+ && corepack prepare pnpm@${PNPM_VERSION} --activate \
+ && pnpm install --frozen-lockfile --prod
 
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/server ./server

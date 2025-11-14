@@ -21,7 +21,7 @@ Use this reference when you write or review code. It captures the conventions en
   - `apps/data-platform/hotpass/pipeline/orchestrator.py`
   - `apps/data-platform/hotpass/telemetry/{bootstrap,registry}.py`
   - `ops/quality/fitness_functions.py`
-  If you extend these modules, run `uv run mypy` before pushing so CI stays green.
+    If you extend these modules, run `uv run mypy` before pushing so CI stays green.
 - Keep the functional decomposition used in `apps/data-platform/hotpass/pipeline/`: ingestion, mapping, validation, enrichment, and export stages each live in their own module. Prefer extending those modules over adding ad-hoc logic to `pipeline/base.py`.
 
 ## Testing conventions
@@ -29,7 +29,7 @@ Use this reference when you write or review code. It captures the conventions en
 - All tests live under `tests/` and default to the `full` bandwidth marker. Use `@pytest.mark.bandwidth("smoke")` for deterministic smoke coverage or `bandwidth("quality_gate")` for nightly-only gates.
 - Do not use bare `assert`. Instead, import and call `expect(condition, message)` from `tests/cli/test_quality_gates.py`, which satisfies Bandit rule B101.
 - Pytest emits coverage reports (`coverage.xml` and HTML under `htmlcov/`) through `addopts` defined in `pyproject.toml`. You do not need to add flags when running `pytest`.
-- UI unit tests use Vitest (`npm run test:unit`). Playwright e2e checks require a one-time `npx playwright install --with-deps chromium`.
+- UI unit tests use Vitest (`pnpm run test:unit`). Playwright e2e checks require a one-time `npx playwright install --with-deps chromium`.
 
 ## Commit and branch hygiene
 

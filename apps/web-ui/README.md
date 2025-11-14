@@ -18,7 +18,7 @@ Modern React-based web interface for Hotpass data pipeline monitoring and manage
 
 ## Tech Stack
 
-- **React 18** - Latest React features
+- **React 19** - Latest React features
 - **Vite** - Fast build tool and dev server
 - **TypeScript** - Type-safe development
 - **TailwindCSS** - Utility-first styling
@@ -31,7 +31,7 @@ Modern React-based web interface for Hotpass data pipeline monitoring and manage
 
 ### Prerequisites
 
-- Node.js 20+ and npm 10+ (for local development)
+- Node.js 24+ with Corepack (pnpm 9+) for local development
 - Docker and Docker Compose (for containerized deployment)
 - Marquez backend (optional, mock data available)
 - Prefect API (optional, mock data available)
@@ -49,6 +49,7 @@ make docker-up
 ```
 
 This starts:
+
 - **Hotpass Web UI** at [http://localhost:3001](http://localhost:3001)
 - **Marquez** at [http://localhost:5000](http://localhost:5000)
 - **Prefect Server** at [http://localhost:4200](http://localhost:4200)
@@ -61,13 +62,14 @@ All services are networked together and the UI is pre-configured to connect to t
 
 ```bash
 cd apps/web-ui
-npm install
+corepack enable pnpm
+pnpm install
 ```
 
 ### Development
 
 ```bash
-npm run dev
+pnpm run dev
 ```
 
 Open [http://localhost:3001](http://localhost:3001) in your browser.
@@ -75,7 +77,7 @@ Open [http://localhost:3001](http://localhost:3001) in your browser.
 ### Building for Production
 
 ```bash
-npm run build
+pnpm run build
 ```
 
 The built files will be in the `dist` directory.
@@ -85,7 +87,7 @@ The built files will be in the `dist` directory.
 View component documentation and test components in isolation:
 
 ```bash
-npm run storybook
+pnpm run storybook
 ```
 
 Open [http://localhost:6006](http://localhost:6006) to view the Storybook.
@@ -108,6 +110,7 @@ HOTPASS_CONTRACT_ROOT=./dist/contracts
 ```
 
 **Environment Options:**
+
 - `local` - Local development (no banner shown)
 - `docker` - Running in Docker containers (shows banner)
 - `staging` - Staging environment (shows yellow banner)
@@ -175,6 +178,7 @@ The UI uses a semantic color system that adapts to light/dark mode:
 ### Components
 
 All components follow shadcn/ui patterns:
+
 - Composable and accessible
 - Variants for different contexts
 - Consistent spacing and sizing
@@ -207,13 +211,13 @@ Mock data is used when the API is unavailable.
 Run linting:
 
 ```bash
-npm run lint
+pnpm run lint
 ```
 
 Build for production (TypeScript check):
 
 ```bash
-npm run build
+pnpm run build
 ```
 
 ## Future Enhancements
@@ -240,7 +244,7 @@ make marquez-up
 uv run hotpass refine --input-dir ./data --output-path ./dist/refined.xlsx
 
 # View results in the web UI
-npm run dev
+pnpm run dev
 ```
 
 ## License
