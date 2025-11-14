@@ -4,13 +4,13 @@ on:
   workflow_dispatch:
     inputs:
       commit:
-        description: 'Commit regenerated lockfiles and push to branch'
+        description: "Commit regenerated lockfiles and push to branch"
         required: false
-        default: 'false'
+        default: "false"
       branch:
-        description: 'Branch name to push lockfile commit to'
+        description: "Branch name to push lockfile commit to"
         required: false
-        default: 'regenerate/lockfiles-windows'
+        default: "regenerate/lockfiles-windows"
 
 permissions:
   contents: write
@@ -31,58 +31,6 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
-
-      - name: Install uv
-        run: python -m pip install -U uv
-        shell: pwsh
-
-      - name: Ensure node + corepack
-        run: |
-          choco install -y nodejs-lts || echo "choco not available; assuming Node is preinstalled"
-          refreshenv || true
-          corepack enable pnpm
-          corepack prepare pnpm@9.12.2 --activate
-        shell: pwsh
-
-      - name: Regenerate lockfiles
-        run: pwsh scripts/regen_lockfiles.ps1 --Commit ${{ inputs.commit }} -BranchName "${{ inputs.branch }}"
-        shell: pwsh
-
-      - name: Upload lockfile artifacts
-        uses: actions/upload-artifact@v5
-        with:
-          name: lockfiles
-          path: |
-            uv.lock
-            apps/web-ui/pnpm-lock.yaml
-name: Regenerate lockfiles (Windows)
-
-on:
-  workflow_dispatch:
-    inputs:
-      commit:
-        description: "Commit regenerated lockfiles and push to branch"
-        required: false
-        default: "false"
-      branch:
-        description: "Branch name to push lockfile commit to"
-        required: false
-        default: "regenerate/lockfiles-windows"
-
-jobs:
-  regen-locks-windows:
-    name: Regenerate locks on Windows
-    runs-on: windows-latest
-
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
           python-version: "3.13"
 
       - name: Install uv
@@ -92,6 +40,7 @@ jobs:
       - name: Ensure node + corepack
         run: |
           choco install -y nodejs-lts || echo "choco not available; assuming Node is preinstalled"
+          refreshenv || true
           corepack enable pnpm
           corepack prepare pnpm@9.12.2 --activate
         shell: pwsh
