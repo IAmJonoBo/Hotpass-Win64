@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   smoke:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     timeout-minutes: 25
     env:
       PYTHONUNBUFFERED: "1"
@@ -47,6 +47,8 @@ jobs:
           # TODO: Raise coverage threshold gradually (target: 70%)
           uv run coverage report --fail-under=20
           uv run coverage html
+          uv run coverage json -o coverage.json
+          python ops/quality/check_per_file_coverage.py --path coverage.json --threshold 85
 
       - name: Upload Python coverage artefacts
         uses: actions/upload-artifact@v5
@@ -65,14 +67,28 @@ jobs:
           cache: pnpm
           cache-dependency-path: apps/web-ui/pnpm-lock.yaml
 
-      - name: Enable pnpm via Corepack
+      - name: Enable pnpm via Corepack (robust)
         run: |
-          corepack enable pnpm
-          corepack prepare pnpm@9.12.2 --activate
+          # Enable corepack and prepare pnpm. If corepack isn't available, install pnpm via npm as a fallback.
+          corepack enable || true
+          corepack prepare pnpm@9.12.2 --activate || true
+          if ! command -v pnpm >/dev/null 2>&1; then
+            echo "pnpm not found; installing via npm..."
+            npm install -g pnpm@9.12.2
+          fi
+          pnpm --version || true
+
 
       - name: Install web dependencies
         working-directory: apps/web-ui
         run: pnpm install --frozen-lockfile
+
+      - name: Debug: node/pnpm path & versions
+        run: |
+          echo "PATH=${PATH}"
+          node --version || true
+          npm --version || true
+          pnpm --version || true
 
       - name: Run web UI linter (Biome)
         working-directory: apps/web-ui
