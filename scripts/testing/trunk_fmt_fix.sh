@@ -9,7 +9,7 @@ bash scripts/testing/install_trunk.sh
 
 echo "Running trunk fmt --all (this will modify files on disk)"
 trunk fmt --all
-echo "Formatting run complete; showing diff summary:" 
+echo "Formatting run complete; showing diff summary:"
 git --no-pager diff --name-only
 
 echo "Optionally run 'git add -A && git commit -m "Apply trunk formatting"' to update your branch."
