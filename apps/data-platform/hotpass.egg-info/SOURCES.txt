@@ -1,11 +1,5 @@
 README.md
 pyproject.toml
-apps/data-platform/hotpass.egg-info/PKG-INFO
-apps/data-platform/hotpass.egg-info/SOURCES.txt
-apps/data-platform/hotpass.egg-info/dependency_links.txt
-apps/data-platform/hotpass.egg-info/entry_points.txt
-apps/data-platform/hotpass.egg-info/requires.txt
-apps/data-platform/hotpass.egg-info/top_level.txt
 apps/data-platform/hotpass/__init__.py
 apps/data-platform/hotpass/_compat_nameparser.py
 apps/data-platform/hotpass/_warning_filters.py
