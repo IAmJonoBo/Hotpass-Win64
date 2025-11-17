@@ -1,0 +1,28 @@
+## 2025-11-17 (branch: work, pr: n/a, actor: codex)
+- [x] **Programme** — Confirm Phase 5 T5.5 completion so roadmap status reflects programme expectations.
+  - notes: Evidence captured under dist/staging/arc/20251113T160000Z/ with roadmap Phase 5 note updated.
+  - checks: tests=unknown, lint=unknown, type=unknown, sec=unknown, build=unknown
+- [x] **QA** — Execute full E2E runs with canonical configuration toggles; reuse Prefect deployment `hotpass-e2e-staging`).
+  - notes: E2E verification recorded under dist/logs/e2e-20251107T105820Z/ using data/e2e sample workbook and generic profile covering overview, refine, enrich, plan research, and qa all.
+  - checks: tests=unknown, lint=unknown, type=unknown, sec=unknown, build=unknown
+- [x] **Engineering** — Benchmark `HotpassConfig.merge` on large payloads.
+  - notes: Added scripts/benchmarks/hotpass_config_merge.py with latest run output dist/benchmarks/hotpass_config_merge.json (mean merge time ≈1.03ms).
+  - checks: tests=unknown, lint=unknown, type=unknown, sec=unknown, build=unknown
+- [x] **QA & Engineering** — Extend orchestrate/resolve CLI coverage for advanced profiles.
+  - notes: Added tests/cli/test_resolve_profile.py for profile-driven defaults, disable flags, and Label Studio wiring; orchestrator stress fixtures covered via tests/cli/test_orchestrate.py.
+  - checks: tests=unknown, lint=unknown, type=unknown, sec=unknown, build=unknown
+- [x] **Engineering & QA** — Execute the staged mypy remediation plan to drive error count toward zero.
+  - notes: Typed Hypothesis wrappers, optional-dependency stubs, CLI/MCP typing, and long-tail cleanup completed; mypy baseline archived.
+  - checks: tests=unknown, lint=unknown, type=unknown, sec=unknown, build=unknown
+- [x] **Platform (Phase 5)** — Enable Docker buildx cache reuse through PR `ci/docker-cache`.
+  - notes: Workflow updated at .github/workflows/docker-cache.yml for cache reuse.
+  - checks: tests=unknown, lint=unknown, type=unknown, sec=unknown, build=unknown
+- [x] Introduce manifest-driven Prefect deployments with CLI/docs/ADR updates (in progress 2025-10-29).
+  - notes: docs/how-to-guides/manage-prefect-deployments.md and docs/adr/0005-prefect-deployment-manifests.md document workflow; manifests live in prefect/.
+  - checks: tests=unknown, lint=unknown, type=unknown, sec=unknown, build=unknown
+- [x] Document expected staging artefacts for Prefect backfill guardrails and ARC runner sign-off runs so evidence drops into dist/staging/backfill/ and dist/staging/arc/ when access resumes (owner: Platform & QA).
+  - notes: docs/operations/staging-rehearsal-plan.md now includes capture instructions and destinations for both rehearsal tracks.
+  - checks: tests=unknown, lint=unknown, type=unknown, sec=unknown, build=unknown
+- [x] **Types remediation roadmap (Engineering & QA)** — execute the staged plan and record checkpoints.
+  - notes: Phases 0-4 completed; `uv run mypy src tests scripts` now reports 0 errors with history archived.
+  - checks: tests=unknown, lint=unknown, type=unknown, sec=unknown, build=unknown
