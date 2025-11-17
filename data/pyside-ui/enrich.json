@@ -1,0 +1,20 @@
+{
+  "tool": "hotpass.enrich",
+  "description": "Simulated deterministic enrich using refined output from the sample run.",
+  "arguments": {
+    "input_path": "dist/pyside-ui/refined-simulated.xlsx",
+    "output_path": "dist/pyside-ui/enriched-simulated.xlsx",
+    "profile": "generic",
+    "allow_network": false
+  },
+  "result": {
+    "success": true,
+    "outputs": [
+      "dist/pyside-ui/enriched-simulated.xlsx"
+    ],
+    "notes": [
+      "Network lookups remain disabled; deterministic registries only.",
+      "Provenance fields include offline sources and timestamps."
+    ]
+  }
+}
