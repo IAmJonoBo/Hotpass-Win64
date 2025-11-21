@@ -1,16 +1,7 @@
 name: Regenerate lockfiles (Windows)
 
 on:
-  workflow_dispatch:
-    inputs:
-      commit:
-        description: "Commit regenerated lockfiles and push to branch"
-        required: false
-        default: "false"
-      branch:
-        description: "Branch name to push lockfile commit to"
-        required: false
-        default: "regenerate/lockfiles-windows"
+  workflow_dispatch: {}
 
 permissions:
   contents: write
@@ -39,9 +30,14 @@ jobs:
 
       - name: Ensure node + corepack
         run: |
-          choco install -y nodejs-lts || echo "choco not available; assuming Node is preinstalled"
-          refreshenv || true
-          corepack enable pnpm
+          try {
+            choco install -y nodejs-lts
+            refreshenv
+          } catch {
+            Write-Host "choco not available; assuming Node is preinstalled"
+          }
+          # Enable and activate pnpm via Corepack; fallback will be handled when pnpm is used
+          corepack enable
           corepack prepare pnpm@9.12.2 --activate
         shell: pwsh
 
@@ -62,7 +58,8 @@ jobs:
         run: |
           $script = Join-Path $Env:GITHUB_WORKSPACE 'scripts\regen_lockfiles.ps1'
           Write-Host "Script path -> $script"
-          & $script --Commit '${{ inputs.commit }}' -BranchName "${{ inputs.branch }}"
+          # Run with default safe settings for dispatch: do not commit changes and use the default branch name
+          & $script --Commit 'false' -BranchName 'regenerate/lockfiles-windows'
 
       - name: Upload lockfile artifacts
         uses: actions/upload-artifact@v5
