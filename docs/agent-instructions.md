@@ -109,6 +109,15 @@ Roles gate which tools are visible. The bundled policy ships with `admin`, `oper
 
 To extend the surface, publish a module that exposes `register_mcp_tools(server)` and list it in `HOTPASS_MCP_PLUGINS`, or ship a Python entry point under `hotpass.mcp_tools`. The callback receives the live `HotpassMCPServer` instance so plugins can call `server.register_tool(...)` and `server.register_role(...)` safely.
 
+### Driving MCP flows with the PySide6 desktop UI _(How-to)_
+
+1. Install the desktop extra so PySide6 is available: `uv sync --extra dev --extra desktop` (or `python -m pip install -e ".[dev,desktop]"`).
+2. (Optional) Start a dedicated MCP stdio server if you want calls to run out-of-process: `uv run python -m hotpass.mcp.server`. The UI embeds the same server when no endpoint is running.
+3. Launch the desktop harness: `uv run python apps/pyside-ui/pyside_ui/main.py`.
+4. Use the **Refine**, **Enrich**, and **QA** tabs to call `hotpass.refine`, `hotpass.enrich`, and `hotpass.qa` over MCP. Defaults target `data/e2e` → `dist/pyside-ui/refined-simulated.xlsx` → `dist/pyside-ui/enriched-simulated.xlsx` with the `generic` profile.
+5. For an offline golden path, click **Simulate** on each tab to load the canned responses in `data/pyside-ui/refine.json`, `data/pyside-ui/enrich.json`, and `data/pyside-ui/qa.json`. The output panel mirrors the MCP payloads so you can share a deterministic walk-through.
+6. Refresh the **Visible MCP tools** list to confirm role-based visibility via `tools/list` before you hand off the UI to operators.
+
 ### Choosing the Right Test Tier
 
 | Situation                    | Run         | Command                                     |
