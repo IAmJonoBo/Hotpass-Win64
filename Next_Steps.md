@@ -15,6 +15,14 @@ Operator prompts to anticipate (and exactly how the agent should respond)
 - [ ] Audit remaining telemetry/CLI modules for strict mypy readiness and convert outstanding bare assertions (owner: Engineering & QA).
   - **Progress:** `uv run mypy src tests scripts` on 2025-10-31 reports 0 errors (down from 197 baseline). Remaining follow-up: monitor new suites for decorator regressions.
 
+## Quality gate remediation (current branch)
+- [ ] Restore pytest baseline before desktop UI work (owner: codex; due: asap). Command: `python -m pytest --maxfail=1` → exit 1 (ModuleNotFoundError: pyarrow dataset support missing).
+- [ ] Clear lint backlog flagged by `python -m ruff check` (owner: codex; due: asap). Exit 1 with E731 in `scripts/benchmarks/hotpass_config_merge.py` and E402 in `scripts/docs_refresh.py`.
+- [ ] Stabilise mypy results for app + ops paths (owner: codex; due: asap). Command: `python -m mypy apps/data-platform tests ops` → exit 1 with 98 errors (missing stubs for yaml/requests/hypothesis, Scrapy imports, unused ignores, typing mismatches).
+- [ ] Reinstate secrets scanning (owner: codex; due: asap). Command: `detect-secrets scan` → missing executable; decide whether to install locally or pin in CI and document path.
+- [ ] Re-enable build + SBOM prerequisites (owner: codex; due: asap). Command: `python -m build` → missing `build` module; align with `project.optional-dependencies.ci` and smoke workflows.
+- [ ] Verify CODEOWNERS + branch protection enforcement for new desktop UI + docs paths (owner: codex; due: before PR).
+
 ## Risks/Notes
 - `make qa` fails immediately with `recipe commences before first target`; investigate Makefile formatting before relying on the wrapper for smoke checks.
 - `python -m ruff check` reports existing lint issues: E731 in `scripts/benchmarks/hotpass_config_merge.py` and E402 in `scripts/docs_refresh.py`.

@@ -1,0 +1,21 @@
+{
+  "tool": "hotpass.refine",
+  "description": "Simulated refine run against bundled aviation profile using data/e2e sample inputs.",
+  "arguments": {
+    "input_path": "data/e2e",
+    "output_path": "dist/pyside-ui/refined-simulated.xlsx",
+    "profile": "generic",
+    "archive": false
+  },
+  "result": {
+    "success": true,
+    "outputs": [
+      "dist/pyside-ui/refined-simulated.xlsx",
+      "dist/data-docs/index.html"
+    ],
+    "notes": [
+      "Uses sample Reachout Database.xlsx workbook for offline validation.",
+      "Great Expectations checkpoints run in offline mode."
+    ]
+  }
+}
